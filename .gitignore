@@ -1,0 +1,11 @@
+# Maven
+target/
+dist/
+boot/dependency-reduced-pom.xml
+
+# JetBrains IDE
+.idea/
+*.iml
+
+generated/src
+generated/.openapi-generator/

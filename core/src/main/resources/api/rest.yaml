@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: Carbonio Docs Connector API
+  description: Carbonio Docs Connector API
+  version: 0.1.0
+servers:
+  - url: 'https://example.com/services/docs/'
+tags:
+
+paths:
+  /files/create:
+    post:
+      description: Create a new empty Docs file
+      operationId: createFile
+      parameters:
+        - $ref: '#/components/parameters/headerCookies'
+      requestBody:
+        $ref: '#/components/requestBodies/InsertFileRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CreatedFileResponse'
+  /files/open/{nodeId}:
+    get:
+      description: Open an existing file with Docs. When the version is not specified, it will open the last one
+      operationId: openFile
+      parameters:
+        - $ref: '#/components/parameters/headerCookies'
+        - $ref: '#/components/parameters/pathNodeId'
+        - $ref: '#/components/parameters/queryNodeVersion'
+      responses:
+        '307':
+          $ref: '#/components/responses/307DocsEditorRedirectResponse'
+  /wopi/{nodeId}:
+    get:
+      description: Retrieve docs-editor attributes
+      operationId: docsEditorAttributes
+      parameters:
+        - $ref: '#/components/parameters/pathNodeId'
+        - $ref: '#/components/parameters/queryNodeVersion'
+      responses:
+        '200':
+          $ref: '#/components/responses/200DocsEditorAttributesResponse'
+  /wopi/{nodeId}/contents:
+    get:
+      description: Retrieve blob of a specific Files node
+      operationId: getBlob
+      parameters:
+        - $ref: '#/components/parameters/pathNodeId'
+        - $ref: '#/components/parameters/queryNodeVersion'
+      responses:
+        '200':
+          $ref: '#/components/responses/200DownloadNodeResponse'
+    post:
+      description: Save the updated blob of a specific Files node
+      operationId: saveBlob
+      parameters:
+        - $ref: '#/components/parameters/headerContentLength'
+        - $ref: '#/components/parameters/pathNodeId'
+      requestBody:
+        $ref: '#/components/requestBodies/SaveBlobRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/200DocsEditorAttributesResponse'
+components:
+  parameters:
+    headerCookies:
+      in: header
+      name: Cookie
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    headerContentLength:
+      in: header
+      name: Content-Length
+      required: true
+      schema:
+        type: string
+
+    pathNodeId:
+      in: path
+      name: nodeId
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The id of the Files node
+
+    queryNodeVersion:
+      in: query
+      name: version
+      schema:
+        type: integer
+      required: false
+      description: The version of the Files node
+
+  requestBodies:
+    InsertFileRequest:
+      description: New Docs file metadata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InsertFile'
+
+    SaveBlobRequest:
+      description: Save the blob
+      content:
+        application/octet-stream:
+          schema:
+            $ref: '#/components/schemas/NodeBinary'
+
+  responses:
+    200CreatedFileResponse:
+      description: The metadata of the new created Docs file
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreatedFile'
+
+    307DocsEditorRedirectResponse:
+      description: URL necessary to redirect to an url that talks with carbonio-docs-editor
+      headers:
+        location:
+          schema:
+            type: string
+
+    200DownloadNodeResponse:
+      description: Return the requested blob
+      content:
+        application/octet-stream:
+          schema:
+            $ref: '#/components/schemas/NodeBinary'
+
+    200DocsEditorAttributesResponse:
+      description: All the attributes necessary to carbonio-docs-editor in order to open a file correctly
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DocsEditorAttributes'
+  schemas:
+    InsertFile:
+      type: object
+      required:
+        - name
+        - parentId
+        - type
+      properties:
+        name:
+          type: string
+          description: "Filename of the file to be created"
+          example: New spreadsheet
+        parentId:
+          type: string
+          description: "Folder id where the file is created"
+          example: c533b987-2cfa-4033-8717-665e680df6f3
+        type:
+          type: string
+          enum: [ document, spreadsheet, presentation ]
+          description: "Docs file type: it can be DOCUMENT, SPREADSHEET or PRESENTATION"
+          example: DOCUMENT
+
+    CreatedFile:
+      type: object
+      properties:
+        nodeId:
+          type: string
+          format: uuid
+          description: "Id of the created Docs file"
+          example: 5564df1e-a16a-4d74-9c74-15e77ac9d473
+
+    DocsEditorAttributes:
+      type: object
+      properties:
+        BaseFileName:
+          type: string
+        OwnerId:
+          type: string
+          format: uuid
+        UserId:
+          type: string
+          format: uuid
+        Size:
+          type: integer
+        UserCanWrite:
+          type: boolean
+
+    NodeBinary:
+      type: string
+      format: binary

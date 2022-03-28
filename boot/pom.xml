@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>carbonio-docs-connector-ce-boot</artifactId>
+
+  <build>
+    <finalName>carbonio-docs-connector-ce-${project.parent.version}</finalName>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>11</release>
+          <source>11</source>
+          <target>11</target>
+        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>3.8.1</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/*.MF</exclude>
+                    <exclude>META-INF/*.md</exclude>
+                    <exclude>META-INF/DEPENDENCIES</exclude>
+                    <exclude>META-INF/LICENSE</exclude>
+                    <exclude>META-INF/LICENSE.txt</exclude>
+                    <exclude>META-INF/NOTICE</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <finalName>${project.parent.artifactId}-fatjar</finalName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.zextras.carbonio.docs_connector.Boot</mainClass>
+                </transformer>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/services/javax.ws.rs.ext.Providers</resource>
+                </transformer>
+              </transformers>
+            </configuration>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>3.2.4</version>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+
+    <dependency>
+      <artifactId>carbonio-docs-connector-ce-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <artifactId>jsr311-api</artifactId>
+          <groupId>javax.ws.rs</groupId>
+        </exclusion>
+      </exclusions>
+      <groupId>com.zextras.carbonio.docs-connector</groupId>
+
+      <version>0.0.1</version>
+    </dependency>
+
+    <!-- Jetty dependencies -->
+    <dependency>
+      <artifactId>jetty-server</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+    </dependency>
+
+    <!-- RestEasy dependencies -->
+    <dependency>
+      <artifactId>resteasy-guice</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>resteasy-servlet-initializer</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>slf4j-api</artifactId>
+      <groupId>org.slf4j</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
+    </dependency>
+  </dependencies>
+
+  <licenses>
+    <license>
+      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
+      <name>AGPL-3.0-only</name>
+    </license>
+  </licenses>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>carbonio-docs-connector-ce-boot</name>
+
+  <parent>
+    <artifactId>carbonio-docs-connector-ce</artifactId>
+    <groupId>com.zextras.carbonio.docs-connector</groupId>
+    <version>0.0.1</version>
+  </parent>
+
+  <properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+</project>

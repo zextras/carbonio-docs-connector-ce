@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <artifactId>carbonio-docs-connector-ce</artifactId>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <configuration>
+                <apiPackage>com.zextras.carbonio.docs_connector.generated</apiPackage>
+                <artifactId>carbonio-docs-connector-ce-generated</artifactId>
+                <artifactVersion>0.0.1</artifactVersion>
+                <configOptions>
+                  <artifactDescription>Carbonio Docs Connector generated</artifactDescription>
+                </configOptions>
+                <generateApiTests>false</generateApiTests>
+                <generatorName>jaxrs-resteasy</generatorName>
+                <groupId>com.zextras.carbonio.docs_connector</groupId>
+                <inputSpec>
+                  core/src/main/resources/api/rest.yaml
+                </inputSpec>
+                <modelPackage>com.zextras.carbonio.docs_connector.generated.model</modelPackage>
+                <output>./</output>
+
+                <packageName>com.zextras.carbonio.docs_connector</packageName>
+              </configuration>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+              <phase>
+                generate-sources
+              </phase>
+            </execution>
+          </executions>
+          <groupId>org.openapitools</groupId>
+          <version>5.2.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- Jetty dependencies -->
+      <dependency>
+        <artifactId>jetty-server</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <version>${jetty.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>jetty-servlet</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+        <version>${jetty.version}</version>
+      </dependency>
+
+
+      <!-- JavaEE API -->
+      <dependency>
+        <artifactId>javaee-api</artifactId>
+        <groupId>javax</groupId>
+        <scope>provided</scope>
+        <version>${javaee-api.version}</version>
+      </dependency>
+
+
+      <!-- RestEasy + JaxRS + Jackson -->
+
+      <dependency>
+        <artifactId>resteasy-jackson2-provider</artifactId>
+        <groupId>org.jboss.resteasy</groupId>
+        <version>${resteasy.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>jackson-datatype-joda</artifactId>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>resteasy-servlet-initializer</artifactId>
+        <groupId>org.jboss.resteasy</groupId>
+        <version>${resteasy.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>resteasy-guice</artifactId>
+        <groupId>org.jboss.resteasy</groupId>
+        <version>${resteasy.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>resteasy-multipart-provider</artifactId>
+        <groupId>org.jboss.resteasy</groupId>
+        <version>${resteasy.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>swagger-jaxrs</artifactId>
+        <groupId>io.swagger</groupId>
+        <version>${swagger-core-version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>swagger-annotations</artifactId>
+        <groupId>io.swagger</groupId>
+        <version>${swagger-core-version}</version>
+      </dependency>
+
+
+      <!-- Dependency Injection -->
+
+      <dependency>
+        <artifactId>guice</artifactId>
+        <groupId>com.google.inject</groupId>
+        <version>${guice.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>guice-assistedinject</artifactId>
+        <groupId>com.google.inject.extensions</groupId>
+        <version>${guice.version}</version>
+      </dependency>
+
+
+      <!-- Logging -->
+
+      <dependency>
+        <artifactId>slf4j-api</artifactId>
+        <groupId>org.slf4j</groupId>
+        <version>${slf4j-api.version}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>logback-classic</artifactId>
+        <groupId>ch.qos.logback</groupId>
+        <version>${logback-classic.version}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <groupId>com.zextras.carbonio.docs-connector</groupId>
+
+  <licenses>
+    <license>
+      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
+      <name>AGPL-3.0-only</name>
+    </license>
+  </licenses>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <modules>
+    <module>boot</module>
+    <module>core</module>
+    <module>generated</module>
+  </modules>
+
+  <name>carbonio-docs-connector-ce</name>
+
+  <packaging>pom</packaging>
+
+  <properties>
+    <ebean.version>12.13.1</ebean.version>
+    <guice.version>5.0.1</guice.version>
+    <jackson-jaxrs.version>2.11.3</jackson-jaxrs.version>
+    <jackson.version>2.12.3</jackson.version>
+    <javaee-api.version>8.0</javaee-api.version>
+    <javax-annotation-api.version>1.2</javax-annotation-api.version>
+    <jaxrs-api.version>3.0.12.Final</jaxrs-api.version>
+    <jetty.version>10.0.6</jetty.version>
+    <joda-time.version>2.7</joda-time.version>
+    <logback-classic.version>1.2.6</logback-classic.version>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <postgresql.version>42.3.0</postgresql.version>
+    <resteasy-jaxrs.version>3.15.3.Final</resteasy-jaxrs.version>
+    <resteasy-validator-provider.version>3.6.3.SP1</resteasy-validator-provider.version>
+    <resteasy.version>4.7.2.Final</resteasy.version>
+    <slf4j-api.version>1.7.32</slf4j-api.version>
+    <swagger-core-version>1.6.3</swagger-core-version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <!-- artifactory should be temporary solution -->
+      <id>artifactory</id>
+      <name>Zextras public maven repo</name>
+      <url>https://zextras.jfrog.io/artifactory/public-maven-repo</url>
+    </repository>
+    <repository>
+      <id>snapshots-repo</id>
+      <url>https://repo.zextras.io/maven/snapshot/</url>
+    </repository>
+    <repository>
+      <id>releases-repo</id>
+      <url>https://repo.zextras.io/maven/release/</url>
+    </repository>
+  </repositories>
+
+  <version>0.0.1</version>
+</project>
