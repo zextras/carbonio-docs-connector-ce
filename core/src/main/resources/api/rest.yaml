@@ -33,6 +33,7 @@ paths:
       description: Retrieve docs-editor attributes
       operationId: docsEditorAttributes
       parameters:
+        - $ref: '#/components/parameters/queryAccessToken'
         - $ref: '#/components/parameters/pathNodeId'
         - $ref: '#/components/parameters/queryNodeVersion'
       responses:
@@ -43,6 +44,7 @@ paths:
       description: Retrieve blob of a specific Files node
       operationId: getBlob
       parameters:
+        - $ref: '#/components/parameters/queryAccessToken'
         - $ref: '#/components/parameters/pathNodeId'
         - $ref: '#/components/parameters/queryNodeVersion'
       responses:
@@ -52,6 +54,7 @@ paths:
       description: Save the updated blob of a specific Files node
       operationId: saveBlob
       parameters:
+        - $ref: '#/components/parameters/queryAccessToken'
         - $ref: '#/components/parameters/headerContentLength'
         - $ref: '#/components/parameters/pathNodeId'
       requestBody:
@@ -92,6 +95,14 @@ components:
         type: integer
       required: false
       description: The version of the Files node
+
+    queryAccessToken:
+      in: query
+      name: access_token
+      schema:
+        type: string
+      required: true
+      description: Token necessary to validate wopi requests. It is mapped to the opened file.
 
   requestBodies:
     InsertFileRequest:
@@ -170,17 +181,48 @@ components:
     DocsEditorAttributes:
       type: object
       properties:
-        BaseFileName:
-          type: string
         OwnerId:
           type: string
           format: uuid
         UserId:
           type: string
           format: uuid
+        UserFriendlyName:
+          type: string
+        UserCanWrite:
+          type: boolean
+        BaseFileName:
+          type: string
+        Version:
+          type: integer
         Size:
           type: integer
-        UserCanWrite:
+          format: int64
+        LastModifiedTime:
+          type: string
+        EnableOwnerTermination:
+          type: boolean
+        DisableCopy:
+          type: boolean
+        DisableExport:
+          type: boolean
+        DisablePrint:
+          type: boolean
+        DisableInactiveMessages:
+          type: boolean
+        HideExportOption:
+          type: boolean
+        HideSaveOption:
+          type: boolean
+        HidePrintOption:
+          type: boolean
+        HideChangeTrackingControls:
+          type: boolean
+        UserCanNotWriteRelative:
+          type: boolean
+        UserCanRename:
+          type: boolean
+        SupportsLocks:
           type: boolean
 
     NodeBinary:
