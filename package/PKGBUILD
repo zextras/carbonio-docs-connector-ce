@@ -3,7 +3,7 @@ targets=(
   "centos"
 )
 pkgname="carbonio-docs-connector-ce"
-pkgver="0.1.1"
+pkgver="0.0.1"
 pkgrel="1"
 pkgdesc="Carbonio docs connector"
 pkgdesclong=(
@@ -30,10 +30,8 @@ sources=(
   "intentions.json"
   "policies.json"
   "service-protocol.json"
-
 )
 hashsums=(
-  "skip"
   "skip"
   "skip"
   "skip"
@@ -71,7 +69,7 @@ postinst() {
   fi
 
   echo "======================================================"
-  echo "Carbonio docs installed successfully!"
+  echo "Carbonio Docs Connector installed successfully!"
   echo "You must run pending-setups to configure it correctly."
   echo "======================================================"
 }

@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Build jar') {
             steps {
-                sh 'mvn -B -DskipTests jaxws:wsimport package'
+                sh 'mvn -B -DskipTests package'
                 // having every file within the package directory is great simplification
                 sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
             }
@@ -70,7 +70,7 @@ pipeline {
                                 }
                                 sh 'sudo pacur build centos /tmp/staging/'
                                 dir('artifacts/') {
-                                    sh 'echo carbonio-docs-connector* | sed -E "s#(carbonio-docs-connector-[0-9.]*).*#\\0 \\1.x86_64.rpm#" | xargs sudo mv'
+                                    sh 'echo carbonio-docs-connector* | sed -E "s#(carbonio-docs-connector-ce-[0-9.]*).*#\\0 \\1.x86_64.rpm#" | xargs sudo mv'
                                 }
                                 stash includes: 'artifacts/', name: 'artifacts-rpm'
                             }
