@@ -138,6 +138,29 @@ SPDX-License-Identifier: AGPL-3.0-only
       </dependency>
 
 
+      <!-- Cache -->
+
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${caffeine.version}</version>
+      </dependency>
+
+      <!-- SDKs -->
+
+      <dependency>
+        <groupId>com.zextras.carbonio.user-management</groupId>
+        <artifactId>carbonio-user-management-sdk</artifactId>
+        <version>${carbonio-user-management-sdk.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.zextras.carbonio.files</groupId>
+        <artifactId>carbonio-files-sdk</artifactId>
+        <version>${carbonio-files-sdk.version}</version>
+      </dependency>
+
+
       <!-- Logging -->
 
       <dependency>
@@ -177,6 +200,9 @@ SPDX-License-Identifier: AGPL-3.0-only
   <packaging>pom</packaging>
 
   <properties>
+    <caffeine.version>3.0.6</caffeine.version>
+    <carbonio-user-management-sdk.version>0.1.1</carbonio-user-management-sdk.version>
+    <carbonio-files-sdk.version>0.0.1</carbonio-files-sdk.version>
     <ebean.version>12.13.1</ebean.version>
     <guice.version>5.0.1</guice.version>
     <jackson-jaxrs.version>2.11.3</jackson-jaxrs.version>

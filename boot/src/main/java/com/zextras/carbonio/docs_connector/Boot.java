@@ -1,6 +1,8 @@
 package com.zextras.carbonio.docs_connector;
 
+import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import java.net.InetSocketAddress;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -14,7 +16,7 @@ public class Boot {
 
 
   public static void main(String[] args) throws Exception {
-    injector = null;//Guice.createInjector(new DocsConnectorModule());
+    injector = Guice.createInjector(new DocsConnectorModule());
     injector.getInstance(Boot.class).boot();
   }
 
@@ -24,7 +26,6 @@ public class Boot {
     servletHandler.addEventListener(injector.getInstance(
       GuiceResteasyBootstrapServletContextListener.class)
     );
-
     ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
 
     servletHandler.addServlet(servletHolder, "/*");

@@ -90,6 +90,21 @@ SPDX-License-Identifier: AGPL-3.0-only
     </dependency>
 
     <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zextras.carbonio.user-management</groupId>
+      <artifactId>carbonio-user-management-sdk</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zextras.carbonio.files</groupId>
+      <artifactId>carbonio-files-sdk</artifactId>
+    </dependency>
+
+    <dependency>
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
     </dependency>
