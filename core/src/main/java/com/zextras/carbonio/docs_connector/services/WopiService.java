@@ -5,6 +5,10 @@ import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.files.FilesClient;
+import com.zextras.carbonio.files.entities.FilesBlob;
+import com.zextras.carbonio.files.entities.NodeId;
+import io.vavr.control.Try;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -16,6 +20,7 @@ import org.slf4j.LoggerFactory;
 public class WopiService {
 
   private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
+  private static final String filesServiceURL = "http://127.78.0.11:20000";
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
     OpenDocumentToken token,
@@ -25,7 +30,7 @@ public class WopiService {
 
     return Optional.ofNullable(
       FilesClient
-        .atURL("http://127.78.0.11:20000")
+        .atURL(filesServiceURL)
         .genericGraphQLRequest(
           token.getRequesterCookies(),
           NodeAttributes.getGraphQLRequest(nodeId.toString(), optVersion)
@@ -81,18 +86,113 @@ public class WopiService {
     );
   }
 
+  public Optional<FilesBlob> getBlob(
+    String cookie,
+    UUID nodeId,
+    Optional<Integer> optVersion
+  ) {
+    return Optional.ofNullable(
+      FilesClient
+        .atURL(filesServiceURL)
+        .downloadFile(cookie, nodeId.toString(), optVersion)
+        .onFailure(failure -> logger.error(failure.getMessage()))
+        .getOrNull()
+    );
+  }
+
+  public Optional<DocsEditorAttributes> saveBlob(
+    String cookie,
+    UUID nodeId,
+    InputStream blob
+  ) {
+
+    Try<NodeId> uploadedNodeId = FilesClient
+      .atURL(filesServiceURL)
+      .genericGraphQLRequest(
+        cookie,
+        NodeAttributes.getGraphQLRequest(nodeId.toString(), Optional.empty())
+      )
+      .map(graphQLResponse -> {
+        try {
+          NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+
+          return FilesClient
+            .atURL(filesServiceURL)
+            .uploadFileVersion(
+              cookie,
+              nodeId.toString(),
+              createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
+              nodeAttributes.getMime_type(),
+              blob,
+              false
+            )
+            .onFailure(failure -> logger.error("Saving blob failed: " + failure));
+
+        } catch (JsonProcessingException exception) {
+          logger.error(exception.getMessage());
+          return null;
+        }
+      })
+      .onFailure(failure -> logger.error(failure.getMessage()))
+      .getOrNull();
+
+    if (uploadedNodeId.isSuccess()) {
+      /*
+       * Retrieve the last update timestamp of the saved file
+       */
+      return Optional.ofNullable(
+        FilesClient
+          .atURL(filesServiceURL)
+          .genericGraphQLRequest(
+            cookie,
+            NodeAttributes.getGraphQLRequest(nodeId.toString(), Optional.empty())
+          )
+          .map(graphQLResponse -> {
+            try {
+              NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+
+              DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
+              docsEditorAttributes.setLastModifiedTime(
+                formatDateToIso8601(new Date(nodeAttributes.getUpdated_at()))
+              );
+
+              return docsEditorAttributes;
+
+            } catch (JsonProcessingException exception) {
+              logger.error(exception.getMessage());
+              return null;
+            }
+          })
+          .onFailure(failure -> logger.error(failure.getMessage()))
+          .getOrNull()
+      );
+    }
+
+    return Optional.empty();
+  }
+
   private String formatDateToIso8601(Date modifiedTime) {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-    return dateFormat.format(
-      modifiedTime
-    );
+
+    return dateFormat.format(modifiedTime);
+  }
+
+  private String createFullFilename(
+    String name,
+    String extension
+  ) {
+    return name + Optional.ofNullable(extension).map(ext -> "." + ext).orElse("");
   }
 
   private String abbreviateFilename(
     String name,
-    String extensions
+    String extension
   ) {
-    return name + Optional.ofNullable(extensions).map(ext -> "." + ext).orElse("");
+    String fullFilename = createFullFilename(name, extension);
+
+    return (fullFilename.length() > 64)
+      ? createFullFilename(name.substring(0, 50), extension)
+      : fullFilename;
   }
 }
