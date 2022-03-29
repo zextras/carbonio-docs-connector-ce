@@ -10,3 +10,7 @@ pom.xml
 README.md
 build.gradle
 settings.gradle
+
+src/gen/java/com/zextras/carbonio/docs_connector/generated/WopiApi.java
+src/gen/java/com/zextras/carbonio/docs_connector/generated/WopiApiService.java
+src/main/java/com/zextras/carbonio/docs_connector/generated/impl/WopiApiServiceImpl.java
