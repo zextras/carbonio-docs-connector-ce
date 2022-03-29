@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class WopiService {
 
-  private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
+  private static final Logger logger          = LoggerFactory.getLogger(WopiService.class);
   private static final String filesServiceURL = "http://127.78.0.11:20000";
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
@@ -33,7 +33,7 @@ public class WopiService {
         .atURL(filesServiceURL)
         .genericGraphQLRequest(
           token.getRequesterCookies(),
-          NodeAttributes.getGraphQLRequest(nodeId.toString(), optVersion)
+          NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
         ).map(graphQLResponse -> {
 
           try {
@@ -110,7 +110,7 @@ public class WopiService {
       .atURL(filesServiceURL)
       .genericGraphQLRequest(
         cookie,
-        NodeAttributes.getGraphQLRequest(nodeId.toString(), Optional.empty())
+        NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
       )
       .map(graphQLResponse -> {
         try {
@@ -145,7 +145,7 @@ public class WopiService {
           .atURL(filesServiceURL)
           .genericGraphQLRequest(
             cookie,
-            NodeAttributes.getGraphQLRequest(nodeId.toString(), Optional.empty())
+            NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
           )
           .map(graphQLResponse -> {
             try {
@@ -182,7 +182,9 @@ public class WopiService {
     String name,
     String extension
   ) {
-    return name + Optional.ofNullable(extension).map(ext -> "." + ext).orElse("");
+    return (extension == null)
+      ? name
+      : name + "." + extension;
   }
 
   private String abbreviateFilename(
