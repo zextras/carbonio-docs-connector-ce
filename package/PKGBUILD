@@ -1,0 +1,93 @@
+targets=(
+  "ubuntu"
+  "centos"
+)
+pkgname="carbonio-docs-connector-ce"
+pkgver="0.0.1"
+pkgrel="1"
+pkgdesc="Carbonio docs connector"
+pkgdesclong=(
+  "Carbonio docs connector"
+)
+maintainer="Zextras <packages@zextras.com>"
+arch="amd64"
+license=("spdx:AGPL-3.0-only")
+section="admin"
+priority="optional"
+url="https://www.zextras.com/"
+depends=(
+  "service-discover"
+  "pending-setups"
+  "carbonio-openjdk"
+)
+sources=(
+  "carbonio-docs-connector"
+  "carbonio-docs-connector.hcl"
+  "carbonio-docs-connector.service"
+  "carbonio-docs-connector-sidecar.service"
+  "carbonio-docs-connector-setup.sh"
+  "carbonio-docs-connector.jar"
+  "intentions.json"
+  "policies.json"
+  "service-protocol.json"
+)
+hashsums=(
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+  "skip"
+)
+
+package() {
+  cd "${srcdir}"
+  install -Dm 755 carbonio-docs-connector "${pkgdir}/usr/bin/carbonio-docs-connector"
+  install -Dm 755 carbonio-docs-connector.jar "${pkgdir}/usr/bin/carbonio/docs-connector/carbonio-docs-connector.jar"
+  install -Dm 644 carbonio-docs-connector.service "${pkgdir}/lib/systemd/system/carbonio-docs-connector.service"
+  install -Dm 644 carbonio-docs-connector-sidecar.service "${pkgdir}/lib/systemd/system/carbonio-docs-connector-sidecar.service"
+  install -Dm 644 carbonio-docs-connector.hcl "${pkgdir}/etc/zextras/service-discover/carbonio-docs-connector.hcl"
+  install -Dm 644 carbonio-docs-connector-setup.sh "${pkgdir}/etc/zextras/pending-setups.d/carbonio-docs-connector.sh"
+  install -Dm 644 intentions.json "${pkgdir}/etc/carbonio/docs-connector/service-discover/intentions.json"
+  install -Dm 644 policies.json "${pkgdir}/etc/carbonio/docs-connector/service-discover/policies.json"
+  install -Dm 644 service-protocol.json "${pkgdir}/etc/carbonio/docs-connector/service-discover/service-protocol.json"
+}
+
+postinst() {
+  getent group 'carbonio-docs-connector' >/dev/null ||
+    groupadd -r 'carbonio-docs-connector'
+  getent passwd 'carbonio-docs-connector' >/dev/null ||
+    useradd -r -M -g 'carbonio-docs-connector' -s /sbin/nologin 'carbonio-docs-connector'
+
+  if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || :
+    systemctl enable carbonio-docs-connector.service >/dev/null 2>&1 || :
+    systemctl enable carbonio-docs-connector-sidecar.service >/dev/null 2>&1 || :
+  fi
+
+  echo "======================================================"
+  echo "Carbonio Docs Connector installed successfully!"
+  echo "You must run pending-setups to configure it correctly."
+  echo "======================================================"
+}
+
+prerm() {
+  if [ -d /run/systemd/system ]; then
+    systemctl --no-reload disable carbonio-docs-connector.service >/dev/null 2>&1 || :
+    systemctl --no-reload disable carbonio-docs-connector-sidecar.service >/dev/null 2>&1 || :
+    systemctl stop carbonio-docs-connector.service >/dev/null 2>&1 || :
+    systemctl stop carbonio-docs-connector-sidecar.service >/dev/null 2>&1 || :
+  fi
+}
+
+postrm() {
+  rm -Rf /etc/carbonio/docs-connector/
+  rm -f /etc/zextras/pending-setups.d/carbonio-docs-connector.sh
+  rm -f /etc/zextras/pending-setups.d/done/carbonio-docs-connector.sh
+  if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || :
+  fi
+}

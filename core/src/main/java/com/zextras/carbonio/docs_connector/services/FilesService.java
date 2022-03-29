@@ -30,7 +30,7 @@ public class FilesService {
     return Optional.ofNullable(
       FilesClient
         .atURL("http://127.78.0.11:20000")
-        .genericGraphQLRequest(cookies, NodeAttributes.getGraphQLRequest(nodeId, optVersion))
+        .genericGraphQLRequest(cookies, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .map(graphQLResponse -> {
           try {
 
@@ -72,7 +72,14 @@ public class FilesService {
               .append("&access_token_ttl=")
               .append(token.getExpirationTimestamp());
 
-            // If the version is specified then the document should be opened in read only
+            /*
+             * If the version is specified then the document should be opened in read only.
+             * This is a conservative choice to avoid corner case when the last version is already
+             * opened and another user tries to edit a specific version causing conflicts.
+             *
+             * This is a temporary solution and if the client requests a specific version then it
+             * will be opened in read only even if it should be editable
+             */
             if (!nodeAttributes.getPermissions().getCan_write_file() || optVersion.isPresent()) {
               docsPathAndParametersBuilder.append("&permission=readonly");
             }

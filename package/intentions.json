@@ -1,0 +1,11 @@
+{
+  "Kind": "service-intentions",
+  "Name": "carbonio-docs-connector",
+  "Sources":
+  [
+    {
+      "Name": "carbonio-proxy",
+      "Action": "allow"
+    }
+  ]
+}
