@@ -19,7 +19,7 @@ public class NodeAttributes {
 
   public NodeAttributes() {}
 
-  public static String getGraphQLRequest(
+  public static String getNodeGraphQLRequest(
     String nodeId,
     Optional<Integer> optVersion
   ) {
