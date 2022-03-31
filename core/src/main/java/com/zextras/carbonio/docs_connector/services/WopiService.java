@@ -7,7 +7,7 @@ import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
 import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
-import com.zextras.carbonio.files.entities.Node;
+import com.zextras.carbonio.files.entities.NodeIdVersion;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -108,7 +108,7 @@ public class WopiService {
     Boolean coolIsAutosave
   ) {
 
-    Try<Node> uploadedNode = FilesClient
+    Try<NodeIdVersion> uploadedNode = FilesClient
       .atURL(filesServiceURL)
       .genericGraphQLRequest(
         cookie,
