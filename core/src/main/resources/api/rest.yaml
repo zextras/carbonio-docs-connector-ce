@@ -54,14 +54,16 @@ paths:
       description: Save the updated blob of a specific Files node
       operationId: saveBlob
       parameters:
-        - $ref: '#/components/parameters/queryAccessToken'
+        - $ref: '#/components/parameters/headerCoolIsAutosave'
+        - $ref: '#/components/parameters/headerCoolIsExitSave'
         - $ref: '#/components/parameters/headerContentLength'
         - $ref: '#/components/parameters/pathNodeId'
+        - $ref: '#/components/parameters/queryAccessToken'
       requestBody:
         $ref: '#/components/requestBodies/SaveBlobRequest'
       responses:
         '200':
-          $ref: '#/components/responses/200DocsEditorAttributesResponse'
+          $ref: '#/components/responses/200NodeUpdatedTimestampResponse'
 components:
   parameters:
     headerCookies:
@@ -74,10 +76,21 @@ components:
     headerContentLength:
       in: header
       name: Content-Length
-      required: true
       schema:
         type: integer
         format: int64
+
+    headerCoolIsAutosave:
+      in: header
+      name: X-COOL-WOPI-IsAutosave
+      schema:
+        type: boolean
+
+    headerCoolIsExitSave:
+      in: header
+      name: X-COOL-WOPI-IsExitSave
+      schema:
+        type: boolean
 
     pathNodeId:
       in: path
@@ -147,6 +160,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DocsEditorAttributes'
+
+    200NodeUpdatedTimestampResponse:
+      description: Updated timestamp of the saved blob
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NodeUpdatedTimestamp'
   schemas:
     InsertFile:
       type: object
@@ -224,6 +244,12 @@ components:
           type: boolean
         SupportsLocks:
           type: boolean
+
+    NodeUpdatedTimestamp:
+      type: object
+      properties:
+        LastModifiedTime:
+          type: string
 
     NodeBinary:
       type: string

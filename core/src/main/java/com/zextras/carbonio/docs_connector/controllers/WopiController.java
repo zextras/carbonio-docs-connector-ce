@@ -88,9 +88,11 @@ public class WopiController implements WopiApiService {
   }
 
   public Response saveBlob(
-    String accessToken,
-    Long contentLength,
     UUID nodeId,
+    String accessToken,
+    Boolean coolIsAutosave,
+    Boolean coolIsExitSave,
+    Long contentLength,
     InputStream blob,
     SecurityContext securityContext
   ) {
@@ -103,8 +105,8 @@ public class WopiController implements WopiApiService {
 
     if (optToken.isPresent()) {
       return wopiService
-        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob)
-        .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
+        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob, coolIsAutosave)
+        .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
         .orElse(Response.serverError().build());
     }
 
