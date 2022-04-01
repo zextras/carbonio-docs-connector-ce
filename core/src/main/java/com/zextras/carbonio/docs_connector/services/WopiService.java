@@ -92,6 +92,7 @@ public class WopiService {
     UUID nodeId,
     Optional<Integer> optVersion
   ) {
+
     return Optional.ofNullable(
       FilesClient
         .atURL(filesServiceURL)
