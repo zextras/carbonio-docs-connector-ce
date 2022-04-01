@@ -199,7 +199,7 @@ components:
           example: c533b987-2cfa-4033-8717-665e680df6f3
         type:
           type: string
-          enum: [ document, spreadsheet, presentation ]
+          enum: [ DOCUMENT, SPREADSHEET, PRESENTATION ]
           description: "Docs file type: it can be DOCUMENT, SPREADSHEET or PRESENTATION"
           example: DOCUMENT
 
