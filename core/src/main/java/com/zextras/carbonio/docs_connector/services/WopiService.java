@@ -3,10 +3,11 @@ package com.zextras.carbonio.docs_connector.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
+import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
 import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
-import com.zextras.carbonio.files.entities.NodeId;
+import com.zextras.carbonio.files.entities.NodeIdVersion;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -100,13 +101,14 @@ public class WopiService {
     );
   }
 
-  public Optional<DocsEditorAttributes> saveBlob(
+  public Optional<NodeUpdatedTimestamp> saveBlob(
     String cookie,
     UUID nodeId,
-    InputStream blob
+    InputStream blob,
+    Boolean coolIsAutosave
   ) {
 
-    Try<NodeId> uploadedNodeId = FilesClient
+    Try<NodeIdVersion> uploadedNode = FilesClient
       .atURL(filesServiceURL)
       .genericGraphQLRequest(
         cookie,
@@ -124,7 +126,7 @@ public class WopiService {
               createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
               nodeAttributes.getMime_type(),
               blob,
-              false
+              coolIsAutosave
             )
             .onFailure(failure -> logger.error("Saving blob failed: " + failure));
 
@@ -136,7 +138,7 @@ public class WopiService {
       .onFailure(failure -> logger.error(failure.getMessage()))
       .getOrNull();
 
-    if (uploadedNodeId.isSuccess()) {
+    if (uploadedNode.isSuccess()) {
       /*
        * Retrieve the last update timestamp of the saved file
        */
@@ -151,12 +153,12 @@ public class WopiService {
             try {
               NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-              DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
-              docsEditorAttributes.setLastModifiedTime(
+              NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+              updatedTimestamp.setLastModifiedTime(
                 formatDateToIso8601(new Date(nodeAttributes.getUpdated_at()))
               );
 
-              return docsEditorAttributes;
+              return updatedTimestamp;
 
             } catch (JsonProcessingException exception) {
               logger.error(exception.getMessage());

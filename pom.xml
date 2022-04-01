@@ -202,7 +202,7 @@ SPDX-License-Identifier: AGPL-3.0-only
   <properties>
     <caffeine.version>3.0.6</caffeine.version>
     <carbonio-user-management-sdk.version>0.1.3</carbonio-user-management-sdk.version>
-    <carbonio-files-sdk.version>0.0.1</carbonio-files-sdk.version>
+    <carbonio-files-sdk.version>0.0.2</carbonio-files-sdk.version>
     <ebean.version>12.13.1</ebean.version>
     <guice.version>5.0.1</guice.version>
     <jackson-jaxrs.version>2.11.3</jackson-jaxrs.version>
@@ -240,5 +240,5 @@ SPDX-License-Identifier: AGPL-3.0-only
     </repository>
   </repositories>
 
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </project>

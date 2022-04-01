@@ -8,6 +8,7 @@ import io.swagger.jaxrs.*;
 
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
 import java.io.File;
+import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
 import java.util.UUID;
 
 import java.util.Map;
@@ -29,7 +30,7 @@ import javax.validation.Valid;
 
 
 @io.swagger.annotations.Api(description = "the wopi API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaResteasyServerCodegen", date = "2022-03-29T11:16:15.397757+02:00[Europe/Rome]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaResteasyServerCodegen", date = "2022-03-31T15:35:04.410508+02:00[Europe/Rome]")
 public class WopiApi  {
 
     @Inject WopiApiService service;
@@ -60,11 +61,11 @@ public class WopiApi  {
     @Path("/contents")
     @Consumes({ "application/octet-stream" })
     @Produces({ "application/json" })
-    @io.swagger.annotations.ApiOperation(value = "", notes = "Save the updated blob of a specific Files node", response = DocsEditorAttributes.class, tags={  })
+    @io.swagger.annotations.ApiOperation(value = "", notes = "Save the updated blob of a specific Files node", response = NodeUpdatedTimestamp.class, tags={  })
     @io.swagger.annotations.ApiResponses(value = { 
-        @io.swagger.annotations.ApiResponse(code = 200, message = "All the attributes necessary to carbonio-docs-editor in order to open a file correctly", response = DocsEditorAttributes.class) })
-    public Response saveBlob( @NotNull  @QueryParam("access_token") String accessToken, @NotNull  @ApiParam(value = "" ,required=true) @HeaderParam("Content-Length") Long contentLength, @PathParam("nodeId") UUID nodeId,@ApiParam(value = "Save the blob" ) @Valid InputStream body,@Context SecurityContext securityContext)
+        @io.swagger.annotations.ApiResponse(code = 200, message = "Updated timestamp of the saved blob", response = NodeUpdatedTimestamp.class) })
+    public Response saveBlob( @PathParam("nodeId") UUID nodeId, @NotNull  @QueryParam("access_token") String accessToken,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsAutosave") Boolean xCOOLWOPIIsAutosave,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsExitSave") Boolean xCOOLWOPIIsExitSave,  @ApiParam(value = "" ) @HeaderParam("Content-Length") Long contentLength,@ApiParam(value = "Save the blob" ) @Valid InputStream body,@Context SecurityContext securityContext)
     throws NotFoundException {
-        return service.saveBlob(accessToken,contentLength,nodeId,body,securityContext);
+        return service.saveBlob(nodeId,accessToken,xCOOLWOPIIsAutosave,xCOOLWOPIIsExitSave,contentLength,body,securityContext);
     }
 }
