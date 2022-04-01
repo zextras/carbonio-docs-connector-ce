@@ -24,7 +24,9 @@ public class FilesController implements FilesApiService {
     InsertFile insertFile,
     SecurityContext securityContext
   ) {
-    return Response.ok().build();
+    return filesService.uploadTemplate(cookie, insertFile)
+      .map(createdFile -> Response.ok().entity(createdFile).build())
+      .orElse(Response.serverError().build());
   }
 
   public Response openFile(

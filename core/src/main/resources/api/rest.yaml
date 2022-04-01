@@ -5,6 +5,10 @@ info:
   version: 0.1.0
 servers:
   - url: 'https://example.com/services/docs/'
+tags:
+  - name: files
+  - name: wopi
+    description: Allows carbonio-docs-editor to manipulate the attributes and the blob of a file. They are exposed only internally.
 paths:
   /files/create:
     post:
@@ -17,6 +21,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CreatedFileResponse'
+      tags:
+        - files
   /files/open/{nodeId}:
     get:
       description: Open an existing file with Docs. When the version is not specified, it will open the last one
@@ -28,6 +34,8 @@ paths:
       responses:
         '307':
           $ref: '#/components/responses/307DocsEditorRedirectResponse'
+      tags:
+        - files
   /wopi/{nodeId}:
     get:
       description: Retrieve docs-editor attributes
@@ -39,6 +47,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200DocsEditorAttributesResponse'
+      tags:
+        - wopi
   /wopi/{nodeId}/contents:
     get:
       description: Retrieve blob of a specific Files node
@@ -50,6 +60,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200DownloadNodeResponse'
+      tags:
+        - wopi
     post:
       description: Save the updated blob of a specific Files node
       operationId: saveBlob
@@ -64,6 +76,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200NodeUpdatedTimestampResponse'
+      tags:
+        - wopi
 components:
   parameters:
     headerCookies:
@@ -171,17 +185,17 @@ components:
     InsertFile:
       type: object
       required:
-        - name
-        - parentId
+        - filename
+        - destinationFolderId
         - type
       properties:
-        name:
+        filename:
           type: string
-          description: "Filename of the file to be created"
+          description: "Filename of the file to be created (without the extension)"
           example: New spreadsheet
-        parentId:
+        destinationFolderId:
           type: string
-          description: "Folder id where the file is created"
+          description: "Folder id where the file is created. The Root id is LOCAL_ROOT"
           example: c533b987-2cfa-4033-8717-665e680df6f3
         type:
           type: string

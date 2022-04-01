@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.cache.CacheManager;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
+import com.zextras.carbonio.docs_connector.generated.model.CreatedFile;
+import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.files.FilesClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +18,8 @@ import org.slf4j.LoggerFactory;
 
 public class FilesService {
 
-  private static final Logger logger = LoggerFactory.getLogger(FilesService.class);
+  private static final Logger logger          = LoggerFactory.getLogger(FilesService.class);
+  private static final String filesServiceURL = "http://127.78.0.11:20000";
 
   private final CacheManager cacheManager;
 
@@ -27,13 +31,13 @@ public class FilesService {
     Optional<Integer> optVersion,
     String cookies
   ) {
+
     return Optional.ofNullable(
       FilesClient
-        .atURL("http://127.78.0.11:20000")
+        .atURL(filesServiceURL)
         .genericGraphQLRequest(cookies, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .map(graphQLResponse -> {
           try {
-
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
             OpenDocumentToken token = new OpenDocumentToken(
@@ -119,5 +123,33 @@ public class FilesService {
         .onFailure(failure -> logger.error(failure.getMessage()))
         .getOrNull()
     );
+  }
+
+  public Optional<CreatedFile> uploadTemplate(
+    String cookies,
+    InsertFile docsFile
+  ) {
+
+    return TemplateUtils.getTemplate(docsFile.getType())
+      .map(template ->
+        FilesClient
+          .atURL(filesServiceURL)
+          .uploadFile(
+            cookies,
+            docsFile.getDestinationFolderId(),
+            TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
+            TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
+            template
+          )
+          .map(nodeId -> {
+            CreatedFile createdFile = new CreatedFile();
+            createdFile.setNodeId(UUID.fromString(nodeId.getNodeId()));
+            return createdFile;
+          })
+          .onFailure(failure ->
+            logger.error("Failed to upload the template: " + failure.getMessage())
+          )
+          .getOrNull()
+      );
   }
 }
