@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 public class WopiService {
 
   private static final Logger logger          = LoggerFactory.getLogger(WopiService.class);
-  private static final String filesServiceURL = "http://127.78.0.11:20000";
+  private static final String filesServiceURL = "http://127.78.0.13:20000";
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
     OpenDocumentToken token,

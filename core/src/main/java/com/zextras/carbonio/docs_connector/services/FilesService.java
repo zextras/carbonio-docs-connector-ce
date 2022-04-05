@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class FilesService {
 
   private static final Logger logger          = LoggerFactory.getLogger(FilesService.class);
-  private static final String filesServiceURL = "http://127.78.0.11:20000";
+  private static final String filesServiceURL = "http://127.78.0.13:20000";
 
   private final CacheManager cacheManager;
 
@@ -52,7 +52,7 @@ public class FilesService {
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
-              .append("http://127.78.0.11:10000/wopi/")
+              .append("http://127.78.0.13:10000/wopi/")
               .append(nodeId);
 
             optVersion
