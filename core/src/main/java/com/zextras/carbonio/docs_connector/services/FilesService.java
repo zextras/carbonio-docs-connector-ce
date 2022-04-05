@@ -9,6 +9,7 @@ import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.files.FilesClient;
+import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -130,8 +131,8 @@ public class FilesService {
     InsertFile docsFile
   ) {
 
-    return TemplateUtils.getTemplate(docsFile.getType())
-      .map(template ->
+    return TemplateUtils.getTemplateRaw(docsFile.getType())
+      .map(templateRaw ->
         FilesClient
           .atURL(filesServiceURL)
           .uploadFile(
@@ -139,7 +140,8 @@ public class FilesService {
             docsFile.getDestinationFolderId(),
             TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
             TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
-            template
+            new ByteArrayInputStream(templateRaw),
+            templateRaw.length
           )
           .map(nodeId -> {
             CreatedFile createdFile = new CreatedFile();

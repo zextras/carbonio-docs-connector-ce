@@ -106,7 +106,8 @@ public class WopiService {
     String cookie,
     UUID nodeId,
     InputStream blob,
-    Boolean coolIsAutosave
+    long contentLength,
+    boolean coolIsAutosave
   ) {
 
     Try<NodeIdVersion> uploadedNode = FilesClient
@@ -127,6 +128,7 @@ public class WopiService {
               createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
               nodeAttributes.getMime_type(),
               blob,
+              contentLength,
               coolIsAutosave
             )
             .onFailure(failure -> logger.error("Saving blob failed: " + failure));
@@ -137,7 +139,7 @@ public class WopiService {
         }
       })
       .onFailure(failure -> logger.error(failure.getMessage()))
-      .getOrNull();
+      .get();
 
     if (uploadedNode.isSuccess()) {
       /*
