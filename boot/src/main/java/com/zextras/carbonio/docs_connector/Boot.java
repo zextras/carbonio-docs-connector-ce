@@ -21,7 +21,7 @@ public class Boot {
   }
 
   public void boot() throws Exception {
-    Server server = new Server(InetSocketAddress.createUnresolved("127.78.0.11", 10_000));
+    Server server = new Server(InetSocketAddress.createUnresolved("127.78.0.13", 10_000));
     ServletContextHandler servletHandler = new ServletContextHandler(server, "/");
     servletHandler.addEventListener(injector.getInstance(
       GuiceResteasyBootstrapServletContextListener.class)
