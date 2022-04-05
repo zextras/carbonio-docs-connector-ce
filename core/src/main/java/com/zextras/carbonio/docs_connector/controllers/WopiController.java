@@ -105,7 +105,7 @@ public class WopiController implements WopiApiService {
 
     if (optToken.isPresent()) {
       return wopiService
-        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob, coolIsAutosave)
+        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob, contentLength, coolIsAutosave)
         .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
         .orElse(Response.serverError().build());
     }
