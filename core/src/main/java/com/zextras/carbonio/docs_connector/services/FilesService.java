@@ -52,17 +52,11 @@ public class FilesService {
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
-              .append("http://127.78.0.13:10000/wopi/")
+              .append("http://127.78.0.12:20000/wopi/")
               .append(nodeId);
 
             optVersion
-              .map(version -> wopiEndpointBuilder.append("?version=").append(version).append("&"))
-              .orElseGet(() -> wopiEndpointBuilder.append("?"));
-
-            // The & or ? connector is appended before
-            wopiEndpointBuilder
-              .append("access_token=")
-              .append(token.getTokenId());
+              .map(version -> wopiEndpointBuilder.append("?version=").append(version));
 
             // Public URL
             StringBuilder publicURLBuilder = new StringBuilder()
