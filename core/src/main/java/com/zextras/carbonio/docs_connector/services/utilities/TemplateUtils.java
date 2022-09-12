@@ -24,19 +24,34 @@ public class TemplateUtils {
   public static Optional<byte[]> getTemplateRaw(TypeEnum docsFileType) {
     Optional<InputStream> optTemplate;
     switch (docsFileType) {
-      case DOCUMENT:
+      case LIBRE_DOCUMENT:
         optTemplate = Optional.ofNullable(
           FilesService.class.getClassLoader().getResourceAsStream("templates/empty.odt")
         );
         break;
-      case SPREADSHEET:
+      case LIBRE_SPREADSHEET:
         optTemplate = Optional.ofNullable(
           FilesService.class.getClassLoader().getResourceAsStream("templates/empty.ods")
         );
         break;
-      case PRESENTATION:
+      case LIBRE_PRESENTATION:
         optTemplate = Optional.ofNullable(
           FilesService.class.getClassLoader().getResourceAsStream("templates/empty.odp")
+        );
+        break;
+      case MS_DOCUMENT:
+        optTemplate = Optional.ofNullable(
+          FilesService.class.getClassLoader().getResourceAsStream("templates/empty.docx")
+        );
+        break;
+      case MS_SPREADSHEET:
+        optTemplate = Optional.ofNullable(
+          FilesService.class.getClassLoader().getResourceAsStream("templates/empty.xlsx")
+        );
+        break;
+      case MS_PRESENTATION:
+        optTemplate = Optional.ofNullable(
+          FilesService.class.getClassLoader().getResourceAsStream("templates/empty.pptx")
         );
         break;
       default:
@@ -66,14 +81,23 @@ public class TemplateUtils {
     String mimeType = "";
 
     switch (docsFileType) {
-      case SPREADSHEET:
+      case LIBRE_SPREADSHEET:
         mimeType = "application/vnd.oasis.opendocument.spreadsheet";
         break;
-      case PRESENTATION:
+      case LIBRE_PRESENTATION:
         mimeType = "application/vnd.oasis.opendocument.presentation";
         break;
-      case DOCUMENT:
+      case LIBRE_DOCUMENT:
         mimeType = "application/vnd.oasis.opendocument.text";
+        break;
+      case MS_DOCUMENT:
+        mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        break;
+      case MS_SPREADSHEET:
+        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        break;
+      case MS_PRESENTATION:
+        mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
         break;
     }
 
@@ -94,12 +118,18 @@ public class TemplateUtils {
     String filename
   ) {
     switch (docsFileType) {
-      case DOCUMENT:
+      case LIBRE_DOCUMENT:
         return filename + ".odt";
-      case SPREADSHEET:
+      case LIBRE_SPREADSHEET:
         return filename + ".ods";
-      case PRESENTATION:
+      case LIBRE_PRESENTATION:
         return filename + ".odp";
+      case MS_DOCUMENT:
+        return filename + ".docx";
+      case MS_SPREADSHEET:
+        return filename + ".xlsx";
+      case MS_PRESENTATION:
+        return filename + ".pptx";
       default:
         return filename;
     }
