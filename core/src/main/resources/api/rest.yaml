@@ -199,9 +199,18 @@ components:
           example: c533b987-2cfa-4033-8717-665e680df6f3
         type:
           type: string
-          enum: [ DOCUMENT, SPREADSHEET, PRESENTATION ]
-          description: "Docs file type: it can be DOCUMENT, SPREADSHEET or PRESENTATION"
-          example: DOCUMENT
+          enum: [
+            LIBRE_DOCUMENT,
+            LIBRE_SPREADSHEET,
+            LIBRE_PRESENTATION,
+            MS_DOCUMENT,
+            MS_SPREADSHEET,
+            MS_PRESENTATION
+          ]
+          description: "Docs file type. It can be:\n
+           - LIBRE_DOCUMENT, LIBRE_SPREADSHEET or LIBRE_PRESENTATION to upload open document format\n
+           - MS_DOCUMENT, MS_SPREADSHEET or MS_PRESENTATION to upload Microsoft Office document format"
+          example: LIBRE_DOCUMENT
 
     CreatedFile:
       type: object
