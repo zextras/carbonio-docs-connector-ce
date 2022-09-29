@@ -111,11 +111,11 @@ public class FilesService {
             return docsPathAndParametersBuilder.toString();
 
           } catch (JsonProcessingException exception) {
-            logger.error(exception.getMessage());
+            logger.error(exception.getMessage(), exception);
             return null;
           }
         })
-        .onFailure(failure -> logger.error(failure.getMessage()))
+        .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
     );
   }
@@ -143,7 +143,7 @@ public class FilesService {
             return createdFile;
           })
           .onFailure(failure ->
-            logger.error("Failed to upload the template: " + failure.getMessage())
+            logger.error("Failed to upload the template: " + failure.getMessage(), failure)
           )
           .getOrNull()
       );

@@ -78,11 +78,11 @@ public class WopiService {
             return docsEditorAttributes;
 
           } catch (JsonProcessingException exception) {
-            logger.error(exception.getMessage());
+            logger.error(exception.getMessage(), exception);
             return null;
           }
         })
-        .onFailure(failure -> logger.error(failure.getMessage()))
+        .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
     );
   }
@@ -97,7 +97,7 @@ public class WopiService {
       FilesClient
         .atURL(filesServiceURL)
         .downloadFile(cookie, nodeId.toString(), optVersion)
-        .onFailure(failure -> logger.error(failure.getMessage()))
+        .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
     );
   }
@@ -134,11 +134,11 @@ public class WopiService {
             .onFailure(failure -> logger.error("Saving blob failed: " + failure));
 
         } catch (JsonProcessingException exception) {
-          logger.error(exception.getMessage());
+          logger.error(exception.getMessage(), exception);
           return null;
         }
       })
-      .onFailure(failure -> logger.error(failure.getMessage()))
+      .onFailure(failure -> logger.error(failure.getMessage(), failure))
       .get();
 
     if (uploadedNode.isSuccess()) {
@@ -164,11 +164,11 @@ public class WopiService {
               return updatedTimestamp;
 
             } catch (JsonProcessingException exception) {
-              logger.error(exception.getMessage());
+              logger.error(exception.getMessage(), exception);
               return null;
             }
           })
-          .onFailure(failure -> logger.error(failure.getMessage()))
+          .onFailure(failure -> logger.error(failure.getMessage(), failure))
           .getOrNull()
       );
     }

@@ -62,7 +62,7 @@ public class TemplateUtils {
       try {
         return template.readAllBytes();
       } catch (IOException exception) {
-        logger.error("Failed to load template: " + docsFileType);
+        logger.error("Failed to load template: " + docsFileType, exception);
         return null;
       } finally {
         IOUtils.closeQuietly(template);
