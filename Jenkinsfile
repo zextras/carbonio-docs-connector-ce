@@ -65,17 +65,17 @@ pipeline {
                                 }
                             }
                         }
-                        stage('RHEL 8') {
+                        stage('Rocky 8') {
                             agent {
                                 node {
-                                    label 'pacur-agent-centos-8-v1'
+                                    label 'pacur-agent-rocky-8-v1'
                                 }
                             }
                             steps {
                                 dir('/tmp/staging'){
                                     unstash 'binaries'
                                 }
-                                sh 'sudo pacur build centos /tmp/staging/'
+                                sh 'sudo pacur build rocky-8 /tmp/staging/'
                                 dir('artifacts/') {
                                     sh 'echo carbonio-docs-connector* | sed -E "s#(carbonio-docs-connector-ce-[0-9.]*).*#\\0 \\1.x86_64.rpm#" | xargs sudo mv'
                                 }
