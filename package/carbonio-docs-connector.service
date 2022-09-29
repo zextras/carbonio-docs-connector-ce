@@ -6,7 +6,11 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/opt/zextras/common/bin/java -Djava.net.preferIPv4Stack=true -Xmx128m -jar /usr/bin/carbonio/docs-connector/carbonio-docs-connector.jar
+ExecStart=/opt/zextras/common/bin/java \
+  -Djava.net.preferIPv4Stack=true \
+  -Xmx128m \
+  -DLOG_LEVEL=warn \
+  -jar /usr/bin/carbonio/docs-connector/carbonio-docs-connector.jar
 User=carbonio-docs-connector
 Group=carbonio-docs-connector
 Restart=on-failure

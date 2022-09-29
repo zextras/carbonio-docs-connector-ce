@@ -1,18 +1,26 @@
 package com.zextras.carbonio.docs_connector;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import java.net.InetSocketAddress;
+import java.util.Optional;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
+import org.slf4j.LoggerFactory;
 
 public class Boot {
 
-  private static Injector injector;
+  private static final Logger   rootLogger = (Logger) LoggerFactory.getLogger("ROOT");
+  private static final Logger   logger     = (Logger) LoggerFactory.getLogger(Boot.class);
+  private static       Injector injector;
+
+  private Server server;
 
 
   public static void main(String[] args) throws Exception {
@@ -21,17 +29,28 @@ public class Boot {
   }
 
   public void boot() throws Exception {
-    Server server = new Server(InetSocketAddress.createUnresolved("127.78.0.13", 10_000));
-    ServletContextHandler servletHandler = new ServletContextHandler(server, "/");
-    servletHandler.addEventListener(injector.getInstance(
-      GuiceResteasyBootstrapServletContextListener.class)
-    );
-    ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
 
-    servletHandler.addServlet(servletHolder, "/*");
-    server.setHandler(servletHandler);
+    // Set configuration level
+    String logLevel = System.getProperty("LOG_LEVEL");
+    rootLogger.setLevel(Level.toLevel(Optional.ofNullable(logLevel).orElse("WARN")));
 
-    server.start();
-    server.join();
+    try {
+      server = new Server(InetSocketAddress.createUnresolved("127.78.0.13", 10_000));
+      ServletContextHandler servletHandler = new ServletContextHandler(server, "/");
+      servletHandler.addEventListener(injector.getInstance(
+        GuiceResteasyBootstrapServletContextListener.class)
+      );
+      ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
+
+      servletHandler.addServlet(servletHolder, "/*");
+      server.setHandler(servletHandler);
+
+      server.start();
+      server.join();
+    } catch (Exception exception) {
+      logger.error("Service stopped unexpectedly: " + exception.getMessage(), exception);
+    } finally {
+      server.stop();
+    }
   }
 }
