@@ -9,46 +9,34 @@ SPDX-License-Identifier: AGPL-3.0-only
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>carbonio-docs-connector-ce-core</artifactId>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>tiles-maven-plugin</artifactId>
-        <configuration>
-          <tiles>
-            <tile>io.ebean.tile:enhancement:12.11.5</tile>
-          </tiles>
-        </configuration>
-        <extensions>true</extensions>
-        <groupId>io.repaint.maven</groupId>
-        <version>2.19</version>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <release>11</release>
-        </configuration>
-        <groupId>org.apache.maven.plugins</groupId>
-        <version>3.8.1</version>
-      </plugin>
-    </plugins>
-  </build>
+  <modelVersion>4.0.0</modelVersion>
+
+  <licenses>
+    <license>
+      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
+      <name>AGPL-3.0-only</name>
+    </license>
+  </licenses>
+
+  <artifactId>carbonio-docs-connector-ce-core</artifactId>
+  <name>carbonio-docs-connector-ce-core</name>
+
+  <parent>
+    <artifactId>carbonio-docs-connector-ce</artifactId>
+    <groupId>com.zextras.carbonio.docs-connector</groupId>
+    <version>0.1.0-2304171458</version>
+  </parent>
 
   <dependencies>
 
     <dependency>
-      <artifactId>carbonio-docs-connector-ce-generated</artifactId>
       <groupId>com.zextras.carbonio.docs-connector</groupId>
-      <version>0.1.0-1</version>
+      <artifactId>carbonio-docs-connector-ce-generated</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
 
-    <dependency>
-      <artifactId>javaee-api</artifactId>
-      <groupId>javax</groupId>
-      <scope>provided</scope>
-    </dependency>
-
+    <!-- Dependency Injection -->
     <dependency>
       <artifactId>guice</artifactId>
       <groupId>com.google.inject</groupId>
@@ -59,19 +47,28 @@ SPDX-License-Identifier: AGPL-3.0-only
       <groupId>com.google.inject.extensions</groupId>
     </dependency>
 
+    <!-- Logging -->
     <dependency>
-      <artifactId>jackson-datatype-joda</artifactId>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
     </dependency>
 
+    <!-- JavaEE API -->
     <dependency>
-      <artifactId>resteasy-multipart-provider</artifactId>
-      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>javaee-api</artifactId>
+      <groupId>javax</groupId>
+      <scope>provided</scope>
     </dependency>
 
+    <!-- RestEasy + JaxRS + Jackson -->
     <dependency>
       <artifactId>resteasy-jackson2-provider</artifactId>
       <groupId>org.jboss.resteasy</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>jackson-datatype-joda</artifactId>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
     </dependency>
 
     <dependency>
@@ -80,8 +77,8 @@ SPDX-License-Identifier: AGPL-3.0-only
     </dependency>
 
     <dependency>
-      <artifactId>swagger-annotations</artifactId>
-      <groupId>io.swagger</groupId>
+      <artifactId>resteasy-multipart-provider</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
     </dependency>
 
     <dependency>
@@ -90,10 +87,17 @@ SPDX-License-Identifier: AGPL-3.0-only
     </dependency>
 
     <dependency>
+      <artifactId>swagger-annotations</artifactId>
+      <groupId>io.swagger</groupId>
+    </dependency>
+
+    <!-- Cache -->
+    <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
     </dependency>
 
+    <!-- SDKs -->
     <dependency>
       <groupId>com.zextras.carbonio.user-management</groupId>
       <artifactId>carbonio-user-management-sdk</artifactId>
@@ -104,36 +108,18 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>carbonio-files-sdk</artifactId>
     </dependency>
 
-    <dependency>
-      <artifactId>slf4j-api</artifactId>
-      <groupId>org.slf4j</groupId>
-    </dependency>
-
-    <dependency>
-      <artifactId>logback-classic</artifactId>
-      <groupId>ch.qos.logback</groupId>
-    </dependency>
-
   </dependencies>
 
-  <licenses>
-    <license>
-      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
-      <name>AGPL-3.0-only</name>
-    </license>
-  </licenses>
-
-  <modelVersion>4.0.0</modelVersion>
-
-  <name>carbonio-docs-connector-ce-core</name>
-
-  <parent>
-    <artifactId>carbonio-docs-connector-ce</artifactId>
-    <groupId>com.zextras.carbonio.docs-connector</groupId>
-    <version>0.1.0-1</version>
-  </parent>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>${java-compiler.version}</release>
+        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>${maven-compiler.version}</version>
+      </plugin>
+    </plugins>
+  </build>
 </project>
