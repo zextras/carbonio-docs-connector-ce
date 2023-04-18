@@ -32,9 +32,25 @@ pipeline {
         }
         stage('Build jar') {
             steps {
-                sh 'mvn -B -settings settings-jenkins.xml -DskipTests package'
+                sh 'mvn -B -settings settings-jenkins.xml clean package'
                 // having every file within the package directory is great simplification
                 sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+            }
+        }
+        stage("Unit tests") {
+            steps {
+                sh 'mvn -B --settings settings-jenkins.xml verify -P run-unit-tests'
+            }
+        }
+        stage("Integration tests") {
+            steps {
+                sh 'mvn -B --settings settings-jenkins.xml verify -P run-integration-tests'
+            }
+        }
+        stage('Coverage') {
+            steps {
+                sh 'mvn -B --settings settings-jenkins.xml verify -P generate-jacoco-full-report'
+                publishCoverage adapters: [jacocoAdapter('core/target/jacoco-full-report/jacoco.xml')]
             }
         }
         stage('Build deb/rpm') {
@@ -88,6 +104,37 @@ pipeline {
                             }
                         }
                     }
+                }
+            }
+        }
+        stage('Upload To Develop') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                unstash 'artifacts-deb'
+                unstash 'artifacts-rpm'
+                script {
+                    def server = Artifactory.server 'zextras-artifactory'
+                    def buildInfo
+                    def uploadSpec
+
+                    buildInfo = Artifactory.newBuildInfo()
+                    uploadSpec = '''{
+                        "files": [
+                            {
+                                "pattern": "artifacts/carbonio-docs-connector*.deb",
+                                "target": "ubuntu-devel/pool/",
+                                "props": "deb.distribution=bionic;deb.distribution=focal;deb.component=main;deb.architecture=amd64"
+                            },
+                            {
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).rpm",
+                                "target": "centos8-devel/zextras/{1}/{1}-{2}.rpm",
+                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras"
+                            }
+                        ]
+                    }'''
+                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
                 }
             }
         }
