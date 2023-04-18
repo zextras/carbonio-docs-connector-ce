@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class CacheManagerTest {
 
   @Test
-  void testCacheManagerIsNotNull() {
+  void givenACacheManagerTheGetTokenCacheShouldReturnAnEmptyCacheWithTheRightAttributes() {
     // Given & When
     CacheManager cacheManager = new CacheManager();
 
@@ -25,7 +25,7 @@ class CacheManagerTest {
   }
 
   @Test
-  void testTokenDurationInMs() {
+  void givenACacheManagerTheGetTokenDurationInMsShouldReturnTheRightDurationOfTheTokenInTheCache() {
     // Given && When
     CacheManager cacheManager = new CacheManager();
 
