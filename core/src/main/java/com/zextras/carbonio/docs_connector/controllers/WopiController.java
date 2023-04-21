@@ -1,8 +1,8 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
 import com.google.inject.Inject;
+import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
-import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.docs_connector.generated.WopiApiService;
 import com.zextras.carbonio.docs_connector.services.WopiService;
 import java.io.InputStream;
@@ -22,15 +22,10 @@ public class WopiController implements WopiApiService {
 
   private final static Logger logger = LoggerFactory.getLogger(WopiController.class);
 
-  private final OpenDocumentTokenRepository openDocumentTokenRepository;
-  private final WopiService  wopiService;
+  private final WopiService wopiService;
 
   @Inject
-  public WopiController(
-    OpenDocumentTokenRepository openDocumentTokenRepository,
-    WopiService wopiService
-  ) {
-    this.openDocumentTokenRepository = openDocumentTokenRepository;
+  public WopiController(WopiService wopiService) {
     this.wopiService = wopiService;
   }
 
@@ -43,16 +38,17 @@ public class WopiController implements WopiApiService {
   ) {
     logger.info("Get docs-editor attributes for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
       return wopiService
-        .getDocsEditorAttributes(optToken.get(), nodeId, Optional.ofNullable(version))
+        .getDocsEditorAttributes(
+          openDocumentToken.getRequesterId(),
+          openDocumentToken.getRequesterCookie(),
+          nodeId,
+          Optional.ofNullable(version)
+        )
         .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
         .orElse(Response.serverError().build());
     }
@@ -70,16 +66,13 @@ public class WopiController implements WopiApiService {
   ) {
     logger.info("Get blob for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
+
       return wopiService
-        .getBlob(optToken.get().getRequesterCookie(), nodeId, Optional.ofNullable(version))
+        .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
         .map(filesBlob ->
           Response
             .ok()
@@ -106,16 +99,14 @@ public class WopiController implements WopiApiService {
   ) {
     logger.info("Save blob for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
+
       return wopiService
-        .saveBlob(optToken.get().getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
+        .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength,
+          coolIsAutosave)
         .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
         .orElse(Response.serverError().build());
     }

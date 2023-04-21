@@ -30,22 +30,22 @@ public class FilesService {
   }
 
   public Optional<String> openFile(
-    String nodeId,
-    Optional<Integer> optVersion,
     String requesterId,
-    String cookies
+    String cookie,
+    String nodeId,
+    Optional<Integer> optVersion
   ) {
 
     return Optional.ofNullable(
       FilesClient
         .atURL(filesServiceURL)
-        .genericGraphQLRequest(cookies, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
+        .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .map(graphQLResponse -> {
           try {
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
             OpenDocumentToken openDocumentToken = openDocumentTokenRepository
-              .createToken(UUID.fromString(nodeId), requesterId, cookies);
+              .createToken(UUID.fromString(nodeId), requesterId, cookie);
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
@@ -118,7 +118,7 @@ public class FilesService {
   }
 
   public Optional<CreatedFile> uploadTemplate(
-    String cookies,
+    String cookie,
     InsertFile docsFile
   ) {
 
@@ -127,7 +127,7 @@ public class FilesService {
         FilesClient
           .atURL(filesServiceURL)
           .uploadFile(
-            cookies,
+            cookie,
             docsFile.getDestinationFolderId(),
             TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
             TemplateUtils.detectMimeTypeFrom(docsFile.getType()),

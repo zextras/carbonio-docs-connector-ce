@@ -35,7 +35,7 @@ public final class Constants {
 
     private Context() {}
 
-    public static final String OPEN_DOCUMENT_TOKEN = "access-token";
+    public static final String OPEN_DOCUMENT_TOKEN = "open-document-token";
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
   }

@@ -2,7 +2,6 @@ package com.zextras.carbonio.docs_connector.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
-import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
@@ -35,20 +34,21 @@ public class WopiService {
   }
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
-    OpenDocumentToken token,
+    String requesterId,
+    String requesterCookie,
     UUID nodeId,
     Optional<Integer> optVersion
   ) {
     UserInfo userInfo = userManagementClient
-      .getUserById(token.getRequesterCookie(), token.getRequesterId())
-      .onFailure(failure -> logger.error("Unable to retrieve user info of user id {}", token.getRequesterId(), failure))
-      .getOrElseThrow(() -> new NoSuchElementException()); // Thinking more about it
+      .getUserById(requesterCookie, requesterId)
+      .onFailure(failure -> logger.error("Unable to retrieve user info of user id {}", requesterId, failure))
+      .getOrElseThrow(() -> new NoSuchElementException()); // Think more about it
 
     return Optional.ofNullable(
       FilesClient
         .atURL(filesServiceURL)
         .genericGraphQLRequest(
-          token.getRequesterCookie(),
+          requesterCookie,
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
         ).map(graphQLResponse -> {
 
