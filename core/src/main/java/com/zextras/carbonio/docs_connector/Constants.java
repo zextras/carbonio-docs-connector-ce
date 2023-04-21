@@ -8,6 +8,9 @@ public final class Constants {
 
     private Service() {}
 
+    public static final String IP = "127.78.0.13";
+    public static final int PORT = 10_000;
+    public static final String SERVICE_NAME = "carbonio-docs-connector";
     public static final class API {
 
       private API() {}
