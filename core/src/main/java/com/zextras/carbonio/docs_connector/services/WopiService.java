@@ -23,14 +23,15 @@ import org.slf4j.LoggerFactory;
 
 public class WopiService {
 
-  private static final Logger logger          = LoggerFactory.getLogger(WopiService.class);
-  private static final String filesServiceURL = "http://127.78.0.13:20000";
+  private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
 
   private final UserManagementClient userManagementClient;
+  private final FilesClient filesClient;
 
   @Inject
-  public WopiService(UserManagementClient userManagementClient) {
+  public WopiService(UserManagementClient userManagementClient, FilesClient filesClient) {
     this.userManagementClient = userManagementClient;
+    this.filesClient = filesClient;
   }
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
@@ -41,12 +42,12 @@ public class WopiService {
   ) {
     UserInfo userInfo = userManagementClient
       .getUserById(requesterCookie, requesterId)
-      .onFailure(failure -> logger.error("Unable to retrieve user info of user id {}", requesterId, failure))
+      .onFailure(
+        failure -> logger.error("Unable to retrieve user info of user id {}", requesterId, failure))
       .getOrElseThrow(() -> new NoSuchElementException()); // Think more about it
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
+      filesClient
         .genericGraphQLRequest(
           requesterCookie,
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
@@ -109,8 +110,7 @@ public class WopiService {
   ) {
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
+      filesClient
         .downloadFile(cookie, nodeId.toString(), optVersion)
         .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
@@ -125,8 +125,7 @@ public class WopiService {
     boolean coolIsAutosave
   ) {
 
-    Try<NodeIdVersion> uploadedNode = FilesClient
-      .atURL(filesServiceURL)
+    Try<NodeIdVersion> uploadedNode = filesClient
       .genericGraphQLRequest(
         cookie,
         NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
@@ -135,8 +134,7 @@ public class WopiService {
         try {
           NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-          return FilesClient
-            .atURL(filesServiceURL)
+          return filesClient
             .uploadFileVersion(
               cookie,
               nodeId.toString(),
@@ -161,8 +159,7 @@ public class WopiService {
        * Retrieve the last update timestamp of the saved file
        */
       return Optional.ofNullable(
-        FilesClient
-          .atURL(filesServiceURL)
+        filesClient
           .genericGraphQLRequest(
             cookie,
             NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())

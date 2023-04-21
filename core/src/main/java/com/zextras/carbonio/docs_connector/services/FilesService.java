@@ -20,13 +20,14 @@ import org.slf4j.LoggerFactory;
 public class FilesService {
 
   private static final Logger logger          = LoggerFactory.getLogger(FilesService.class);
-  private static final String filesServiceURL = "http://127.78.0.13:20000";
 
   private final OpenDocumentTokenRepository openDocumentTokenRepository;
+  private final FilesClient filesClient;
 
   @Inject
-  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository) {
+  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository, FilesClient filesClient) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
+    this.filesClient = filesClient;
   }
 
   public Optional<String> openFile(
@@ -37,8 +38,7 @@ public class FilesService {
   ) {
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
+      filesClient
         .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .map(graphQLResponse -> {
           try {
@@ -124,8 +124,7 @@ public class FilesService {
 
     return TemplateUtils.getTemplateRaw(docsFile.getType())
       .map(templateRaw ->
-        FilesClient
-          .atURL(filesServiceURL)
+        filesClient
           .uploadFile(
             cookie,
             docsFile.getDestinationFolderId(),

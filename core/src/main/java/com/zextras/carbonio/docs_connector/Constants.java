@@ -46,6 +46,15 @@ public final class Constants {
 
     public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
 
+    public static final class FilesService {
+
+      private FilesService() {}
+
+      public static final String PROTOCOL = "http";
+      public static final String URL = "127.78.0.13";
+      public static final int PORT = 20000;
+    }
+
     public static final class UserService {
 
       private UserService() {}
