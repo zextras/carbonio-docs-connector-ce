@@ -61,7 +61,7 @@ public class OpenDocumentToken {
   @Override
   public String toString() {
     return String.format(
-      "tokenId: %s, documentId: %s, expires at %d, requesterId: %s",
+      "tokenId: %s, documentId: %s, expires at %d",
       tokenId,
       documentId,
       expiresAt
