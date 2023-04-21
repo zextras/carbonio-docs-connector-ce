@@ -1,7 +1,5 @@
 package com.zextras.carbonio.docs_connector;
 
-import com.zextras.carbonio.docs_connector.services.FilesService;
-
 public final class Constants {
 
   private Constants() {}
@@ -9,10 +7,6 @@ public final class Constants {
   public static final class Service {
 
     private Service() {}
-
-    public static final String IP = "127.78.0.13";
-    public static final int PORT = 10_000;
-    public static final String SERVICE_NAME = "carbonio-docs-connector";
 
     public static final class API {
 
@@ -52,16 +46,6 @@ public final class Constants {
 
     public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
 
-    public static final class FilesService {
-
-      private FilesService() {}
-
-      public static final String PROTOCOL = "http";
-      public static final String URL = "127.78.0.13";
-      public static final int PORT = 20000;
-
-    }
-
     public static final class UserService {
 
       private UserService() {}
@@ -69,8 +53,6 @@ public final class Constants {
       public static final String PROTOCOL = "http";
       public static final String URL = "127.78.0.13";
       public static final int PORT = 20001;
-
     }
   }
-
 }
