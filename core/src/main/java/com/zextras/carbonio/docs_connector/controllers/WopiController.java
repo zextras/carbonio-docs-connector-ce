@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
 import javax.enterprise.context.RequestScoped;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -37,7 +38,8 @@ public class WopiController implements WopiApiService {
     String accessToken,
     UUID nodeId,
     Integer version,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Get docs-editor attributes for: " + nodeId);
 
@@ -63,7 +65,8 @@ public class WopiController implements WopiApiService {
     String accessToken,
     UUID nodeId,
     Integer version,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Get blob for: " + nodeId);
 
@@ -98,7 +101,8 @@ public class WopiController implements WopiApiService {
     Boolean coolIsExitSave,
     Long contentLength,
     InputStream blob,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Save blob for: " + nodeId);
 

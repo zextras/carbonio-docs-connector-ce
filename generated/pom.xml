@@ -82,12 +82,12 @@
   <parent>
     <artifactId>carbonio-docs-connector-ce</artifactId>
     <groupId>com.zextras.carbonio.docs-connector</groupId>
-    <version>0.1.0-2304211049</version>
+    <version>0.1.0-2304211226</version>
   </parent>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <version>0.1.0-2304211049</version>
+  <version>0.1.0-2304211226</version>
 </project>

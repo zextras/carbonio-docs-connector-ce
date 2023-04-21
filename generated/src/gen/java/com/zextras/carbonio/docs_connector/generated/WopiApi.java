@@ -17,6 +17,7 @@ import com.zextras.carbonio.docs_connector.generated.NotFoundException;
 
 import java.io.InputStream;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
@@ -42,9 +43,9 @@ public class WopiApi  {
     @io.swagger.annotations.ApiOperation(value = "", notes = "Retrieve docs-editor attributes", response = DocsEditorAttributes.class, tags={  })
     @io.swagger.annotations.ApiResponses(value = { 
         @io.swagger.annotations.ApiResponse(code = 200, message = "All the attributes necessary to carbonio-docs-editor in order to open a file correctly", response = DocsEditorAttributes.class) })
-    public Response docsEditorAttributes( @NotNull  @QueryParam("access_token") String accessToken, @PathParam("nodeId") UUID nodeId,  @QueryParam("version") Integer version,@Context SecurityContext securityContext)
+    public Response docsEditorAttributes( @NotNull  @QueryParam("access_token") String accessToken, @PathParam("nodeId") UUID nodeId,  @QueryParam("version") Integer version,@Context SecurityContext securityContext,@Context HttpServletRequest httpRequest)
     throws NotFoundException {
-        return service.docsEditorAttributes(accessToken,nodeId,version,securityContext);
+        return service.docsEditorAttributes(accessToken,nodeId,version,securityContext,httpRequest);
     }
     @GET
     @Path("/contents")
@@ -53,9 +54,9 @@ public class WopiApi  {
     @io.swagger.annotations.ApiOperation(value = "", notes = "Retrieve blob of a specific Files node", response = File.class, tags={  })
     @io.swagger.annotations.ApiResponses(value = { 
         @io.swagger.annotations.ApiResponse(code = 200, message = "Return the requested blob", response = File.class) })
-    public Response getBlob( @NotNull  @QueryParam("access_token") String accessToken, @PathParam("nodeId") UUID nodeId,  @QueryParam("version") Integer version,@Context SecurityContext securityContext)
+    public Response getBlob( @NotNull  @QueryParam("access_token") String accessToken, @PathParam("nodeId") UUID nodeId,  @QueryParam("version") Integer version,@Context SecurityContext securityContext, @Context HttpServletRequest httpRequest)
     throws NotFoundException {
-        return service.getBlob(accessToken,nodeId,version,securityContext);
+        return service.getBlob(accessToken,nodeId,version,securityContext,httpRequest);
     }
     @POST
     @Path("/contents")
@@ -64,8 +65,8 @@ public class WopiApi  {
     @io.swagger.annotations.ApiOperation(value = "", notes = "Save the updated blob of a specific Files node", response = NodeUpdatedTimestamp.class, tags={  })
     @io.swagger.annotations.ApiResponses(value = { 
         @io.swagger.annotations.ApiResponse(code = 200, message = "Updated timestamp of the saved blob", response = NodeUpdatedTimestamp.class) })
-    public Response saveBlob( @PathParam("nodeId") UUID nodeId, @NotNull  @QueryParam("access_token") String accessToken,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsAutosave") Boolean xCOOLWOPIIsAutosave,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsExitSave") Boolean xCOOLWOPIIsExitSave,  @ApiParam(value = "" ) @HeaderParam("Content-Length") Long contentLength,@ApiParam(value = "Save the blob" ) @Valid InputStream body,@Context SecurityContext securityContext)
+    public Response saveBlob( @PathParam("nodeId") UUID nodeId, @NotNull  @QueryParam("access_token") String accessToken,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsAutosave") Boolean xCOOLWOPIIsAutosave,  @ApiParam(value = "" ) @HeaderParam("X-COOL-WOPI-IsExitSave") Boolean xCOOLWOPIIsExitSave,  @ApiParam(value = "" ) @HeaderParam("Content-Length") Long contentLength,@ApiParam(value = "Save the blob" ) @Valid InputStream body,@Context SecurityContext securityContext,@Context HttpServletRequest httpRequest)
     throws NotFoundException {
-        return service.saveBlob(nodeId,accessToken,xCOOLWOPIIsAutosave,xCOOLWOPIIsExitSave,contentLength,body,securityContext);
+        return service.saveBlob(nodeId,accessToken,xCOOLWOPIIsAutosave,xCOOLWOPIIsExitSave,contentLength,body,securityContext,httpRequest);
     }
 }
