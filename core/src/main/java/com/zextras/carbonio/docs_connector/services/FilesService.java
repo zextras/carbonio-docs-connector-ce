@@ -2,11 +2,11 @@ package com.zextras.carbonio.docs_connector.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
-import com.zextras.carbonio.docs_connector.cache.CacheManager;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.CreatedFile;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.files.FilesClient;
 import java.io.ByteArrayInputStream;
@@ -22,10 +22,12 @@ public class FilesService {
   private static final Logger logger          = LoggerFactory.getLogger(FilesService.class);
   private static final String filesServiceURL = "http://127.78.0.13:20000";
 
-  private final CacheManager cacheManager;
+  private final OpenDocumentTokenRepository openDocumentTokenRepository;
 
   @Inject
-  public FilesService(CacheManager cacheManager) {this.cacheManager = cacheManager;}
+  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository) {
+    this.openDocumentTokenRepository = openDocumentTokenRepository;
+  }
 
   public Optional<String> openFile(
     String nodeId,
@@ -41,14 +43,8 @@ public class FilesService {
           try {
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-            OpenDocumentToken token = new OpenDocumentToken(
-              UUID.randomUUID(),
-              UUID.fromString(nodeId),
-              cookies,
-              System.currentTimeMillis() + cacheManager.getTokenDurationInMs()
-            );
-
-            cacheManager.getTokenCache().put(token.getTokenId().toString(), token);
+            OpenDocumentToken openDocumentToken = openDocumentTokenRepository
+              .createToken(UUID.fromString(nodeId), cookies);
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
@@ -67,9 +63,9 @@ public class FilesService {
             StringBuilder docsPathAndParametersBuilder = new StringBuilder()
               .append("editor/browser/dist/cool.html")
               .append("?access_token=")
-              .append(token.getTokenId())
+              .append(openDocumentToken.getTokenId())
               .append("&access_token_ttl=")
-              .append(token.getExpirationTimestamp());
+              .append(openDocumentToken.getExpirationTimestamp());
 
             /*
              * If the version is specified then the document should be opened in read only.

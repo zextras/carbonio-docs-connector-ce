@@ -1,10 +1,10 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
@@ -33,7 +33,7 @@ public class WopiService {
       FilesClient
         .atURL(filesServiceURL)
         .genericGraphQLRequest(
-          token.getRequesterCookies(),
+          token.getRequesterCookie(),
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
         ).map(graphQLResponse -> {
 

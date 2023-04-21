@@ -2,6 +2,8 @@ package com.zextras.carbonio.docs_connector.config;
 
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
 import com.zextras.carbonio.docs_connector.controllers.WopiController;
+import com.zextras.carbonio.docs_connector.dal.repositories.impl.OpenDocumentTokenRepositoryInMemory;
+import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.docs_connector.generated.FilesApi;
 import com.zextras.carbonio.docs_connector.generated.FilesApiService;
 import com.zextras.carbonio.docs_connector.generated.WopiApi;
@@ -17,5 +19,7 @@ public class DocsConnectorModule extends RequestScopeModule {
 
     bind(WopiApi.class);
     bind(WopiApiService.class).to(WopiController.class);
+
+    bind(OpenDocumentTokenRepository.class).to(OpenDocumentTokenRepositoryInMemory.class);
   }
 }
