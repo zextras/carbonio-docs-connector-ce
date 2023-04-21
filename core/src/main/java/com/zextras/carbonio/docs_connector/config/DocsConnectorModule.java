@@ -8,6 +8,7 @@ import com.zextras.carbonio.docs_connector.generated.FilesApi;
 import com.zextras.carbonio.docs_connector.generated.FilesApiService;
 import com.zextras.carbonio.docs_connector.generated.WopiApi;
 import com.zextras.carbonio.docs_connector.generated.WopiApiService;
+import java.time.Clock;
 import org.jboss.resteasy.plugins.guice.ext.RequestScopeModule;
 
 public class DocsConnectorModule extends RequestScopeModule {
@@ -20,6 +21,7 @@ public class DocsConnectorModule extends RequestScopeModule {
     bind(WopiApi.class);
     bind(WopiApiService.class).to(WopiController.class);
 
+    bind(Clock.class).toInstance(Clock.systemUTC());
     bind(OpenDocumentTokenRepository.class).to(OpenDocumentTokenRepositoryInMemory.class);
   }
 }
