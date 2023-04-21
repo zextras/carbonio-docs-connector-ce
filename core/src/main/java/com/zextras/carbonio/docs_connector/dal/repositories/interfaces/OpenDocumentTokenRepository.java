@@ -8,6 +8,7 @@ public interface OpenDocumentTokenRepository {
 
   OpenDocumentToken createToken(
     UUID documentId,
+    String requesterId,
     String requesterCookie
   );
 

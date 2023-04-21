@@ -1,6 +1,7 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
@@ -8,10 +9,13 @@ import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
+import com.zextras.carbonio.usermanagement.UserManagementClient;
+import com.zextras.carbonio.usermanagement.entities.UserInfo;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -23,11 +27,22 @@ public class WopiService {
   private static final Logger logger          = LoggerFactory.getLogger(WopiService.class);
   private static final String filesServiceURL = "http://127.78.0.13:20000";
 
+  private final UserManagementClient userManagementClient;
+
+  @Inject
+  public WopiService(UserManagementClient userManagementClient) {
+    this.userManagementClient = userManagementClient;
+  }
+
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
     OpenDocumentToken token,
     UUID nodeId,
     Optional<Integer> optVersion
   ) {
+    UserInfo userInfo = userManagementClient
+      .getUserById(token.getRequesterCookie(), token.getRequesterId())
+      .onFailure(failure -> logger.error("Unable to retrieve user info of user id {}", token.getRequesterId(), failure))
+      .getOrElseThrow(() -> new NoSuchElementException()); // Thinking more about it
 
     return Optional.ofNullable(
       FilesClient
@@ -53,8 +68,8 @@ public class WopiService {
 
             DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
             docsEditorAttributes.setOwnerId(nodeOwnerId);
-            docsEditorAttributes.setUserId(nodeOwnerId);
-            //docsEditorAttributes.setUserFriendlyName(nodeAttributes.getOwner().getFull_name());
+            docsEditorAttributes.setUserId(UUID.fromString(userInfo.getId().getUserId()));
+            docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
             docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
             docsEditorAttributes.setBaseFileName(abbreviateFilename);
             docsEditorAttributes.setVersion(nodeAttributes.getVersion());

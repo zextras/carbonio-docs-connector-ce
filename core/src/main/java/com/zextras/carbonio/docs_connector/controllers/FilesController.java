@@ -1,6 +1,7 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
 import com.google.inject.Inject;
+import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.generated.FilesApiService;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.FilesService;
@@ -38,10 +39,12 @@ public class FilesController implements FilesApiService {
     SecurityContext securityContext,
     HttpServletRequest httpRequest
   ) {
+    String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
 
     Optional<String> optDocsEditorRedirect = filesService.openFile(
       nodeId.toString(),
       Optional.ofNullable(version),
+      requesterId,
       cookie
     );
 

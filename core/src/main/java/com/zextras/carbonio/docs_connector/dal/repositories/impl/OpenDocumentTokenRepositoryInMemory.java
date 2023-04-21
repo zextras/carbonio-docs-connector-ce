@@ -22,11 +22,13 @@ public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRep
   @Override
   public OpenDocumentToken createToken(
     UUID documentId,
+    String requesterId,
     String requesterCookie
   ) {
     OpenDocumentToken token = new OpenDocumentToken(
       UUID.randomUUID(),
       documentId,
+      requesterId,
       requesterCookie,
       clock.millis() + cacheManager.getTokenDurationInMs()
     );
