@@ -20,32 +20,32 @@ import org.slf4j.LoggerFactory;
 public class FilesService {
 
   private static final Logger logger          = LoggerFactory.getLogger(FilesService.class);
-  private static final String filesServiceURL = "http://127.78.0.13:20000";
 
   private final OpenDocumentTokenRepository openDocumentTokenRepository;
+  private final FilesClient filesClient;
 
   @Inject
-  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository) {
+  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository, FilesClient filesClient) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
+    this.filesClient = filesClient;
   }
 
   public Optional<String> openFile(
-    String nodeId,
-    Optional<Integer> optVersion,
     String requesterId,
-    String cookies
+    String cookie,
+    String nodeId,
+    Optional<Integer> optVersion
   ) {
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
-        .genericGraphQLRequest(cookies, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
+      filesClient
+        .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .map(graphQLResponse -> {
           try {
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
             OpenDocumentToken openDocumentToken = openDocumentTokenRepository
-              .createToken(UUID.fromString(nodeId), requesterId, cookies);
+              .createToken(UUID.fromString(nodeId), requesterId, cookie);
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
@@ -118,16 +118,15 @@ public class FilesService {
   }
 
   public Optional<CreatedFile> uploadTemplate(
-    String cookies,
+    String cookie,
     InsertFile docsFile
   ) {
 
     return TemplateUtils.getTemplateRaw(docsFile.getType())
       .map(templateRaw ->
-        FilesClient
-          .atURL(filesServiceURL)
+        filesClient
           .uploadFile(
-            cookies,
+            cookie,
             docsFile.getDestinationFolderId(),
             TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
             TemplateUtils.detectMimeTypeFrom(docsFile.getType()),

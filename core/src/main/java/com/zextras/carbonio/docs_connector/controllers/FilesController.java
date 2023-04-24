@@ -42,10 +42,10 @@ public class FilesController implements FilesApiService {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
 
     Optional<String> optDocsEditorRedirect = filesService.openFile(
-      nodeId.toString(),
-      Optional.ofNullable(version),
       requesterId,
-      cookie
+      cookie,
+      nodeId.toString(),
+      Optional.ofNullable(version)
     );
 
     return optDocsEditorRedirect.isPresent()

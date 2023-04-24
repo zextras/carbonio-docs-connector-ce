@@ -8,6 +8,9 @@ public final class Constants {
 
     private Service() {}
 
+    public static final String IP = "127.78.0.13";
+    public static final int PORT = 10_000;
+    public static final String SERVICE_NAME = "carbonio-docs-connector";
     public static final class API {
 
       private API() {}
@@ -35,7 +38,7 @@ public final class Constants {
 
     private Context() {}
 
-    public static final String OPEN_DOCUMENT_TOKEN = "access-token";
+    public static final String OPEN_DOCUMENT_TOKEN = "open-document-token";
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
   }
@@ -45,6 +48,15 @@ public final class Constants {
     private Config() {}
 
     public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
+
+    public static final class FilesService {
+
+      private FilesService() {}
+
+      public static final String PROTOCOL = "http";
+      public static final String URL = "127.78.0.13";
+      public static final int PORT = 20000;
+    }
 
     public static final class UserService {
 
