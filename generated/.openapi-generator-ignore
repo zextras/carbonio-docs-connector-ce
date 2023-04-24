@@ -14,3 +14,7 @@ settings.gradle
 src/gen/java/com/zextras/carbonio/docs_connector/generated/WopiApi.java
 src/gen/java/com/zextras/carbonio/docs_connector/generated/WopiApiService.java
 src/main/java/com/zextras/carbonio/docs_connector/generated/impl/WopiApiServiceImpl.java
+
+src/gen/java/com/zextras/carbonio/docs_connector/generated/FilesApi.java
+src/gen/java/com/zextras/carbonio/docs_connector/generated/FilesApiService.java
+src/main/java/com/zextras/carbonio/docs_connector/generated/impl/FilesApiServiceImpl.java

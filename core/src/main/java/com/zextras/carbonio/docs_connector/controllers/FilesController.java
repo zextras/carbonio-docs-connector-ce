@@ -1,6 +1,7 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
 import com.google.inject.Inject;
+import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.generated.FilesApiService;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.FilesService;
@@ -8,6 +9,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import javax.enterprise.context.RequestScoped;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
@@ -22,7 +24,8 @@ public class FilesController implements FilesApiService {
   public Response createFile(
     String cookie,
     InsertFile insertFile,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     return filesService.uploadTemplate(cookie, insertFile)
       .map(createdFile -> Response.ok().entity(createdFile).build())
@@ -33,12 +36,15 @@ public class FilesController implements FilesApiService {
     String cookie,
     UUID nodeId,
     Integer version,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
+    String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
 
     Optional<String> optDocsEditorRedirect = filesService.openFile(
       nodeId.toString(),
       Optional.ofNullable(version),
+      requesterId,
       cookie
     );
 

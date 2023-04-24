@@ -32,6 +32,7 @@ public class FilesService {
   public Optional<String> openFile(
     String nodeId,
     Optional<Integer> optVersion,
+    String requesterId,
     String cookies
   ) {
 
@@ -44,7 +45,7 @@ public class FilesService {
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
             OpenDocumentToken openDocumentToken = openDocumentTokenRepository
-              .createToken(UUID.fromString(nodeId), cookies);
+              .createToken(UUID.fromString(nodeId), requesterId, cookies);
 
             // WopiSRC
             StringBuilder wopiEndpointBuilder = new StringBuilder()
