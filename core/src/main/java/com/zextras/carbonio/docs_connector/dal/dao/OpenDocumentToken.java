@@ -1,5 +1,6 @@
 package com.zextras.carbonio.docs_connector.dal.dao;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -9,14 +10,14 @@ public class OpenDocumentToken {
   private final UUID   documentId;
   private final String requesterId;
   private final String requesterCookie;
-  private final Long   expiresAt;
+  private final Instant expiresAt;
 
   public OpenDocumentToken(
     UUID tokenId,
     UUID documentId,
     String requesterId,
     String requesterCookie,
-    Long expirationTimestamp
+    Instant expirationTimestamp
   ) {
     this.tokenId = tokenId;
     this.documentId = documentId;
@@ -41,7 +42,7 @@ public class OpenDocumentToken {
     return requesterCookie;
   }
 
-  public Long getExpirationTimestamp() {
+  public Instant getExpirationTimestamp() {
     return expiresAt;
   }
 

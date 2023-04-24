@@ -67,9 +67,8 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
 
           return;
         }
-
-       requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
       }
+      requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
     }
   }
 }
