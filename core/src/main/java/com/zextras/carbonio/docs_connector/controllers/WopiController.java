@@ -1,10 +1,10 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
 import com.google.inject.Inject;
-import com.zextras.carbonio.docs_connector.cache.CacheManager;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.docs_connector.generated.WopiApiService;
 import com.zextras.carbonio.docs_connector.services.WopiService;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,15 +21,15 @@ public class WopiController implements WopiApiService {
 
   private final static Logger logger = LoggerFactory.getLogger(WopiController.class);
 
-  private final CacheManager cacheManager;
+  private final OpenDocumentTokenRepository openDocumentTokenRepository;
   private final WopiService  wopiService;
 
   @Inject
   public WopiController(
-    CacheManager cacheManager,
+    OpenDocumentTokenRepository openDocumentTokenRepository,
     WopiService wopiService
   ) {
-    this.cacheManager = cacheManager;
+    this.openDocumentTokenRepository = openDocumentTokenRepository;
     this.wopiService = wopiService;
   }
 
@@ -43,8 +43,10 @@ public class WopiController implements WopiApiService {
 
     Optional<OpenDocumentToken> optToken = Optional
       .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
 
     if (optToken.isPresent()) {
       return wopiService
@@ -67,12 +69,14 @@ public class WopiController implements WopiApiService {
 
     Optional<OpenDocumentToken> optToken = Optional
       .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
 
     if (optToken.isPresent()) {
       return wopiService
-        .getBlob(optToken.get().getRequesterCookies(), nodeId, Optional.ofNullable(version))
+        .getBlob(optToken.get().getRequesterCookie(), nodeId, Optional.ofNullable(version))
         .map(filesBlob ->
           Response
             .ok()
@@ -100,12 +104,14 @@ public class WopiController implements WopiApiService {
 
     Optional<OpenDocumentToken> optToken = Optional
       .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+      .map(token -> openDocumentTokenRepository.getToken(UUID.fromString(token)))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .filter(openDocumentToken -> openDocumentToken.getDocumentId().equals(nodeId));
 
     if (optToken.isPresent()) {
       return wopiService
-        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob, contentLength, coolIsAutosave)
+        .saveBlob(optToken.get().getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
         .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
         .orElse(Response.serverError().build());
     }

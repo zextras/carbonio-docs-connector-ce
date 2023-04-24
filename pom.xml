@@ -221,6 +221,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <resteasy.version>4.7.2.Final</resteasy.version>
     <slf4j-api.version>1.7.32</slf4j-api.version>
     <swagger-core-version>1.6.3</swagger-core-version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <repositories>
@@ -240,5 +241,5 @@ SPDX-License-Identifier: AGPL-3.0-only
     </repository>
   </repositories>
 
-  <version>0.1.0-1</version>
+  <version>0.1.0-2304211049</version>
 </project>
