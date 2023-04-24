@@ -65,7 +65,7 @@ public class FilesService {
               .append("?access_token=")
               .append(openDocumentToken.getTokenId())
               .append("&access_token_ttl=")
-              .append(openDocumentToken.getExpirationTimestamp());
+              .append(openDocumentToken.getExpirationTimestamp().toEpochMilli());
 
             /*
              * If the version is specified then the document should be opened in read only.
