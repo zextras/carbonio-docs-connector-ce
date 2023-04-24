@@ -5,6 +5,7 @@ import com.zextras.carbonio.docs_connector.cache.CacheManager;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRep
       documentId,
       requesterId,
       requesterCookie,
-      clock.millis() + cacheManager.getTokenDurationInMs()
+      Instant.ofEpochMilli(clock.millis() + cacheManager.getTokenDurationInMs())
     );
 
     cacheManager.getTokenCache().put(token.getTokenId().toString(), token);
