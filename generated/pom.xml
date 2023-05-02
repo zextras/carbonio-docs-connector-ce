@@ -1,46 +1,18 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
   <artifactId>carbonio-docs-connector-ce-generated</artifactId>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>11</source>
-          <target>11</target>
-        </configuration>
-        <groupId>org.apache.maven.plugins</groupId>
-        <version>3.6.1</version>
-      </plugin>
-      <plugin>
-        <artifactId>openapi-generator-maven-plugin</artifactId>
-        <groupId>org.openapitools</groupId>
-      </plugin>
-      <plugin>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <configuration>
-              <sources>
-                <source>
-                  src/gen/java
-                </source>
-              </sources>
-            </configuration>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-          </execution>
-        </executions>
-        <groupId>org.codehaus.mojo</groupId>
-        <version>1.9.1</version>
-      </plugin>
-    </plugins>
-    <sourceDirectory>src/main/java</sourceDirectory>
-  </build>
+  <name>carbonio-docs-connector-ce-generated</name>
+
+  <parent>
+    <artifactId>carbonio-docs-connector-ce</artifactId>
+    <groupId>com.zextras.carbonio.docs-connector</groupId>
+    <version>0.2.0-2305020941</version>
+  </parent>
+
   <dependencies>
 
     <dependency>
@@ -73,21 +45,48 @@
       <groupId>io.swagger</groupId>
     </dependency>
 
-
   </dependencies>
-  <groupId>com.zextras.carbonio.docs-connector</groupId>
-  <modelVersion>4.0.0</modelVersion>
-  <name>carbonio-docs-connector-ce-generated</name>
-  <packaging>jar</packaging>
-  <parent>
-    <artifactId>carbonio-docs-connector-ce</artifactId>
-    <groupId>com.zextras.carbonio.docs-connector</groupId>
-    <version>0.2.0-1</version>
-  </parent>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
 
-  <version>0.2.0-1</version>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${java-compiler.version}</source>
+          <target>${java-compiler.version}</target>
+        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>${maven-compiler.version}</version>
+      </plugin>
+
+      <plugin>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <groupId>org.openapitools</groupId>
+      </plugin>
+
+      <plugin>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <sources>
+                <source>
+                  src/gen/java
+                </source>
+              </sources>
+            </configuration>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+          </execution>
+        </executions>
+        <groupId>org.codehaus.mojo</groupId>
+        <version>${build-helper-maven.version}</version>
+      </plugin>
+    </plugins>
+    <sourceDirectory>src/main/java</sourceDirectory>
+  </build>
 </project>

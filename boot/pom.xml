@@ -9,7 +9,72 @@ SPDX-License-Identifier: AGPL-3.0-only
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <licenses>
+    <license>
+      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
+      <name>AGPL-3.0-only</name>
+    </license>
+  </licenses>
+
   <artifactId>carbonio-docs-connector-ce-boot</artifactId>
+  <name>carbonio-docs-connector-ce-boot</name>
+
+  <parent>
+    <artifactId>carbonio-docs-connector-ce</artifactId>
+    <groupId>com.zextras.carbonio.docs-connector</groupId>
+    <version>0.2.0-2305020941</version>
+  </parent>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>com.zextras.carbonio.docs-connector</groupId>
+      <artifactId>carbonio-docs-connector-ce-core</artifactId>
+      <version>${project.parent.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.ws.rs</groupId>
+          <artifactId>jsr311-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jakarta.inject</groupId>
+          <artifactId>jakarta.inject-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
+    </dependency>
+
+    <!-- Jetty dependencies -->
+    <dependency>
+      <artifactId>jetty-server</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+    </dependency>
+
+    <!-- RestEasy dependencies -->
+    <dependency>
+      <artifactId>resteasy-guice</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
+    </dependency>
+
+    <dependency>
+      <artifactId>resteasy-servlet-initializer</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
+    </dependency>
+
+  </dependencies>
 
   <build>
     <finalName>carbonio-docs-connector-ce-${project.parent.version}</finalName>
@@ -23,12 +88,12 @@ SPDX-License-Identifier: AGPL-3.0-only
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <release>11</release>
-          <source>11</source>
-          <target>11</target>
+          <release>${java-compiler.version}</release>
+          <source>${java-compiler.version}</source>
+          <target>${java-compiler.version}</target>
         </configuration>
         <groupId>org.apache.maven.plugins</groupId>
-        <version>3.8.1</version>
+        <version>${maven-compiler.version}</version>
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -69,78 +134,10 @@ SPDX-License-Identifier: AGPL-3.0-only
           </execution>
         </executions>
         <groupId>org.apache.maven.plugins</groupId>
-        <version>3.2.4</version>
+        <version>${maven-shade.version}</version>
       </plugin>
     </plugins>
   </build>
-  <dependencies>
 
-    <dependency>
-      <artifactId>carbonio-docs-connector-ce-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <artifactId>jsr311-api</artifactId>
-          <groupId>javax.ws.rs</groupId>
-        </exclusion>
-      </exclusions>
-      <groupId>com.zextras.carbonio.docs-connector</groupId>
 
-      <version>0.2.0-1</version>
-    </dependency>
-
-    <!-- Jetty dependencies -->
-    <dependency>
-      <artifactId>jetty-server</artifactId>
-      <groupId>org.eclipse.jetty</groupId>
-    </dependency>
-
-    <dependency>
-      <artifactId>jetty-servlet</artifactId>
-      <groupId>org.eclipse.jetty</groupId>
-    </dependency>
-
-    <!-- RestEasy dependencies -->
-    <dependency>
-      <artifactId>resteasy-guice</artifactId>
-      <groupId>org.jboss.resteasy</groupId>
-    </dependency>
-
-    <dependency>
-      <artifactId>resteasy-servlet-initializer</artifactId>
-      <groupId>org.jboss.resteasy</groupId>
-    </dependency>
-
-    <dependency>
-      <artifactId>slf4j-api</artifactId>
-      <groupId>org.slf4j</groupId>
-    </dependency>
-
-    <dependency>
-      <artifactId>logback-classic</artifactId>
-      <groupId>ch.qos.logback</groupId>
-    </dependency>
-  </dependencies>
-
-  <licenses>
-    <license>
-      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
-      <name>AGPL-3.0-only</name>
-    </license>
-  </licenses>
-
-  <modelVersion>4.0.0</modelVersion>
-
-  <name>carbonio-docs-connector-ce-boot</name>
-
-  <parent>
-    <artifactId>carbonio-docs-connector-ce</artifactId>
-    <groupId>com.zextras.carbonio.docs-connector</groupId>
-    <version>0.2.0-1</version>
-  </parent>
-
-  <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
 </project>
