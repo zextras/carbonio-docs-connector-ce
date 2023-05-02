@@ -1,14 +1,15 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
 import com.google.inject.Inject;
-import com.zextras.carbonio.docs_connector.cache.CacheManager;
+import com.zextras.carbonio.docs_connector.Constants.Context;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.generated.WopiApiService;
 import com.zextras.carbonio.docs_connector.services.WopiService;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
 import javax.enterprise.context.RequestScoped;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -21,15 +22,10 @@ public class WopiController implements WopiApiService {
 
   private final static Logger logger = LoggerFactory.getLogger(WopiController.class);
 
-  private final CacheManager cacheManager;
-  private final WopiService  wopiService;
+  private final WopiService wopiService;
 
   @Inject
-  public WopiController(
-    CacheManager cacheManager,
-    WopiService wopiService
-  ) {
-    this.cacheManager = cacheManager;
+  public WopiController(WopiService wopiService) {
     this.wopiService = wopiService;
   }
 
@@ -37,18 +33,22 @@ public class WopiController implements WopiApiService {
     String accessToken,
     UUID nodeId,
     Integer version,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Get docs-editor attributes for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
       return wopiService
-        .getDocsEditorAttributes(optToken.get(), nodeId, Optional.ofNullable(version))
+        .getDocsEditorAttributes(
+          openDocumentToken.getRequesterId(),
+          openDocumentToken.getRequesterCookie(),
+          nodeId,
+          Optional.ofNullable(version)
+        )
         .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
         .orElse(Response.serverError().build());
     }
@@ -61,18 +61,18 @@ public class WopiController implements WopiApiService {
     String accessToken,
     UUID nodeId,
     Integer version,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Get blob for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
+
       return wopiService
-        .getBlob(optToken.get().getRequesterCookies(), nodeId, Optional.ofNullable(version))
+        .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
         .map(filesBlob ->
           Response
             .ok()
@@ -94,18 +94,19 @@ public class WopiController implements WopiApiService {
     Boolean coolIsExitSave,
     Long contentLength,
     InputStream blob,
-    SecurityContext securityContext
+    SecurityContext securityContext,
+    HttpServletRequest httpRequest
   ) {
     logger.info("Save blob for: " + nodeId);
 
-    Optional<OpenDocumentToken> optToken = Optional
-      .ofNullable(accessToken)
-      .map(token -> cacheManager.getTokenCache().getIfPresent(token))
-      .filter(openDocumentToken -> openDocumentToken.getNodeId().equals(nodeId));
+    OpenDocumentToken openDocumentToken =
+      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
-    if (optToken.isPresent()) {
+    if (openDocumentToken.getDocumentId().equals(nodeId)) {
+
       return wopiService
-        .saveBlob(optToken.get().getRequesterCookies(), nodeId, blob, contentLength, coolIsAutosave)
+        .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength,
+          coolIsAutosave)
         .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
         .orElse(Response.serverError().build());
     }

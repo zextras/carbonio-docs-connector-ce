@@ -1,17 +1,20 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.generated.model.NodeUpdatedTimestamp;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
+import com.zextras.carbonio.usermanagement.UserManagementClient;
+import com.zextras.carbonio.usermanagement.entities.UserInfo;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -20,20 +23,33 @@ import org.slf4j.LoggerFactory;
 
 public class WopiService {
 
-  private static final Logger logger          = LoggerFactory.getLogger(WopiService.class);
-  private static final String filesServiceURL = "http://127.78.0.13:20000";
+  private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
+
+  private final UserManagementClient userManagementClient;
+  private final FilesClient filesClient;
+
+  @Inject
+  public WopiService(UserManagementClient userManagementClient, FilesClient filesClient) {
+    this.userManagementClient = userManagementClient;
+    this.filesClient = filesClient;
+  }
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
-    OpenDocumentToken token,
+    String requesterId,
+    String requesterCookie,
     UUID nodeId,
     Optional<Integer> optVersion
   ) {
+    UserInfo userInfo = userManagementClient
+      .getUserById(requesterCookie, requesterId)
+      .onFailure(
+        failure -> logger.error("Unable to retrieve user info of user id {}", requesterId, failure))
+      .getOrElseThrow(() -> new NoSuchElementException()); // Think more about it
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
+      filesClient
         .genericGraphQLRequest(
-          token.getRequesterCookies(),
+          requesterCookie,
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
         ).map(graphQLResponse -> {
 
@@ -53,8 +69,8 @@ public class WopiService {
 
             DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
             docsEditorAttributes.setOwnerId(nodeOwnerId);
-            docsEditorAttributes.setUserId(nodeOwnerId);
-            //docsEditorAttributes.setUserFriendlyName(nodeAttributes.getOwner().getFull_name());
+            docsEditorAttributes.setUserId(UUID.fromString(userInfo.getId().getUserId()));
+            docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
             docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
             docsEditorAttributes.setBaseFileName(abbreviateFilename);
             docsEditorAttributes.setVersion(nodeAttributes.getVersion());
@@ -94,8 +110,7 @@ public class WopiService {
   ) {
 
     return Optional.ofNullable(
-      FilesClient
-        .atURL(filesServiceURL)
+      filesClient
         .downloadFile(cookie, nodeId.toString(), optVersion)
         .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
@@ -110,8 +125,7 @@ public class WopiService {
     boolean coolIsAutosave
   ) {
 
-    Try<NodeIdVersion> uploadedNode = FilesClient
-      .atURL(filesServiceURL)
+    Try<NodeIdVersion> uploadedNode = filesClient
       .genericGraphQLRequest(
         cookie,
         NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
@@ -120,8 +134,7 @@ public class WopiService {
         try {
           NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-          return FilesClient
-            .atURL(filesServiceURL)
+          return filesClient
             .uploadFileVersion(
               cookie,
               nodeId.toString(),
@@ -146,8 +159,7 @@ public class WopiService {
        * Retrieve the last update timestamp of the saved file
        */
       return Optional.ofNullable(
-        FilesClient
-          .atURL(filesServiceURL)
+        filesClient
           .genericGraphQLRequest(
             cookie,
             NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())

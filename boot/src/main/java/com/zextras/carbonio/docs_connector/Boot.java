@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.zextras.carbonio.docs_connector.Constants.Service;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import java.net.InetSocketAddress;
 import java.util.Optional;
@@ -35,7 +36,7 @@ public class Boot {
     rootLogger.setLevel(Level.toLevel(Optional.ofNullable(logLevel).orElse("WARN")));
 
     try {
-      server = new Server(InetSocketAddress.createUnresolved("127.78.0.13", 10_000));
+      server = new Server(InetSocketAddress.createUnresolved(Service.IP, Service.PORT));
       ServletContextHandler servletHandler = new ServletContextHandler(server, "/");
       servletHandler.addEventListener(injector.getInstance(
         GuiceResteasyBootstrapServletContextListener.class)

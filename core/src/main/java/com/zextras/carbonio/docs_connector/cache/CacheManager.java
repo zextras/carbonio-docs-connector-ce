@@ -4,13 +4,14 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class CacheManager {
 
-  private final long tokenDurationInMs = 1000L * 60L * 60L * 12;
+  private final long tokenDurationInMs = Duration.ofHours(12).toMillis();
 
   private final Cache<String, OpenDocumentToken> tokenCache;
 
