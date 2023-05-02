@@ -1,7 +1,7 @@
 package com.zextras.carbonio.docs_connector.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.zextras.carbonio.docs_connector.services.utilities.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

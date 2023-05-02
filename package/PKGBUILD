@@ -4,7 +4,7 @@ targets=(
 )
 pkgname="carbonio-docs-connector-ce"
 pkgver="0.2.0"
-pkgrel="1"
+pkgrel="2305020941"
 pkgdesc="Carbonio docs connector"
 pkgdesclong=(
   "Carbonio docs connector"

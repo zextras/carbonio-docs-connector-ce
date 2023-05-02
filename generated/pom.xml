@@ -10,7 +10,7 @@
   <parent>
     <artifactId>carbonio-docs-connector-ce</artifactId>
     <groupId>com.zextras.carbonio.docs-connector</groupId>
-    <version>0.1.0-2304171458</version>
+    <version>0.2.0-2305020941</version>
   </parent>
 
   <dependencies>
