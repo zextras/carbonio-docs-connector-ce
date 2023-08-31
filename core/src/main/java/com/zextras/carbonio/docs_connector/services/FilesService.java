@@ -9,6 +9,7 @@ import com.zextras.carbonio.docs_connector.generated.model.CreatedFile;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.files.FilesClient;
+import com.zextras.carbonio.usermanagement.entities.Locale;
 import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ public class FilesService {
 
   public Optional<String> openFile(
     String requesterId,
+    Locale requesterLocale,
     String cookie,
     String nodeId,
     Optional<Integer> optVersion
@@ -103,6 +105,8 @@ public class FilesService {
             docsPathAndParametersBuilder
               .append("&public_url=")
               .append(URLEncoder.encode(publicURLBuilder.toString(), StandardCharsets.UTF_8));
+
+            docsPathAndParametersBuilder.append("&lang=").append(requesterLocale);
 
             logger.info(docsPathAndParametersBuilder.toString());
             return docsPathAndParametersBuilder.toString();
