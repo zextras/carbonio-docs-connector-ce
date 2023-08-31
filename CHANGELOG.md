@@ -8,6 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.2.0...v0.3.0) (2023-08-31)
+
+
+### Features
+
+* add the requester locale during the docs-editor URL generation ([#20](https://github.com/Zextras/carbonio-docs-connector-ce/issues/20)) ([052b177](https://github.com/Zextras/carbonio-docs-connector-ce/commit/052b1774eb05b010524dddcc5612aaeebd047b69))
+
 ## [0.2.0](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.1.0...v0.2.0) (2023-04-27)
 
 
