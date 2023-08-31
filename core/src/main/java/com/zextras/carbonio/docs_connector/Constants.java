@@ -41,6 +41,7 @@ public final class Constants {
     public static final String OPEN_DOCUMENT_TOKEN = "open-document-token";
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
+    public static final String REQUESTER_LOCALE = "requester-locale";
   }
 
   public static final class Config {
@@ -65,6 +66,7 @@ public final class Constants {
       public static final String PROTOCOL = "http";
       public static final String URL = "127.78.0.13";
       public static final int PORT = 20001;
+      public static final String ZM_AUTH_TOKEN = "ZM_AUTH_TOKEN=";
     }
   }
 }

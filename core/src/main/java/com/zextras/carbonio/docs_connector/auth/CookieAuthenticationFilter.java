@@ -3,6 +3,7 @@ package com.zextras.carbonio.docs_connector.auth;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.zextras.carbonio.docs_connector.Constants.Config;
+import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.Service.API.Endpoints;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
@@ -52,10 +53,21 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
       userManagementClient
         .validateUserToken(optZmCookie.get().getValue())
-        .onSuccess(userId -> {
-          requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
-          requestContext.setProperty(Context.REQUESTER_ID, userId.getUserId());
-        })
+        .onSuccess(userId ->
+          userManagementClient
+            .getUserMyself(UserService.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
+            .onSuccess(
+              myself -> {
+                requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
+                requestContext.setProperty(Context.REQUESTER_ID, userId.getUserId());
+                requestContext.setProperty(Context.REQUESTER_LOCALE, myself.getLocale()
+                );
+              })
+            .onFailure(throwable -> {
+              logger.error("The request is unauthorized: the cookie is invalid");
+              requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+            })
+        )
         .onFailure(failure -> {
           logger.error("The request is unauthorized: the cookie is invalid");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());

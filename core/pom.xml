@@ -33,7 +33,13 @@ SPDX-License-Identifier: AGPL-3.0-only
       <groupId>com.zextras.carbonio.docs-connector</groupId>
       <artifactId>carbonio-docs-connector-ce-generated</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
+      <exclusions>
+      <exclusion>
+        <groupId>javax.ws.rs</groupId>
+        <artifactId>jsr311-api</artifactId>
+      </exclusion>
+    </exclusions>
+  </dependency>
 
     <!-- Guice dependencies -->
     <dependency>
@@ -151,6 +157,18 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>jsonassert</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

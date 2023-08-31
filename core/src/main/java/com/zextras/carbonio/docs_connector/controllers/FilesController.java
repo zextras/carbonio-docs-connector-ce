@@ -5,6 +5,7 @@ import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.generated.FilesApiService;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.FilesService;
+import com.zextras.carbonio.usermanagement.entities.Locale;
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,9 +41,11 @@ public class FilesController implements FilesApiService {
     HttpServletRequest httpRequest
   ) {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
+    Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
 
     Optional<String> optDocsEditorRedirect = filesService.openFile(
       requesterId,
+      requesterLocale,
       cookie,
       nodeId.toString(),
       Optional.ofNullable(version)
