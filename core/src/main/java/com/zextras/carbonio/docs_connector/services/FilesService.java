@@ -9,10 +9,10 @@ import com.zextras.carbonio.docs_connector.generated.model.CreatedFile;
 import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
 import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.usermanagement.entities.Locale;
 import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -106,7 +106,7 @@ public class FilesService {
               .append("&public_url=")
               .append(URLEncoder.encode(publicURLBuilder.toString(), StandardCharsets.UTF_8));
 
-            docsPathAndParametersBuilder.append("&lang=").append(requesterLocale);
+            docsPathAndParametersBuilder.append("&lang=").append(requesterLocale.toLanguageTag());
 
             logger.info(docsPathAndParametersBuilder.toString());
             return docsPathAndParametersBuilder.toString();
