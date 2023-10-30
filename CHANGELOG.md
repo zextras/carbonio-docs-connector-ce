@@ -8,6 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.1](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.0...v0.3.1) (2023-10-30)
+
+
+### Bug Fixes
+
+* update carbonio-user-management-sdk and fix locale in url ([#23](https://github.com/Zextras/carbonio-docs-connector-ce/issues/23)) ([c346a8d](https://github.com/Zextras/carbonio-docs-connector-ce/commit/c346a8d2eefdb62e6d49290ec467d1edb34474bf))
+
 ## [0.3.0](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.2.0...v0.3.0) (2023-08-31)
 
 
