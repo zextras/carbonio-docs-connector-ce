@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
   <groupId>com.zextras.carbonio.docs-connector</groupId>
   <artifactId>carbonio-docs-connector-ce</artifactId>
-  <version>0.3.0-1</version>
+  <version>0.3.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>carbonio-docs-connector-ce</name>
@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
   <properties>
     <assertj.version>3.24.2</assertj.version>
     <caffeine.version>3.1.6</caffeine.version>
-    <carbonio-user-management-sdk.version>0.2.2</carbonio-user-management-sdk.version>
+    <carbonio-user-management-sdk.version>0.3.0</carbonio-user-management-sdk.version>
     <carbonio-files-sdk.version>0.0.3</carbonio-files-sdk.version>
     <guice.version>6.0.0</guice.version>
     <jackson.version>2.15.2</jackson.version>

@@ -2,7 +2,6 @@ package com.zextras.carbonio.docs_connector.apis;
 
 import com.zextras.carbonio.docs_connector.apis.Simulator.SimulatorBuilder;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
-import com.zextras.carbonio.usermanagement.entities.Locale;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.http.HttpHeader;
@@ -56,7 +55,7 @@ public class OpenFileApiIT {
     String nodeId = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
 
     simulator.mockValidateUser("9e2cffc4", "9e2cffc4-5860-4095-aedb-7b48d6ff889a");
-    simulator.mockGetMyself(userCookie, "9e2cffc4-5860-4095-aedb-7b48d6ff889a", Locale.EN.name());
+    simulator.mockGetMyself(userCookie, "9e2cffc4-5860-4095-aedb-7b48d6ff889a", "pt_BR");
 
     filesServiceMock
       .when(HttpRequest
@@ -118,6 +117,6 @@ public class OpenFileApiIT {
       .contains("&WOPISrc")
       .contains(nodeId)
       .contains("&public_url=docs%2Feditor%2F58032253-ed56-4eca-9017-3ae26cc2d9f1")
-      .contains("&lang=EN");
+      .contains("&lang=pt-BR");
   }
 }
