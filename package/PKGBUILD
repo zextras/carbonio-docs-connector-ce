@@ -3,8 +3,8 @@ targets=(
   "centos"
 )
 pkgname="carbonio-docs-connector-ce"
-pkgver="0.3.0"
-pkgrel="1"
+pkgver="0.3.1"
+pkgrel="SNAPSHOT"
 pkgdesc="Carbonio docs connector"
 pkgdesclong=(
   "Carbonio docs connector"
