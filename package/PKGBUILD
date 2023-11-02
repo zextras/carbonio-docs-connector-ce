@@ -1,16 +1,9 @@
-targets=(
-  "ubuntu"
-  "centos"
-)
 pkgname="carbonio-docs-connector-ce"
 pkgver="0.3.1"
 pkgrel="1"
 pkgdesc="Carbonio docs connector"
-pkgdesclong=(
-  "Carbonio docs connector"
-)
 maintainer="Zextras <packages@zextras.com>"
-arch="amd64"
+arch=('x86_64')
 license=("spdx:AGPL-3.0-only")
 section="admin"
 priority="optional"
@@ -20,7 +13,7 @@ depends=(
   "pending-setups"
   "carbonio-openjdk"
 )
-sources=(
+source=(
   "carbonio-docs-connector"
   "carbonio-docs-connector.hcl"
   "carbonio-docs-connector.service"
@@ -31,19 +24,19 @@ sources=(
   "policies.json"
   "service-protocol.json"
 )
-hashsums=(
-  "skip"
-  "skip"
-  "skip"
-  "skip"
-  "skip"
-  "skip"
-  "skip"
-  "skip"
-  "skip"
+sha256sums=(
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
 )
 backup=(
-    "/etc/zextras/service-discover/carbonio-docs-connector.hcl"
+  "etc/zextras/service-discover/carbonio-docs-connector.hcl"
 )
 
 package() {

@@ -1,7 +1,7 @@
 {
   "name": "carbonio-docs-connector-ce",
   "description": "Zextras Carbonio docs connector",
-  "build_dir": "/tmp/",
+  "buildDir": "/tmp/",
   "output": "artifacts",
   "projects": [
     {
