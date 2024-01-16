@@ -4,9 +4,12 @@ pkgrel="1"
 pkgdesc="Carbonio docs connector"
 maintainer="Zextras <packages@zextras.com>"
 arch=('x86_64')
-license=("spdx:AGPL-3.0-only")
 section="admin"
 priority="optional"
+copyright=(
+  "2022-2024, Zextras <https://www.zextras.com>"
+)
+license=("AGPL-3.0-only")
 url="https://www.zextras.com/"
 depends=(
   "service-discover"
