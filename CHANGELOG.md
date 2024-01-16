@@ -8,6 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.1...v0.3.2) (2024-01-16)
+
+
+### Features
+
+* move to yap agent and add rhel9 support ([#25](https://github.com/Zextras/carbonio-docs-connector-ce/issues/25)) ([db3c99d](https://github.com/Zextras/carbonio-docs-connector-ce/commit/db3c99d44d9e14f5e8466207ffc2d45563e1c83f))
+
 ### [0.3.1](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.0...v0.3.1) (2023-10-30)
 
 
