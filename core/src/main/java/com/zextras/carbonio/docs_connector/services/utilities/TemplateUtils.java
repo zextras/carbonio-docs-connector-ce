@@ -1,6 +1,6 @@
 package com.zextras.carbonio.docs_connector.services.utilities;
 
-import com.zextras.carbonio.docs_connector.generated.model.InsertFile.TypeEnum;
+import com.zextras.carbonio.docs_connector.types.InsertFile.TypeEnum;
 import com.zextras.carbonio.docs_connector.services.FilesService;
 import java.io.IOException;
 import java.io.InputStream;

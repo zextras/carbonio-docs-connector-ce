@@ -1,6 +1,5 @@
 package com.zextras.carbonio.docs_connector.apis;
 
-import io.swagger.models.HttpMethod;
 import java.io.IOException;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -8,6 +7,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.assertj.core.api.Assertions;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;

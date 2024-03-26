@@ -1,58 +1,33 @@
 package com.zextras.carbonio.docs_connector.controllers;
 
-import com.google.inject.Inject;
-import com.zextras.carbonio.docs_connector.Constants.Context;
-import com.zextras.carbonio.docs_connector.generated.FilesApiService;
-import com.zextras.carbonio.docs_connector.generated.model.InsertFile;
-import com.zextras.carbonio.docs_connector.services.FilesService;
-import java.net.URI;
-import java.util.Locale;
-import java.util.Optional;
 import java.util.UUID;
-import javax.enterprise.context.RequestScoped;
+
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 
-@RequestScoped
-public class FilesController implements FilesApiService {
+import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
-  private final FilesService filesService;
+import com.zextras.carbonio.docs_connector.types.InsertFile;
 
-  @Inject
-  public FilesController(FilesService filesService) {this.filesService = filesService;}
+@Path("/files")
+public interface FilesController {
+  @POST
+  @Path("/create")
+  @Consumes({ "application/json" })
+  @Produces(MediaType.APPLICATION_JSON)
+  Response createFile(@HeaderParam("Cookie") String cookie, InsertFile insertFile, @Context HttpServletRequest httpRequest);
 
-  public Response createFile(
-    String cookie,
-    InsertFile insertFile,
-    SecurityContext securityContext,
-    HttpServletRequest httpRequest
-  ) {
-    return filesService.uploadTemplate(cookie, insertFile)
-      .map(createdFile -> Response.ok().entity(createdFile).build())
-      .orElse(Response.serverError().build());
-  }
-
-  public Response openFile(
-    String cookie,
-    UUID nodeId,
-    Integer version,
-    SecurityContext securityContext,
-    HttpServletRequest httpRequest
-  ) {
-    String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
-    Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
-
-    Optional<String> optDocsEditorRedirect = filesService.openFile(
-      requesterId,
-      requesterLocale,
-      cookie,
-      nodeId.toString(),
-      Optional.ofNullable(version)
-    );
-
-    return optDocsEditorRedirect.isPresent()
-      ? Response.temporaryRedirect(URI.create(optDocsEditorRedirect.get())).build()
-      : Response.serverError().build();
-  }
+  @GET
+  @Path("/open/{nodeId}")
+  Response openFile(@HeaderParam("Cookie") String cookie, @PathParam("nodeId") UUID nodeId, @QueryParam("version") Integer version, @Context HttpServletRequest httpRequest);
 }

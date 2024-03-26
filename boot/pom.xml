@@ -33,13 +33,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       <groupId>com.zextras.carbonio.docs-connector</groupId>
       <artifactId>carbonio-docs-connector-ce-core</artifactId>
       <version>${project.parent.version}</version>
-      <!--<exclusions>
-        <exclusion>
-          <groupId>javax.ws.rs</groupId>
-          <artifactId>jsr311-api</artifactId>
-        </exclusion>
-      </exclusions>
-      -->
     </dependency>
 
     <!-- Logging -->
@@ -118,6 +111,9 @@ SPDX-License-Identifier: AGPL-3.0-only
                     <exclude>META-INF/LICENSE</exclude>
                     <exclude>META-INF/LICENSE.txt</exclude>
                     <exclude>META-INF/NOTICE</exclude>
+                    <exclude>META-INF/NOTICE.txt</exclude>
+                    <exclude>META-INF/ASL-2.0.txt</exclude>
+                    <exclude>META-INF/LGPL-3.0.txt</exclude>
                   </excludes>
                 </filter>
               </filters>
