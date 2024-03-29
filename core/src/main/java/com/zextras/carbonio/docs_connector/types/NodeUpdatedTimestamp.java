@@ -2,7 +2,7 @@ package com.zextras.carbonio.docs_connector.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class NodeUpdatedTimestamp   {
+public class NodeUpdatedTimestamp {
 
   private String lastModifiedTime;
 

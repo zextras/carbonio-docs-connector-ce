@@ -16,12 +16,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.stylesheets.MediaList;
 
 @RequestScoped
 public class WopiControllerImpl implements WopiController {
 
-  private final static Logger logger = LoggerFactory.getLogger(WopiController.class);
+  private static final Logger logger = LoggerFactory.getLogger(WopiController.class);
 
   private final WopiService wopiService;
 
@@ -31,26 +30,21 @@ public class WopiControllerImpl implements WopiController {
   }
 
   public Response docsEditorAttributes(
-    String accessToken,
-    UUID nodeId,
-    Integer version,
-    HttpServletRequest httpRequest
-  ) {
+      String accessToken, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
     logger.info("Get docs-editor attributes for: " + nodeId);
 
     OpenDocumentToken openDocumentToken =
-      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
+        (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
       return wopiService
-        .getDocsEditorAttributes(
-          openDocumentToken.getRequesterId(),
-          openDocumentToken.getRequesterCookie(),
-          nodeId,
-          Optional.ofNullable(version)
-        )
-        .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
-        .orElse(Response.serverError().build());
+          .getDocsEditorAttributes(
+              openDocumentToken.getRequesterId(),
+              openDocumentToken.getRequesterCookie(),
+              nodeId,
+              Optional.ofNullable(version))
+          .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
+          .orElse(Response.serverError().build());
     }
 
     logger.error("Invalid token: " + accessToken + ", nodeId: " + nodeId);
@@ -58,29 +52,24 @@ public class WopiControllerImpl implements WopiController {
   }
 
   public Response getBlob(
-    String accessToken,
-    UUID nodeId,
-    Integer version,
-    HttpServletRequest httpRequest
-  ) {
+      String accessToken, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
     logger.info("Get blob for: " + nodeId);
 
     OpenDocumentToken openDocumentToken =
-      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
+        (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
 
       return wopiService
-        .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
-        .map(filesBlob ->
-          Response
-            .ok()
-            .type(MediaType.APPLICATION_OCTET_STREAM)
-            .entity(filesBlob.getContent())
-            .header(HttpHeaders.CONTENT_LENGTH, filesBlob.getSize())
-            .build()
-        )
-        .orElse(Response.serverError().build());
+          .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
+          .map(
+              filesBlob ->
+                  Response.ok()
+                      .type(MediaType.APPLICATION_OCTET_STREAM)
+                      .entity(filesBlob.getContent())
+                      .header(HttpHeaders.CONTENT_LENGTH, filesBlob.getSize())
+                      .build())
+          .orElse(Response.serverError().build());
     }
 
     logger.error("Invalid token: " + accessToken + ", nodeId: " + nodeId);
@@ -88,26 +77,25 @@ public class WopiControllerImpl implements WopiController {
   }
 
   public Response saveBlob(
-    String accessToken,
-    UUID nodeId,
-    Boolean coolIsAutosave,
-    Boolean coolIsExitSave,
-    Long contentLength,
-    InputStream blob,
-    HttpServletRequest httpRequest
-  ) {
+      String accessToken,
+      UUID nodeId,
+      Boolean coolIsAutosave,
+      Boolean coolIsExitSave,
+      Long contentLength,
+      InputStream blob,
+      HttpServletRequest httpRequest) {
     logger.info("Save blob for: " + nodeId);
 
     OpenDocumentToken openDocumentToken =
-      (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
+        (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
 
       return wopiService
-        .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength,
-          coolIsAutosave)
-        .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
-        .orElse(Response.serverError().build());
+          .saveBlob(
+              openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
+          .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
+          .orElse(Response.serverError().build());
     }
 
     logger.error("Invalid token: " + accessToken + ", nodeId: " + nodeId);
