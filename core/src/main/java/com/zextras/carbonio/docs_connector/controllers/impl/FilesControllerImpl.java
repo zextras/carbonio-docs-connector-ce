@@ -9,9 +9,9 @@ import java.net.URI;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import javax.enterprise.context.RequestScoped;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.plugins.guice.RequestScoped;
 
 @RequestScoped
 public class FilesControllerImpl implements FilesController {

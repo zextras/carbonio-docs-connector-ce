@@ -8,12 +8,12 @@ import com.zextras.carbonio.docs_connector.services.WopiService;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
-import javax.enterprise.context.RequestScoped;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import org.jboss.resteasy.plugins.guice.RequestScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

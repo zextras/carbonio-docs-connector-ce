@@ -9,8 +9,8 @@ import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import java.net.InetSocketAddress;
 import java.util.Optional;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ public class Boot {
 
     try {
       server = new Server(InetSocketAddress.createUnresolved(Service.IP, Service.PORT));
-      ServletContextHandler servletHandler = new ServletContextHandler(server, "/");
+      ServletContextHandler servletHandler = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
       servletHandler.addEventListener(injector.getInstance(
         GuiceResteasyBootstrapServletContextListener.class)
       );

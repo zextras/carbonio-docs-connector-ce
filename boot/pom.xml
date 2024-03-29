@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
     <!-- RestEasy dependencies -->
     <dependency>
-      <groupId>org.jboss.resteasy</groupId>
+      <groupId>com.federicorispo</groupId>
       <artifactId>resteasy-guice</artifactId>
     </dependency>
 

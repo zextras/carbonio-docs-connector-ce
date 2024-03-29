@@ -46,7 +46,8 @@ SPDX-License-Identifier: AGPL-3.0-only
     <logback-classic.version>1.5.3</logback-classic.version>
     <mock-server.version>5.15.0</mock-server.version>
     <mockito.version>5.11.0</mockito.version>
-    <resteasy.version>4.7.9.Final</resteasy.version>
+    <resteasy.version>6.2.7.Final</resteasy.version>
+    <resteasy-guice.version>6.2.7-alpha</resteasy-guice.version>
     <swagger-core-version>2.2.21</swagger-core-version>
 
     <!-- Plugins -->
@@ -87,9 +88,9 @@ SPDX-License-Identifier: AGPL-3.0-only
       </dependency>
 
       <dependency>
-        <groupId>org.jboss.resteasy</groupId>
+        <groupId>com.federicorispo</groupId>
         <artifactId>resteasy-guice</artifactId>
-        <version>${resteasy.version}</version>
+        <version>${resteasy-guice.version}</version>
       </dependency>
 
       <!-- Logging -->
