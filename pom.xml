@@ -30,7 +30,6 @@ SPDX-License-Identifier: AGPL-3.0-only
   <modules>
     <module>boot</module>
     <module>core</module>
-    <module>generated</module>
   </modules>
 
   <properties>
@@ -59,7 +58,6 @@ SPDX-License-Identifier: AGPL-3.0-only
     <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
     <maven-surfire.version>3.1.2</maven-surfire.version>
-    <openapi-generator-maven.version>6.6.0</openapi-generator-maven.version>
 
     <!-- Other properties -->
     <maven.compiler.source>17</maven.compiler.source>
@@ -262,41 +260,6 @@ SPDX-License-Identifier: AGPL-3.0-only
     <pluginManagement>
       <plugins>
         <plugin>
-          <artifactId>openapi-generator-maven-plugin</artifactId>
-          <groupId>org.openapitools</groupId>
-          <version>${openapi-generator-maven.version}</version>
-          <executions>
-            <execution>
-              <configuration>
-                <generatorName>jaxrs-resteasy</generatorName>
-                <groupId>com.zextras.carbonio.docs_connector</groupId>
-                <artifactId>carbonio-docs-connector-ce-generated</artifactId>
-                <packageName>com.zextras.carbonio.docs_connector</packageName>
-                <apiPackage>com.zextras.carbonio.docs_connector.generated</apiPackage>
-                <modelPackage>com.zextras.carbonio.docs_connector.generated.model</modelPackage>
-                <configOptions>
-                  <artifactDescription>Carbonio Docs Connector generated</artifactDescription>
-                  <libart>resteasy</libart>
-                  <serializationLibrary>jackson</serializationLibrary>
-                  <dateLibrary>java8</dateLibrary>
-                </configOptions>
-                <generateApiTests>false</generateApiTests>
-                <inputSpec>
-                  core/src/main/resources/api/rest.yaml
-                </inputSpec>
-                <output>./</output>
-              </configuration>
-              <goals>
-                <goal>generate</goal>
-              </goals>
-              <phase>
-                generate-sources
-              </phase>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${maven-jar-plugin.version}</version>
@@ -306,28 +269,6 @@ SPDX-License-Identifier: AGPL-3.0-only
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${maven-resources-plugin.version}</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>build-helper-maven-plugin</artifactId>
-          <version>${build-helper-maven.version}</version>
-          <executions>
-            <execution>
-              <configuration>
-                <sources>
-                  <source>
-                    src/gen/java
-                  </source>
-                </sources>
-              </configuration>
-              <goals>
-                <goal>add-source</goal>
-              </goals>
-              <id>add-source</id>
-              <phase>generate-sources</phase>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
