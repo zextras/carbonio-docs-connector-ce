@@ -50,11 +50,9 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>logback-classic</artifactId>
     </dependency>
 
-    <!-- JavaEE API -->
     <dependency>
-      <groupId>javax</groupId>
-      <artifactId>javaee-api</artifactId>
-      <scope>provided</scope>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
     <!-- RestEasy dependencies -->
@@ -146,8 +144,8 @@ SPDX-License-Identifier: AGPL-3.0-only
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
