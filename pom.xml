@@ -120,12 +120,6 @@ SPDX-License-Identifier: AGPL-3.0-only
         <version>${jakarta-servlet-api.version}</version>
       </dependency>
 
-      <dependency>
-        <groupId>jakarta.enterprise</groupId>
-        <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>${jakarta-enterprise.version}</version>
-      </dependency>
-
       <!-- RestEasy dependencies -->
       <dependency>
         <groupId>org.jboss.resteasy</groupId>
@@ -136,12 +130,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       <dependency>
         <groupId>org.jboss.resteasy</groupId>
         <artifactId>resteasy-servlet-initializer</artifactId>
-        <version>${resteasy.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-multipart-provider</artifactId>
         <version>${resteasy.version}</version>
       </dependency>
 

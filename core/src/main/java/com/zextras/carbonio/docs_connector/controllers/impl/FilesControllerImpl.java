@@ -12,9 +12,7 @@ import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Response;
-import jakarta.enterprise.context.RequestScoped;
 
-@RequestScoped
 public class FilesControllerImpl implements FilesController {
 
   private final FilesService filesService;

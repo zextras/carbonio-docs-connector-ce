@@ -55,20 +55,10 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.cdi-api</artifactId>
-    </dependency>
-
     <!-- RestEasy dependencies -->
     <dependency>
       <groupId>org.jboss.resteasy</groupId>
       <artifactId>resteasy-jackson2-provider</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.resteasy</groupId>
-      <artifactId>resteasy-multipart-provider</artifactId>
     </dependency>
 
     <!-- Jackson dependencies -->
