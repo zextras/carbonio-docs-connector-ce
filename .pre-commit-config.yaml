@@ -37,15 +37,15 @@ repos:
         stages: [commit-msg]
         args: []
 
-  #- repo: https://github.com/fsfe/reuse-tool
-  #  rev: v3.0.1
-  #  hooks:
-  #    - id: reuse
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v3.0.1
+    hooks:
+      - id: reuse
 
-  #- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  #  rev: v2.12.0
-  #  hooks:
-  #    - id: pretty-format-java
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.12.0
+    hooks:
+      - id: pretty-format-java
 
   - repo: https://github.com/ejba/pre-commit-maven
     rev: v0.3.4
