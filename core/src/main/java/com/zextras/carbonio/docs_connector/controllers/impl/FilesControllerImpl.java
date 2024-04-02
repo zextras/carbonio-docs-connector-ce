@@ -1,6 +1,5 @@
 package com.zextras.carbonio.docs_connector.controllers.impl;
 
-import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
 import com.zextras.carbonio.docs_connector.services.FilesService;
@@ -9,11 +8,11 @@ import java.net.URI;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import javax.enterprise.context.RequestScoped;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Response;
 
-@RequestScoped
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Response;
+
 public class FilesControllerImpl implements FilesController {
 
   private final FilesService filesService;

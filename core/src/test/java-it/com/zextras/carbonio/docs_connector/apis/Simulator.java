@@ -8,8 +8,8 @@ import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.mockserver.client.MockServerClient;
@@ -71,7 +71,7 @@ public class Simulator implements AutoCloseable {
       httpLocalConnector = new LocalConnector(jettyServer);
       jettyServer.addConnector(httpLocalConnector);
 
-      ServletContextHandler servletContextHandler = new ServletContextHandler(jettyServer, "/");
+      ServletContextHandler servletContextHandler = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
       ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
 
       servletContextHandler.addEventListener(injector.getInstance(

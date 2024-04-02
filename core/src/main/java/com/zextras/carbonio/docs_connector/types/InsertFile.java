@@ -1,6 +1,6 @@
 package com.zextras.carbonio.docs_connector.types;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 public class InsertFile {
 

@@ -54,13 +54,13 @@ SPDX-License-Identifier: AGPL-3.0-only
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
 
     <!-- RestEasy dependencies -->
     <dependency>
-      <groupId>org.jboss.resteasy</groupId>
+      <groupId>com.federicorispo</groupId>
       <artifactId>resteasy-guice</artifactId>
     </dependency>
 
@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only
                 </transformer>
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                  <resource>META-INF/services/javax.ws.rs.ext.Providers</resource>
+                  <resource>META-INF/services/jakarta.ws.rs.ext.Providers</resource>
                 </transformer>
               </transformers>
             </configuration>

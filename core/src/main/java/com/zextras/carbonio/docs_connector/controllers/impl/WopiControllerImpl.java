@@ -1,6 +1,5 @@
 package com.zextras.carbonio.docs_connector.controllers.impl;
 
-import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.controllers.WopiController;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
@@ -8,16 +7,16 @@ import com.zextras.carbonio.docs_connector.services.WopiService;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
-import javax.enterprise.context.RequestScoped;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RequestScoped
 public class WopiControllerImpl implements WopiController {
 
   private static final Logger logger = LoggerFactory.getLogger(WopiController.class);
