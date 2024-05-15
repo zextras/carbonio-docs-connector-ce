@@ -7,8 +7,10 @@ import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
 import com.zextras.carbonio.docs_connector.auth.AccessTokenValidationFilter;
 import com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
+import com.zextras.carbonio.docs_connector.controllers.HealthController;
 import com.zextras.carbonio.docs_connector.controllers.WopiController;
 import com.zextras.carbonio.docs_connector.controllers.impl.FilesControllerImpl;
+import com.zextras.carbonio.docs_connector.controllers.impl.HealthControllerImpl;
 import com.zextras.carbonio.docs_connector.controllers.impl.WopiControllerImpl;
 import com.zextras.carbonio.docs_connector.dal.repositories.impl.OpenDocumentTokenRepositoryInMemory;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
@@ -21,6 +23,7 @@ public class DocsConnectorModule extends RequestScopeModule {
 
   @Override
   public void configure() {
+    bind(HealthController.class).to(HealthControllerImpl.class);
     bind(FilesController.class).to(FilesControllerImpl.class);
     bind(WopiController.class).to(WopiControllerImpl.class);
 

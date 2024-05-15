@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import com.zextras.carbonio.docs_connector.Constants.Config.FilesService;
 import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
-import org.eclipse.jetty.http.HttpMethod;
+import jakarta.ws.rs.HttpMethod;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -121,7 +121,7 @@ public class Simulator implements AutoCloseable {
     userManagementServiceMock
       .when(
         HttpRequest.request()
-          .withMethod(HttpMethod.GET.toString())
+          .withMethod(HttpMethod.GET)
           .withPath("/auth/token/" + cookie))
       .respond(
         HttpResponse.response()
