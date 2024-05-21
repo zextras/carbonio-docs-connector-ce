@@ -10,6 +10,16 @@
     {
       "Name": "carbonio-docs-editor",
       "Action": "allow"
+    },
+    {
+      "Name": "carbonio-files",
+      "Action": "allow",
+      "HTTP": {
+        "PathPrefix": "/health/live",
+        "Methods": [
+          "GET"
+        ]
+      }
     }
   ]
 }
