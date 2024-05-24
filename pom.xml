@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
   <properties>
     <assertj.version>3.25.3</assertj.version>
     <caffeine.version>3.1.8</caffeine.version>
-    <carbonio-user-management-sdk.version>0.5.0-SNAPSHOT</carbonio-user-management-sdk.version>
+    <carbonio-user-management-sdk.version>0.5.1-SNAPSHOT</carbonio-user-management-sdk.version>
     <carbonio-files-sdk.version>0.0.3</carbonio-files-sdk.version>
     <guice.version>7.0.0</guice.version>
     <jackson.version>2.17.0</jackson.version>
