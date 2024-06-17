@@ -8,6 +8,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.3...v0.4.0) (2024-06-17)
+
+
+### Features
+
+* add health check API ([#32](https://github.com/Zextras/carbonio-docs-connector-ce/issues/32)) ([fba70a2](https://github.com/Zextras/carbonio-docs-connector-ce/commit/fba70a2abb5bbe0a0c64cdcfa507ef0f4a8a3526))
+* update docs connector to use new user management sdk with returned user type ([#34](https://github.com/Zextras/carbonio-docs-connector-ce/issues/34)) ([cb1e015](https://github.com/Zextras/carbonio-docs-connector-ce/commit/cb1e0150025cef25230cdb58cdbaa22bc17e1ca1))
+* use new user management sdk with returned user status ([#33](https://github.com/Zextras/carbonio-docs-connector-ce/issues/33)) ([e2e8086](https://github.com/Zextras/carbonio-docs-connector-ce/commit/e2e8086c321b13ed4412265ffa229a3300a7d31f))
+
 ### [0.3.3](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.2...v0.3.3) (2024-04-12)
 
 ### [0.3.2](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.3.1...v0.3.2) (2024-01-16)

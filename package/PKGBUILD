@@ -1,6 +1,6 @@
 pkgname="carbonio-docs-connector-ce"
 pkgver="0.4.0"
-pkgrel="SNAPSHOT"
+pkgrel="1"
 pkgdesc="Carbonio docs connector"
 maintainer="Zextras <packages@zextras.com>"
 arch=('x86_64')
