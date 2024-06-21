@@ -13,13 +13,17 @@
     },
     {
       "Name": "carbonio-files",
-      "Action": "allow",
-      "HTTP": {
-        "PathPrefix": "/health/live",
-        "Methods": [
-          "GET"
-        ]
-      }
+      "Permissions": [
+        {
+          "Action": "allow",
+          "HTTP": {
+            "PathPrefix": "/health/live",
+            "Methods": [
+              "GET"
+            ]
+          }
+        }
+      ]
     }
   ]
 }
