@@ -18,6 +18,7 @@ depends=(
 )
 source=(
   "carbonio-docs-connector"
+  "carbonio-docs-connector-setup"
   "carbonio-docs-connector.hcl"
   "carbonio-docs-connector.service"
   "carbonio-docs-connector-sidecar.service"
@@ -37,6 +38,7 @@ sha256sums=(
   "SKIP"
   "SKIP"
   "SKIP"
+  "SKIP"
 )
 backup=(
   "etc/zextras/service-discover/carbonio-docs-connector.hcl"
@@ -45,7 +47,8 @@ backup=(
 package() {
   cd "${srcdir}"
   install -Dm 755 carbonio-docs-connector "${pkgdir}/usr/bin/carbonio-docs-connector"
-  install -Dm 755 carbonio-docs-connector.jar "${pkgdir}/usr/bin/carbonio/docs-connector/carbonio-docs-connector.jar"
+  install -Dm 755 carbonio-docs-connector-setup "${pkgdir}/usr/bin/carbonio-docs-connector-setup"
+  install -Dm 755 carbonio-docs-connector.jar "${pkgdir}/usr/share/carbonio/carbonio-docs-connector.jar"
   install -Dm 644 carbonio-docs-connector.service "${pkgdir}/lib/systemd/system/carbonio-docs-connector.service"
   install -Dm 644 carbonio-docs-connector-sidecar.service "${pkgdir}/lib/systemd/system/carbonio-docs-connector-sidecar.service"
   install -Dm 644 carbonio-docs-connector.hcl "${pkgdir}/etc/zextras/service-discover/carbonio-docs-connector.hcl"
