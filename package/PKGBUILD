@@ -12,9 +12,9 @@ copyright=(
 license=("AGPL-3.0-only")
 url="https://www.zextras.com/"
 depends=(
-  "service-discover"
-  "pending-setups"
   "carbonio-openjdk"
+  "pending-setups"
+  "service-discover"
 )
 source=(
   "carbonio-docs-connector"
