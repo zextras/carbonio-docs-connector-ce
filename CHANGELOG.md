@@ -8,6 +8,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.2](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.4.1...v0.4.2) (2024-08-27)
+
+
+### Features
+
+* add ubuntu 24.04 (ubuntu-noble) support ([74b8a11](https://github.com/Zextras/carbonio-docs-connector-ce/commit/74b8a11bc4b16a388975156cef32068a08cfd3b1))
+
+
+### Bug Fixes
+
+* move jar from /usr/bin to usr/share to follow the FHS standard ([#39](https://github.com/Zextras/carbonio-docs-connector-ce/issues/39)) ([c2ee668](https://github.com/Zextras/carbonio-docs-connector-ce/commit/c2ee668c455abb7aa5afe01298625e913d100665))
+
 ### [0.4.1](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.4.0...v0.4.1) (2024-06-21)
 
 
