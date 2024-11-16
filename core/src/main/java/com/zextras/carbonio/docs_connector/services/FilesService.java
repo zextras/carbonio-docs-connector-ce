@@ -58,13 +58,14 @@ public class FilesService {
     GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
     long maxFileSizeInMb = config.getMaxSizeLimitForFileType(fileType);
     if (nodeAttributes.getSize()  >  maxFileSizeInMb * megaByte) {
-      throw new FileSizeTooLargeException(
-        "File %s with mime type %s and size %d is too large to open".formatted(
-            nodeId,
-            nodeAttributes.getMime_type(),
-            nodeAttributes.getSize()),
-        maxFileSizeInMb
+      String message = "File %s with mime type %s and size %d is too large to open".formatted(
+        nodeId,
+        nodeAttributes.getMime_type(),
+        nodeAttributes.getSize()
       );
+
+      logger.info(message);
+      throw new FileSizeTooLargeException(message, maxFileSizeInMb);
     }
 
     OpenDocumentToken openDocumentToken = openDocumentTokenRepository
