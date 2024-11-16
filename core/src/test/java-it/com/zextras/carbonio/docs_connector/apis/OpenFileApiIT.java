@@ -55,10 +55,32 @@ public class OpenFileApiIT {
   }
 
   static Stream<Arguments> maxFileSizeProvider() {
+    long megaBytes = 1024 * 1024;
+    long elevenMbInBytes = 11L * megaBytes;
+    long ninetyOneMbInBytes = 91L * megaBytes;
+    long threeMbInBytes = 3L * megaBytes;
+
     return Stream.of(
-      Arguments.of("document", 10L, "application/vnd.oasis.opendocument.text", "odt", 11L),
-      Arguments.of("presentation", 90L, "application/vnd.ms-powerpoint", "ppt", 91L),
-      Arguments.of("spreadsheet", 2L, "application/vnd.oasis.opendocument.spreadsheet", "ods", 3L)
+      Arguments.of(
+         "document",
+        10L,
+        "application/vnd.oasis.opendocument.text", "odt",
+        elevenMbInBytes
+      ),
+      Arguments.of(
+        "presentation",
+        90L,
+        "application/vnd.ms-powerpoint",
+        "ppt",
+        ninetyOneMbInBytes
+      ),
+      Arguments.of(
+        "spreadsheet",
+        2L,
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "ods",
+        threeMbInBytes
+      )
     );
   }
 
@@ -103,7 +125,7 @@ public class OpenFileApiIT {
                       "updated_at": 100,
                       "extension": "odt",
                       "mime_type": "application/vnd.oasis.opendocument.text",
-                      "size": 50.0,
+                      "size": 52428800,
                       "version": 1
                   }
               }
@@ -125,10 +147,10 @@ public class OpenFileApiIT {
     );
 
     // Then
-    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.TEMPORARY_REDIRECT_307);
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     Assertions
-      .assertThat(response.get(HttpHeaders.LOCATION))
-      .contains("/editor/browser/dist/cool.html")
+      .assertThat(response.getContent())
+      .contains("/services/docs/editor/browser/dist/cool.html")
       .contains("?access_token=")
       .contains("&access_token_ttl=")
       .contains("&title=test-file")
@@ -296,6 +318,6 @@ public class OpenFileApiIT {
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN_403);
-    //Assertions.assertThat(response.getContent()).contains(String.valueOf(maxFileTypeLimit));
+    Assertions.assertThat(response.getContent()).contains(String.valueOf(maxFileTypeLimit));
   }
 }

@@ -45,6 +45,7 @@ public final class Constants {
     public static final String OPEN_DOCUMENT_TOKEN = "open-document-token";
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
+    public static final String REQUESTER_DOMAIN = "requester-domain";
     public static final String REQUESTER_LOCALE = "requester-locale";
   }
 

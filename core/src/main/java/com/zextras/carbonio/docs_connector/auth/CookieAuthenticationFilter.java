@@ -60,6 +60,7 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
               myself -> {
                 requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
                 requestContext.setProperty(Context.REQUESTER_ID, userId.getUserId());
+                requestContext.setProperty(Context.REQUESTER_DOMAIN, myself.getDomain());
                 requestContext.setProperty(Context.REQUESTER_LOCALE, myself.getLocale()
                 );
               })

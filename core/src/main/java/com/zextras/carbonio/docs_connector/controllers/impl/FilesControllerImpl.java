@@ -5,6 +5,7 @@ import com.zextras.carbonio.docs_connector.controllers.FilesController;
 import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.FilesService;
+import com.zextras.carbonio.docs_connector.types.DocsEditorRedirect;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,16 +35,25 @@ public class FilesControllerImpl implements FilesController {
   public Response openFile(
     String cookie, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
+    String requesterDomain = (String) httpRequest.getAttribute(Context.REQUESTER_DOMAIN);
     Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
 
     try {
-      String docsEditorRedirect = filesService.openFile(
-        requesterId, requesterLocale, cookie, nodeId.toString(), Optional.ofNullable(version));
+      String docsEditorURL = filesService.openFile(
+        requesterId,
+        requesterLocale,
+        cookie,
+        nodeId.toString(),
+        Optional.ofNullable(version)
+      );
 
-      return Response.temporaryRedirect(URI.create(docsEditorRedirect)).build();
+      return Response
+        .ok()
+        .entity(new DocsEditorRedirect("%s/%s".formatted(requesterDomain, docsEditorURL)))
+        .build();
 
     } catch (FileSizeTooLargeException exception) {
-      return Response.status(Status.FORBIDDEN).build();
+      return Response.status(Status.FORBIDDEN).entity(exception).build();
     } catch (ServiceDependencyException exception) {
       return Response.status(Status.NOT_FOUND).build();
     }

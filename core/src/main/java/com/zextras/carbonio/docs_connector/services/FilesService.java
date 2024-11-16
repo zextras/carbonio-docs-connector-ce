@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 public class FilesService {
 
   private static final Logger logger = LoggerFactory.getLogger(FilesService.class);
+  private static final long megaByte = 1024*1024;
 
   private final OpenDocumentTokenRepository openDocumentTokenRepository;
   private final DocsConnectorConfig config;
@@ -55,8 +56,8 @@ public class FilesService {
       .getOrElseThrow(ServiceDependencyException::new);
 
     GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
-    long maxFileSizeInMb = config.getMaxSizeLimitForDocumentType(fileType);
-    if (nodeAttributes.getSize() >  maxFileSizeInMb) {
+    long maxFileSizeInMb = config.getMaxSizeLimitForFileType(fileType);
+    if (nodeAttributes.getSize()  >  maxFileSizeInMb * megaByte) {
       throw new FileSizeTooLargeException(
         "File %s with mime type %s and size %d is too large to open".formatted(
             nodeId,
@@ -84,7 +85,7 @@ public class FilesService {
 
     // Cool html resource + token parameter
     StringBuilder docsPathAndParametersBuilder = new StringBuilder()
-      .append("editor/browser/dist/cool.html")
+      .append("services/docs/editor/browser/dist/cool.html")
       .append("?access_token=")
       .append(openDocumentToken.getTokenId())
       .append("&access_token_ttl=")

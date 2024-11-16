@@ -10,7 +10,14 @@ public class DocsConnectorConfig {
 
   private final String consulHttpTokenEnvironmentKey = "CONSUL_HTTP_TOKEN";
 
-  public long getMaxSizeLimitForDocumentType(GenericFileType fileType) {
+  /**
+   * Fetches the maximum file size values from the service-discover key/value if it is set,
+   * otherwise it returns the default size
+   *
+   * @param fileType is a {@link GenericFileType} to fetch the maximum file size for.
+   * @return a {@code long} representing the maximum file size of the passed file type.
+   */
+  public long getMaxSizeLimitForFileType(GenericFileType fileType) {
     return Consul
       .builder()
       .withTokenAuth(consulHttpTokenEnvironmentKey)
