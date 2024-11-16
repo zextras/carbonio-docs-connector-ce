@@ -4,6 +4,11 @@
       "carbonio-docs-connector/": {
         "policy": "read"
       }
+    },
+    {
+      "carbonio-docs-connector/max-file-size-in-mb": {
+        "policy": "write"
+      }
     }
   ],
   "node_prefix": [
