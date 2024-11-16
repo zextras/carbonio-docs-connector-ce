@@ -1,7 +1,7 @@
 package com.zextras.carbonio.docs_connector.services.utilities;
 
 import com.zextras.carbonio.docs_connector.services.FilesService;
-import com.zextras.carbonio.docs_connector.types.InsertFile.TypeEnum;
+import com.zextras.carbonio.docs_connector.types.FileType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
@@ -14,13 +14,13 @@ public class TemplateUtils {
   private static Logger logger = LoggerFactory.getLogger(TemplateUtils.class);
 
   /**
-   * @param docsFileType is a {@link TypeEnum} representing the file type whose template is to be
+   * @param docsFileType is a {@link FileType} representing the file type whose template is to be
    *     loaded.
    * @return an {@link Optional} of <code>byte[]</code> containing the template according to the
-   *     {@link TypeEnum} type. If the template does not exist or the {@link TypeEnum} does not
+   *     {@link FileType} type. If the template does not exist or the {@link FileType} does not
    *     match those specified, then it returns an {@link Optional#empty}.
    */
-  public static Optional<byte[]> getTemplateRaw(TypeEnum docsFileType) {
+  public static Optional<byte[]> getTemplateRaw(FileType docsFileType) {
     Optional<InputStream> optTemplate;
     switch (docsFileType) {
       case LIBRE_DOCUMENT:
@@ -71,12 +71,12 @@ public class TemplateUtils {
   }
 
   /**
-   * @param docsFileType is a {@link TypeEnum} representing the file type to find the mime-type for
-   * @return a {@link String} representing the related mime-type of the {@link TypeEnum} type. If
-   *     the {@link TypeEnum} does not match those specified, then it returns an empty {@link
+   * @param docsFileType is a {@link FileType} representing the file type to find the mime-type for
+   * @return a {@link String} representing the related mime-type of the {@link FileType} type. If
+   *     the {@link FileType} does not match those specified, then it returns an empty {@link
    *     String}.
    */
-  public static String detectMimeTypeFrom(TypeEnum docsFileType) {
+  public static String detectMimeTypeFrom(FileType docsFileType) {
     String mimeType = "";
 
     switch (docsFileType) {
@@ -104,14 +104,14 @@ public class TemplateUtils {
   }
 
   /**
-   * @param docsFileType is a {@link TypeEnum} representing the file type necessary to choose the
+   * @param docsFileType is a {@link FileType} representing the file type necessary to choose the
    *     right extension to append.
    * @param filename is a {@link String} representing the filename to modify.
    * @return a {@link String} representing the filename with the extension according to the {@link
-   *     TypeEnum} type passed. If the {@link TypeEnum} does not match those specified, then it
+   *     FileType} type passed. If the {@link FileType} does not match those specified, then it
    *     returns only the filename unchanged.
    */
-  public static String appendExtensionByType(TypeEnum docsFileType, String filename) {
+  public static String appendExtensionByType(FileType docsFileType, String filename) {
     switch (docsFileType) {
       case LIBRE_DOCUMENT:
         return filename + ".odt";

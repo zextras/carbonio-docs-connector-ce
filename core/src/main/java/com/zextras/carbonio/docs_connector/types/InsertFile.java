@@ -6,49 +6,7 @@ public class InsertFile {
 
   private String filename;
   private String destinationFolderId;
-
-  /**
-   * Represents a document file type. It can be an open document format:
-   *
-   * <ul>
-   *   <li>LIBRE_DOCUMENT
-   *   <li>LIBRE_SPREADSHEET
-   *   <li>LIBRE_PRESENTATION
-   * </ul>
-   *
-   * Otherwise, it can be a Microsoft Office document format:
-   *
-   * <ul>
-   *   <li>MS_DOCUMENT
-   *   <li>MS_SPREADSHEET
-   *   <li>MS_PRESENTATION
-   * </ul>
-   */
-  public enum TypeEnum {
-    LIBRE_DOCUMENT("LIBRE_DOCUMENT"),
-
-    LIBRE_SPREADSHEET("LIBRE_SPREADSHEET"),
-
-    LIBRE_PRESENTATION("LIBRE_PRESENTATION"),
-
-    MS_DOCUMENT("MS_DOCUMENT"),
-
-    MS_SPREADSHEET("MS_SPREADSHEET"),
-
-    MS_PRESENTATION("MS_PRESENTATION");
-    private String value;
-
-    TypeEnum(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-  }
-
-  private TypeEnum type;
+  private FileType type;
 
   /** Filename of the file to be created (without the extension) */
   public String getFilename() {
@@ -71,11 +29,11 @@ public class InsertFile {
   }
 
   @NotNull
-  public TypeEnum getType() {
+  public FileType getType() {
     return type;
   }
 
-  public void setType(TypeEnum type) {
+  public void setType(FileType type) {
     this.type = type;
   }
 }
