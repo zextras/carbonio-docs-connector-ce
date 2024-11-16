@@ -2,8 +2,10 @@ package com.zextras.carbonio.docs_connector.controllers.impl;
 
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
+import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.FilesService;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
+import jakarta.ws.rs.core.Response.Status;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Optional;
@@ -34,12 +36,14 @@ public class FilesControllerImpl implements FilesController {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
     Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
 
-    Optional<String> optDocsEditorRedirect =
-        filesService.openFile(
-            requesterId, requesterLocale, cookie, nodeId.toString(), Optional.ofNullable(version));
+    try {
+      String docsEditorRedirect = filesService.openFile(
+          requesterId, requesterLocale, cookie, nodeId.toString(), Optional.ofNullable(version));
 
-    return optDocsEditorRedirect.isPresent()
-        ? Response.temporaryRedirect(URI.create(optDocsEditorRedirect.get())).build()
-        : Response.serverError().build();
+      return Response.temporaryRedirect(URI.create(docsEditorRedirect)).build();
+
+    } catch (ServiceDependencyException exception) {
+      return Response.status(Status.NOT_FOUND).build();
+    }
   }
 }

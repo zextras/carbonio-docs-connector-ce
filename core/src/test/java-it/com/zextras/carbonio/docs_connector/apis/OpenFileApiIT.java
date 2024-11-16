@@ -119,4 +119,79 @@ public class OpenFileApiIT {
       .contains("&public_url=docs%2Feditor%2F58032253-ed56-4eca-9017-3ae26cc2d9f1")
       .contains("&lang=pt-BR");
   }
+
+  @Test
+  void givenAValidUserCookieAndAnInvalidNodeIdTheOpenFileApiShouldReturnANotFoundStatusCode()
+    throws Exception {
+    // Given
+    String userCookie = "ZM_AUTH_TOKEN=9e2cffc4";
+    String nodeId = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
+
+    simulator.mockValidateUser("9e2cffc4", "9e2cffc4-5860-4095-aedb-7b48d6ff889a");
+    simulator.mockGetMyself(userCookie, "9e2cffc4-5860-4095-aedb-7b48d6ff889a", "pt_BR");
+
+    filesServiceMock
+      .when(HttpRequest
+        .request("/graphql/")
+        .withCookie(Cookie.cookie("ZM_AUTH_TOKEN", "9e2cffc4"))
+        .withBody(NodeAttributes.getNodeGraphQLRequest(nodeId, Optional.empty()))
+      )
+      .respond(HttpResponse
+        .response()
+        .withStatusCode(HttpStatus.NOT_FOUND_404)
+      );
+
+    LocalConnector httpLocalConnector = simulator.getHttpLocalConnector();
+    HttpTester.Request request = HttpTester.newRequest();
+    request.setMethod(HttpMethod.GET.toString());
+    request.setHeader(HttpHeader.HOST.toString(), "test");
+    request.setHeader(HttpHeader.COOKIE.toString(), userCookie);
+    request.setURI("/files/open/%s".formatted(nodeId));
+
+    // When
+    Response response = HttpTester.parseResponse(
+      httpLocalConnector.getResponse(request.generate())
+    );
+
+    // Then
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
+  }
+
+  @Test
+  void givenAValidUserCookieAndAMalformedFilesServiceResponseTheOpenFileApiShouldReturnANotFoundStatusCode()
+    throws Exception {
+    // Given
+    String userCookie = "ZM_AUTH_TOKEN=9e2cffc4";
+    String nodeId = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
+
+    simulator.mockValidateUser("9e2cffc4", "9e2cffc4-5860-4095-aedb-7b48d6ff889a");
+    simulator.mockGetMyself(userCookie, "9e2cffc4-5860-4095-aedb-7b48d6ff889a", "pt_BR");
+
+    filesServiceMock
+      .when(HttpRequest
+        .request("/graphql/")
+        .withCookie(Cookie.cookie("ZM_AUTH_TOKEN", "9e2cffc4"))
+        .withBody(NodeAttributes.getNodeGraphQLRequest(nodeId, Optional.empty()))
+      )
+      .respond(HttpResponse
+        .response()
+          .withStatusCode(HttpStatus.OK_200)
+          .withBody("{ \"data\":  \"malformed-payload-response\" }")
+      );
+
+    LocalConnector httpLocalConnector = simulator.getHttpLocalConnector();
+    HttpTester.Request request = HttpTester.newRequest();
+    request.setMethod(HttpMethod.GET.toString());
+    request.setHeader(HttpHeader.HOST.toString(), "test");
+    request.setHeader(HttpHeader.COOKIE.toString(), userCookie);
+    request.setURI("/files/open/%s".formatted(nodeId));
+
+    // When
+    Response response = HttpTester.parseResponse(
+      httpLocalConnector.getResponse(request.generate())
+    );
+
+    // Then
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
+  }
 }
