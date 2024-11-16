@@ -94,6 +94,11 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>carbonio-files-sdk</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.orbitz.consul</groupId>
+      <artifactId>consul-client</artifactId>
+    </dependency>
+
     <!-- Testing -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -182,6 +187,11 @@ SPDX-License-Identifier: AGPL-3.0-only
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven-failsafe.version}</version>
+        <configuration>
+          <environmentVariables>
+            <CONSUL_HTTP_TOKEN></CONSUL_HTTP_TOKEN>
+          </environmentVariables>
+        </configuration>
         <executions>
           <execution>
             <id>integration-test</id>

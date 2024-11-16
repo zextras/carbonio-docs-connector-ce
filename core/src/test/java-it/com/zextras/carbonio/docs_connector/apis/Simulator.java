@@ -6,14 +6,17 @@ import com.zextras.carbonio.docs_connector.Constants.Config.FilesService;
 import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import jakarta.ws.rs.HttpMethod;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Server;
+import java.util.Base64;
+import java.util.List;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.ExpectationId;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 
@@ -22,6 +25,7 @@ public class Simulator implements AutoCloseable {
   private final Injector injector;
 
   private ClientAndServer clientAndServer;
+  private MockServerClient serviceDiscoverMock;
   private MockServerClient userManagementServiceMock;
   private MockServerClient filesServiceMock;
   private Server jettyServer;
@@ -31,9 +35,40 @@ public class Simulator implements AutoCloseable {
     this.injector = Guice.createInjector(new DocsConnectorModule());
   }
 
+  private Simulator startServiceDiscover() {
+
+    if (serviceDiscoverMock != null && serviceDiscoverMock.hasStarted()) {
+      return this;
+    }
+
+    startMockServer();
+    serviceDiscoverMock = new MockServerClient("localhost", 8500);
+
+    serviceDiscoverMock
+      .when(
+        HttpRequest.request()
+          .withMethod(HttpMethod.GET)
+          .withPath("/v1/status/leader"))
+      .respond(
+        HttpResponse.response()
+          .withStatusCode(200));
+
+    return this;
+  }
+
+  private void stopServiceDiscover() {
+    if (serviceDiscoverMock != null && serviceDiscoverMock.hasStarted()) {
+      serviceDiscoverMock.stop();
+    }
+  }
+
   private void startMockServer() {
     if (clientAndServer == null) {
-      clientAndServer = ClientAndServer.startClientAndServer(UserService.PORT, FilesService.PORT);
+      clientAndServer = ClientAndServer.startClientAndServer(
+        8500,
+        UserService.PORT,
+        FilesService.PORT
+      );
     }
   }
 
@@ -71,7 +106,8 @@ public class Simulator implements AutoCloseable {
       httpLocalConnector = new LocalConnector(jettyServer);
       jettyServer.addConnector(httpLocalConnector);
 
-      ServletContextHandler servletContextHandler = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+      ServletContextHandler servletContextHandler = new ServletContextHandler("/",
+        ServletContextHandler.SESSIONS);
       ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
 
       servletContextHandler.addEventListener(injector.getInstance(
@@ -117,8 +153,8 @@ public class Simulator implements AutoCloseable {
     return httpLocalConnector;
   }
 
-  public void mockValidateUser(String cookie, String userId) {
-    userManagementServiceMock
+  public String mockValidateUser(String cookie, String userId) {
+    return userManagementServiceMock
       .when(
         HttpRequest.request()
           .withMethod(HttpMethod.GET)
@@ -129,11 +165,11 @@ public class Simulator implements AutoCloseable {
           .withBody("""
             {"userId": "%s"})
             """.formatted(userId))
-      );
+      )[0].getId();
   }
 
-  public void mockGetMyself(String cookie, String userId, String locale) {
-    userManagementServiceMock
+  public String mockGetMyself(String cookie, String userId, String locale) {
+    return userManagementServiceMock
       .when(
         HttpRequest.request()
           .withMethod(HttpMethod.GET.toString())
@@ -153,16 +189,46 @@ public class Simulator implements AutoCloseable {
                 "locale": "%s"
             }
             """.formatted(userId, locale))
-      );
-
+      )[0].getId();
   }
 
-  public void resetAll() {
-    userManagementServiceMock.reset();
+  public String mockServiceDiscoverConfig(String key, String value) {
+    String encodedValue = new String(Base64.getEncoder().encode(value.getBytes()));
+    String bodyPayload = """
+        [
+          {
+            "Key":"carbonio-docs-connector/%s",
+            "Value":"%s",
+            "CreateIndex": 0,
+            "ModifyIndex": 0,
+            "LockIndex": 0,
+            "Flags": 0
+          }
+        ]
+      """.formatted(key, encodedValue);
+
+    return serviceDiscoverMock
+      .when(
+        HttpRequest.request()
+          .withMethod(HttpMethod.GET)
+          .withPath("/v1/kv/carbonio-docs-connector%2F" + key.replaceAll("/", "%2F"))
+          .withHeader("X-Consul-Token", ""))
+      .respond(
+        HttpResponse.response()
+          .withStatusCode(200)
+          .withBody(bodyPayload)
+      )[0].getId();
+  }
+
+  public void resetAllExpectations(List<String> expectationIds) {
+    if (clientAndServer != null && clientAndServer.hasStarted()) {
+      expectationIds.forEach(id -> clientAndServer.clear(ExpectationId.expectationId(id)));
+    }
   }
 
   public void stopAll() {
     stopJettyServer();
+    stopServiceDiscover();
     stopUserManagementService();
     stopFilesService();
     stopMockServer();
@@ -183,6 +249,11 @@ public class Simulator implements AutoCloseable {
 
     public SimulatorBuilder init() {
       simulator = new Simulator();
+      return this;
+    }
+
+    public SimulatorBuilder withServiceDiscover() {
+      simulator.startServiceDiscover();
       return this;
     }
 

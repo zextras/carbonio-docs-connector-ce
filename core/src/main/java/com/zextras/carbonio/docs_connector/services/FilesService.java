@@ -1,12 +1,15 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import com.google.inject.Inject;
+import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
+import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.docs_connector.types.CreatedFile;
+import com.zextras.carbonio.docs_connector.types.FileType.GenericFileType;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
 import com.zextras.carbonio.files.FilesClient;
 import io.vavr.control.Try;
@@ -24,12 +27,17 @@ public class FilesService {
   private static final Logger logger = LoggerFactory.getLogger(FilesService.class);
 
   private final OpenDocumentTokenRepository openDocumentTokenRepository;
+  private final DocsConnectorConfig config;
   private final FilesClient filesClient;
 
   @Inject
-  public FilesService(OpenDocumentTokenRepository openDocumentTokenRepository,
-    FilesClient filesClient) {
+  public FilesService(
+    OpenDocumentTokenRepository openDocumentTokenRepository,
+    DocsConnectorConfig config,
+    FilesClient filesClient
+  ) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
+    this.config = config;
     this.filesClient = filesClient;
   }
 
@@ -39,12 +47,24 @@ public class FilesService {
     String cookie,
     String nodeId,
     Optional<Integer> optVersion
-  ) throws ServiceDependencyException {
+  ) throws ServiceDependencyException, FileSizeTooLargeException {
 
     NodeAttributes nodeAttributes = filesClient
       .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
       .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
       .getOrElseThrow(ServiceDependencyException::new);
+
+    GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
+    long maxFileSizeInMb = config.getMaxSizeLimitForDocumentType(fileType);
+    if (nodeAttributes.getSize() >  maxFileSizeInMb) {
+      throw new FileSizeTooLargeException(
+        "File %s with mime type %s and size %d is too large to open".formatted(
+            nodeId,
+            nodeAttributes.getMime_type(),
+            nodeAttributes.getSize()),
+        maxFileSizeInMb
+      );
+    }
 
     OpenDocumentToken openDocumentToken = openDocumentTokenRepository
       .createToken(UUID.fromString(nodeId), requesterId, cookie);

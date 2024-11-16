@@ -52,6 +52,8 @@ public final class Constants {
 
     private Config() {}
 
+    public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
+
     public static final List<String> DOCUMENT_MIME_TYPES = List.of(
       "text/rtf",
       "text/plain",
@@ -108,7 +110,12 @@ public final class Constants {
         GenericFileType.SPREADSHEET, 10L
       );
 
-    public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
+    public static final class Key {
+
+      private Key() {}
+
+      public static final String MAX_FILE_SIZE_IN_MB = "max-file-size-in-mb";
+    }
 
     public static final class FilesService {
 
