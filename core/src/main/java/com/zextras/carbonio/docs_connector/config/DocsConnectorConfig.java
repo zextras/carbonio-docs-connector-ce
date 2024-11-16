@@ -20,7 +20,7 @@ public class DocsConnectorConfig {
   public long getMaxSizeLimitForFileType(GenericFileType fileType) {
     return Consul
       .builder()
-      .withTokenAuth(consulHttpTokenEnvironmentKey)
+      .withTokenAuth(System.getenv(consulHttpTokenEnvironmentKey))
       .build()
       .keyValueClient()
       .getValueAsString("%s/%s/%s".formatted(
