@@ -33,7 +33,7 @@ public class FilesControllerImpl implements FilesController {
   }
 
   public Response openFile(
-    String cookie, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
+    String cookie, UUID nodeId, Integer version, Boolean redirect, HttpServletRequest httpRequest) {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
     String requesterDomain = (String) httpRequest.getAttribute(Context.REQUESTER_DOMAIN);
     Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
@@ -46,11 +46,11 @@ public class FilesControllerImpl implements FilesController {
         nodeId.toString(),
         Optional.ofNullable(version)
       );
+      String docsRedirectURL = "%s/%s".formatted(requesterDomain, docsEditorURL);
 
-      return Response
-        .ok()
-        .entity(new DocsEditorRedirect("%s/%s".formatted(requesterDomain, docsEditorURL)))
-        .build();
+      return (redirect != null && redirect)
+        ? Response.temporaryRedirect(URI.create(docsRedirectURL)).build()
+        : Response.ok().entity(new DocsEditorRedirect(docsRedirectURL)).build();
 
     } catch (FileSizeTooLargeException exception) {
       return Response.status(Status.FORBIDDEN).entity(exception).build();
