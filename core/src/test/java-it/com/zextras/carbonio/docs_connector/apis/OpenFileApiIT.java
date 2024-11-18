@@ -29,6 +29,31 @@ public class OpenFileApiIT {
 
   static Simulator simulator;
   static List<String> expectationIds;
+  static String filesGetNodeResponseFormat = """
+              {
+              "data": {
+                  "getNode": {
+                      "permissions": {
+                          "can_write_file": true
+                      },
+                      "owner": {
+                          "id": "%s",
+                          "full_name": "Fake user"
+                      },
+                      "parent": {
+                          "id": "LOCAL_ROOT"
+                      },
+                      "id": "%s",
+                      "name": "test-file",
+                      "updated_at": 100,
+                      "extension": "%s",
+                      "mime_type": "%s",
+                      "size": %d,
+                      "version": 1
+                  }
+              }
+          }
+    """;
 
   @BeforeAll
   static void init() {
@@ -62,7 +87,7 @@ public class OpenFileApiIT {
 
     return Stream.of(
       Arguments.of(
-         "document",
+        "document",
         10L,
         "application/vnd.oasis.opendocument.text", "odt",
         elevenMbInBytes
@@ -85,9 +110,9 @@ public class OpenFileApiIT {
   }
 
   @DisplayName("Given a valid user cookie and an accessible node id the openFile API should"
-    + "return a redirect containing the URL of the document to open with Docs")
+    + "return a 200 and a payload containing the URL of the document to open with Docs")
   @Test
-  void givenAValidUserCookieAndAnAccessibleNodeIdTheOpenFileApiShouldReturnARedirectContainingTheUrlToOpenTheDocumentWithDocs()
+  void givenAValidUserCookieAndAnAccessibleNodeIdTheOpenFileApiShouldReturnA200ContainingTheUrlToOpenTheDocumentWithDocs()
     throws Exception {
     // Given
     String userCookie = "ZM_AUTH_TOKEN=9e2cffc4";
@@ -106,31 +131,13 @@ public class OpenFileApiIT {
       .respond(HttpResponse
         .response()
         .withStatusCode(HttpStatus.OK_200)
-        .withBody("""
-          {
-              "data": {
-                  "getNode": {
-                      "permissions": {
-                          "can_write_file": true
-                      },
-                      "owner": {
-                          "id": "9e2cffc4-5860-4095-aedb-7b48d6ff889a",
-                          "full_name": "Fake user"
-                      },
-                      "parent": {
-                          "id": "LOCAL_ROOT"
-                      },
-                      "id": "58032253-ed56-4eca-9017-3ae26cc2d9f1",
-                      "name": "test-file",
-                      "updated_at": 100,
-                      "extension": "odt",
-                      "mime_type": "application/vnd.oasis.opendocument.text",
-                      "size": 52428800,
-                      "version": 1
-                  }
-              }
-          }
-          """)
+        .withBody(filesGetNodeResponseFormat.formatted(
+          requesterId,
+          nodeId,
+          "odt",
+          "application/vnd.oasis.opendocument.text",
+          52428800
+        ))
       )[0].getId()
     );
 
@@ -158,8 +165,60 @@ public class OpenFileApiIT {
         "&ui_defaults=UIMode=classic;UIMode=classic;TextSidebar=false;PresentationSidebar=false;SpreadsheetSidebar=false")
       .contains("&WOPISrc")
       .contains(nodeId)
-      .contains("&public_url=docs%2Feditor%2F58032253-ed56-4eca-9017-3ae26cc2d9f1")
+      .contains("&public_url=services%2Fdocs%2Ffiles%2Fopen%2F58032253-ed56-4eca-9017-3ae26cc2d9f1%3Fredirect%3Dtrue")
       .contains("&lang=pt-BR");
+  }
+
+  @DisplayName("Given a valid user cookie and an accessible node id the openFile API with the "
+    + "redirect query params to true should return a redirect containing the URL of the document "
+    + "to open with Docs")
+  @Test
+  void givenAValidUserCookieAndAnAccessibleNodeIdTheOpenFileApiShouldReturnARedirectContainingTheUrlToOpenTheDocumentWithDocs()
+    throws Exception {
+    // Given
+    String userCookie = "ZM_AUTH_TOKEN=9e2cffc4";
+    String requesterId = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
+    String nodeId = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
+
+    expectationIds.add(simulator.mockValidateUser("9e2cffc4", requesterId));
+    expectationIds.add(simulator.mockGetMyself(userCookie, requesterId, "pt_BR"));
+
+    expectationIds.add(simulator.getFilesService()
+      .when(HttpRequest
+        .request("/graphql/")
+        .withCookie(Cookie.cookie("ZM_AUTH_TOKEN", "9e2cffc4"))
+        .withBody(NodeAttributes.getNodeGraphQLRequest(nodeId, Optional.empty()))
+      )
+      .respond(HttpResponse
+        .response()
+        .withStatusCode(HttpStatus.OK_200)
+        .withBody(filesGetNodeResponseFormat.formatted(
+          requesterId,
+          nodeId,
+          "odt",
+          "application/vnd.oasis.opendocument.text",
+          20
+        ))
+      )[0].getId()
+    );
+
+    LocalConnector httpLocalConnector = simulator.getHttpLocalConnector();
+    HttpTester.Request request = HttpTester.newRequest();
+    request.setMethod(HttpMethod.GET.toString());
+    request.setHeader(HttpHeaders.HOST.toString(), "test");
+    request.setHeader(HttpHeaders.COOKIE.toString(), userCookie);
+    request.setURI("/files/open/%s?redirect=true".formatted(nodeId));
+
+    // When
+    Response response = HttpTester.parseResponse(
+      httpLocalConnector.getResponse(request.generate())
+    );
+
+    // Then
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.TEMPORARY_REDIRECT_307);
+    Assertions
+      .assertThat(response.get(HttpHeaders.LOCATION))
+      .contains("/services/docs/editor/browser/dist/cool.html");
   }
 
   @DisplayName("Given a valid cookie of a user and an invalid node id, "
@@ -273,31 +332,13 @@ public class OpenFileApiIT {
       .respond(HttpResponse
         .response()
         .withStatusCode(HttpStatus.OK_200)
-        .withBody("""
-          {
-              "data": {
-                  "getNode": {
-                      "permissions": {
-                          "can_write_file": true
-                      },
-                      "owner": {
-                          "id": "%s",
-                          "full_name": "Fake user"
-                      },
-                      "parent": {
-                          "id": "LOCAL_ROOT"
-                      },
-                      "id": "%s",
-                      "name": "test-file",
-                      "updated_at": 100,
-                      "extension": "%s",
-                      "mime_type": "%s",
-                      "size": %d,
-                      "version": 1
-                  }
-              }
-          }
-          """.formatted(requesterId, nodeId, fileExtension, fileMimeType, fileSize))
+        .withBody(filesGetNodeResponseFormat.formatted(
+          requesterId,
+          nodeId,
+          fileExtension,
+          fileMimeType,
+          fileSize
+        ))
       )[0].getId());
 
     expectationIds.add(simulator.mockServiceDiscoverConfig(

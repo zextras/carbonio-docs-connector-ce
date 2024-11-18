@@ -79,10 +79,20 @@ public class FilesService {
     optVersion
       .map(version -> wopiEndpointBuilder.append("?version=").append(version));
 
-    // Public URL
+    // Public URL, it contains the redirect=true to allow the controller to return 307. Optionally,
+    // it can contain the version:
+    // - services/docs/files/open/<node_id>?redirect=true
+    // - services/docs/files/open/<node_id>?version=<version>&redirect=true
     StringBuilder publicURLBuilder = new StringBuilder()
-      .append("docs/editor/")
-      .append(nodeId);
+      .append("services/docs/files/open/")
+      .append(nodeId)
+      .append("?");
+
+    optVersion
+      .map(version -> publicURLBuilder.append("version=").append(version).append("&"));
+
+    publicURLBuilder.append("redirect=true");
+
 
     // Cool html resource + token parameter
     StringBuilder docsPathAndParametersBuilder = new StringBuilder()

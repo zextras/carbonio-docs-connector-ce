@@ -31,6 +31,7 @@ paths:
         - $ref: '#/components/parameters/headerCookies'
         - $ref: '#/components/parameters/pathNodeId'
         - $ref: '#/components/parameters/queryNodeVersion'
+        - $ref: '#/components/parameters/queryRedirect'
       responses:
         '307':
           $ref: '#/components/responses/307DocsEditorRedirectResponse'
@@ -122,6 +123,14 @@ components:
         type: integer
       required: false
       description: The version of the Files node
+
+    queryRedirect:
+      in: query
+      name: redirect
+      schema:
+        type: boolean
+      required: false
+      description: Allows to specify if the response of the API should return a 307 or a 200 status code with the URL in the json response
 
     queryAccessToken:
       in: query

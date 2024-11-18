@@ -34,5 +34,6 @@ public interface FilesController {
       @HeaderParam("Cookie") String cookie,
       @PathParam("nodeId") UUID nodeId,
       @QueryParam("version") Integer version,
+      @QueryParam("redirect") Boolean redirect,
       @Context HttpServletRequest httpRequest);
 }
