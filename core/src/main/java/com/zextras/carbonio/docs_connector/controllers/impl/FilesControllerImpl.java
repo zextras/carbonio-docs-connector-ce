@@ -2,16 +2,19 @@ package com.zextras.carbonio.docs_connector.controllers.impl;
 
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
+import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
+import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.FilesService;
+import com.zextras.carbonio.docs_connector.types.DocsEditorRedirect;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-
-import jakarta.inject.Inject;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Response;
 
 public class FilesControllerImpl implements FilesController {
 
@@ -24,22 +27,35 @@ public class FilesControllerImpl implements FilesController {
 
   public Response createFile(String cookie, InsertFile insertFile, HttpServletRequest httpRequest) {
     return filesService
-        .uploadTemplate(cookie, insertFile)
-        .map(createdFile -> Response.ok().entity(createdFile).build())
-        .orElse(Response.serverError().build());
+      .uploadTemplate(cookie, insertFile)
+      .map(createdFile -> Response.ok().entity(createdFile).build())
+      .orElse(Response.serverError().build());
   }
 
   public Response openFile(
-      String cookie, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
+    String cookie, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
+    String requesterDomain = (String) httpRequest.getAttribute(Context.REQUESTER_DOMAIN);
     Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
 
-    Optional<String> optDocsEditorRedirect =
-        filesService.openFile(
-            requesterId, requesterLocale, cookie, nodeId.toString(), Optional.ofNullable(version));
+    try {
+      String docsEditorURL = filesService.openFile(
+        requesterId,
+        requesterLocale,
+        cookie,
+        nodeId.toString(),
+        Optional.ofNullable(version)
+      );
 
-    return optDocsEditorRedirect.isPresent()
-        ? Response.temporaryRedirect(URI.create(optDocsEditorRedirect.get())).build()
-        : Response.serverError().build();
+      return Response
+        .ok()
+        .entity(new DocsEditorRedirect("%s/%s".formatted(requesterDomain, docsEditorURL)))
+        .build();
+
+    } catch (FileSizeTooLargeException exception) {
+      return Response.status(Status.FORBIDDEN).entity(exception).build();
+    } catch (ServiceDependencyException exception) {
+      return Response.status(Status.NOT_FOUND).build();
+    }
   }
 }

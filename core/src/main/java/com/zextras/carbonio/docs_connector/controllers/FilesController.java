@@ -29,6 +29,7 @@ public interface FilesController {
 
   @GET
   @Path("/open/{nodeId}")
+  @Produces(MediaType.APPLICATION_JSON)
   Response openFile(
       @HeaderParam("Cookie") String cookie,
       @PathParam("nodeId") UUID nodeId,
