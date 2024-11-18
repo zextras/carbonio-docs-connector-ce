@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
   <parent>
     <groupId>com.zextras.carbonio.docs-connector</groupId>
     <artifactId>carbonio-docs-connector-ce</artifactId>
-    <version>0.4.3-SNAPSHOT</version>
+    <version>0.5.0-1</version>
   </parent>
 
   <dependencies>
