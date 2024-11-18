@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+SPDX-FileCopyrightText: 2023 Zextras <https://www.zextras.com>
 
 SPDX-License-Identifier: AGPL-3.0-only
 -->
@@ -7,6 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [0.5.0](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.4.2...v0.5.0) (2024-11-18)
+
+
+### Features
+
+* add live health check ([#45](https://github.com/Zextras/carbonio-docs-connector-ce/issues/45)) ([ebf6bd0](https://github.com/Zextras/carbonio-docs-connector-ce/commit/ebf6bd0c21739978c84ead6130c034112e22e1f6))
+* block the opening of file that exceed the maximum size limit set ([#46](https://github.com/Zextras/carbonio-docs-connector-ce/issues/46)) ([19ba7a7](https://github.com/Zextras/carbonio-docs-connector-ce/commit/19ba7a7d924c9bd436b6c7ceefba952d23aed11d))
+
+
+### Bug Fixes
+
+* change public URL endpoint returned by openFile ([#47](https://github.com/Zextras/carbonio-docs-connector-ce/issues/47)) ([85d0d4a](https://github.com/Zextras/carbonio-docs-connector-ce/commit/85d0d4adf6ab2e6d20ccff6f8543eff5e16a0244))
 
 ### [0.4.2](https://github.com/Zextras/carbonio-docs-connector-ce/compare/v0.4.1...v0.4.2) (2024-08-27)
 
