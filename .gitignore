@@ -11,8 +11,5 @@ boot/dependency-reduced-pom.xml
 .idea/
 *.iml
 
-generated/src
-generated/.openapi-generator/
-
 # License
 LICENSES
