@@ -7,13 +7,17 @@ package com.zextras.carbonio.docs_connector.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
+import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.NodeUpdatedTimestamp;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
+import com.zextras.carbonio.files.exceptions.InternalServerError;
+import com.zextras.carbonio.files.exceptions.UnAuthorized;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
 import com.zextras.carbonio.usermanagement.entities.UserInfo;
+import io.vavr.Predicates;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -24,6 +28,9 @@ import java.util.TimeZone;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
 
 public class WopiService {
 
@@ -127,69 +134,63 @@ public class WopiService {
     InputStream blob,
     long contentLength,
     boolean coolIsAutosave
-  ) {
-
-    Try<NodeIdVersion> uploadedNode = filesClient
-      .genericGraphQLRequest(
-        cookie,
-        NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
-      )
-      .map(graphQLResponse -> {
-        try {
-          NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
-
-          return filesClient
-            .uploadFileVersion(
-              cookie,
-              nodeId.toString(),
-              createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
-              nodeAttributes.getMime_type(),
-              blob,
-              contentLength,
-              coolIsAutosave
-            )
-            .onFailure(failure -> logger.error("Saving blob failed: " + failure));
-
-        } catch (JsonProcessingException exception) {
-          logger.error(exception.getMessage(), exception);
-          return null;
-        }
-      })
-      .onFailure(failure -> logger.error(failure.getMessage(), failure))
-      .get();
-
-    if (uploadedNode.isSuccess()) {
-      /*
-       * Retrieve the last update timestamp of the saved file
-       */
-      return Optional.ofNullable(
-        filesClient
-          .genericGraphQLRequest(
+  ) throws ServiceDependencyException {
+    NodeAttributes nodeAttributes = filesClient
+        .genericGraphQLRequest(
             cookie,
             NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
-          )
-          .map(graphQLResponse -> {
-            try {
-              NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+        )
+        .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
+        .getOrElseThrow(ServiceDependencyException::new);
 
-              NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
-              updatedTimestamp.setLastModifiedTime(
-                formatDateToIso8601(new Date(nodeAttributes.getUpdated_at()))
-              );
+    NodeIdVersion uploadedNodeIdVersion = filesClient
+        .uploadFileVersion(
+            cookie,
+            nodeId.toString(),
+            createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
+            nodeAttributes.getMime_type(),
+            blob,
+            contentLength,
+            coolIsAutosave
+        ).mapFailure(
+            Case(
+                $(Predicates.instanceOf(UnAuthorized.class)),
+                new ServiceDependencyException("Unable to save blob %s to Files (424)".formatted(nodeId))),
+            Case(
+                $(Predicates.instanceOf(InternalServerError.class)),
+                new ServiceDependencyException("Unable to save blob %s to Files (500)".formatted(nodeId)))
+        ).get();
 
-              return updatedTimestamp;
+    Optional<Integer> uploadedNodeVersion = Optional.of(uploadedNodeIdVersion.getVersion());
 
-            } catch (JsonProcessingException exception) {
-              logger.error(exception.getMessage(), exception);
-              return null;
-            }
-          })
-          .onFailure(failure -> logger.error(failure.getMessage(), failure))
-          .getOrNull()
-      );
-    }
+    /*
+     * Retrieve the last update timestamp of the saved file
+     */
+    return Optional.ofNullable(
+      filesClient
+        .genericGraphQLRequest(
+          cookie,
+          NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion)
+        )
+        .map(graphQLResponse -> {
+          try {
+            NodeAttributes updatedModeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-    return Optional.empty();
+            NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+            updatedTimestamp.setLastModifiedTime(
+              formatDateToIso8601(new Date(updatedModeAttributes.getUpdated_at()))
+            );
+
+            return updatedTimestamp;
+
+          } catch (JsonProcessingException exception) {
+            logger.error(exception.getMessage(), exception);
+            return null;
+          }
+        })
+        .onFailure(failure -> logger.error(failure.getMessage(), failure))
+        .getOrNull()
+    );
   }
 
   private String formatDateToIso8601(Date modifiedTime) {

@@ -7,6 +7,7 @@ package com.zextras.carbonio.docs_connector.controllers.impl;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.controllers.WopiController;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.WopiService;
 import java.io.InputStream;
 import java.util.Optional;
@@ -93,12 +94,15 @@ public class WopiControllerImpl implements WopiController {
         (OpenDocumentToken) httpRequest.getAttribute(Context.OPEN_DOCUMENT_TOKEN);
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
-
-      return wopiService
-          .saveBlob(
-              openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
-          .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
-          .orElse(Response.serverError().build());
+      try {
+        return wopiService
+            .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
+            .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
+            .orElse(Response.status(424).build());
+      } catch (ServiceDependencyException exception) {
+        logger.error(exception.getMessage());
+        return Response.status(424).build();
+      }
     }
 
     logger.error("Invalid token: " + accessToken + ", nodeId: " + nodeId);
