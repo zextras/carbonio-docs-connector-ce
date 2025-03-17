@@ -12,6 +12,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRepository {
 
@@ -30,11 +32,25 @@ public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRep
     String requesterId,
     String requesterCookie
   ) {
+    // Extract only the relevant token we need
+    String zmAuthTokenCookie = null;
+    if (requesterCookie != null) {
+        Matcher matcher = Pattern
+            .compile("ZM_AUTH_TOKEN=([a-zA-Z0-9_]+)(;|$)")
+            .matcher(requesterCookie);
+
+        if (matcher.find()) {
+            zmAuthTokenCookie = matcher.group();
+        } else {
+            throw new IllegalArgumentException("ZM_AUTH_TOKEN not found in requester cookie");
+        }
+    }
+
     OpenDocumentToken token = new OpenDocumentToken(
       UUID.randomUUID(),
       documentId,
       requesterId,
-      requesterCookie,
+      zmAuthTokenCookie,
       Instant.ofEpochMilli(clock.millis() + cacheManager.getTokenDurationInMs())
     );
 
