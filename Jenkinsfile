@@ -5,7 +5,7 @@
 pipeline {
     agent {
         node {
-            label 'openjdk17-agent-v1'
+            label 'zextras-v1'
         }
     }
     environment {
@@ -34,32 +34,42 @@ pipeline {
         }
         stage('Setup') {
             steps {
-                withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                    sh "cp ${SETTINGS_PATH} settings-jenkins.xml"
+                container('jdk-17') {
+                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
+                        sh 'cp $SETTINGS_PATH settings-jenkins.xml'
+                    }
                 }
             }
         }
         stage('Build jar') {
             steps {
-                sh 'mvn -B -settings settings-jenkins.xml clean package'
-                // having every file within the package directory is great simplification
-                sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+                container('jdk-17') {
+                    sh 'mvn -B -settings settings-jenkins.xml clean package'
+                    // having every file within the package directory is great simplification
+                    sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+                }
             }
         }
         stage("Unit tests") {
             steps {
-                sh 'mvn -B --settings settings-jenkins.xml verify -P run-unit-tests'
+                container('jdk-17') {
+                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-unit-tests'
+                }
             }
         }
         stage("Integration tests") {
             steps {
-                sh 'mvn -B --settings settings-jenkins.xml verify -P run-integration-tests'
+                container('jdk-17') {
+                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-integration-tests'
+                }
             }
         }
         stage('Coverage') {
             steps {
-                sh 'mvn -B --settings settings-jenkins.xml verify -P generate-jacoco-full-report'
-                recordCoverage(tools: [[parser: 'JACOCO']],sourceCodeRetention: 'MODIFIED')
+                container('jdk-17') {
+                    sh 'mvn -B --settings settings-jenkins.xml verify -P generate-jacoco-full-report'
+                    recordCoverage(tools: [[parser: 'JACOCO']],sourceCodeRetention: 'MODIFIED')
+                }
             }
         }
         stage('Build deb/rpm') {
@@ -92,15 +102,15 @@ pipeline {
                         stage('Ubuntu') {
                             agent {
                                 node {
-                                    label 'yap-agent-ubuntu-20.04-v2'
+                                    label 'yap-ubuntu-20-v1'
                                 }
                             }
                             steps {
-                                dir('/tmp/staging'){
+                                container('yap') {
                                     unstash 'binaries'
+                                    sh 'sudo yap build ubuntu .'
+                                    stash includes: 'artifacts/', name: 'artifacts-deb'
                                 }
-                                sh 'sudo yap build ubuntu /tmp/staging/'
-                                stash includes: 'artifacts/', name: 'artifacts-deb'
                             }
                             post {
                                 always {
@@ -111,19 +121,19 @@ pipeline {
                         stage('RHEL') {
                             agent {
                                 node {
-                                    label 'yap-agent-rocky-8-v2'
+                                    label 'yap-rocky-8-v1'
                                 }
                             }
                             steps {
-                                dir('/tmp/staging'){
+                                container('yap') {
                                     unstash 'binaries'
+                                    sh 'sudo yap build rocky .'
+                                    stash includes: 'artifacts/*.rpm', name: 'artifacts-rpm'
                                 }
-                                sh 'sudo yap build rocky /tmp/staging/'
-                                stash includes: 'artifacts/x86_64/*.rpm', name: 'artifacts-rpm'
                             }
                             post {
                                 always {
-                                    archiveArtifacts artifacts: 'artifacts/x86_64/*.rpm', fingerprint: true
+                                    archiveArtifacts artifacts: 'artifacts/*.rpm', fingerprint: true
                                 }
                             }
                         }
@@ -152,12 +162,12 @@ pipeline {
                                 "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "centos8-devel/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "rhel9-devel/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             }
@@ -191,12 +201,12 @@ pipeline {
                                 "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "centos8-playground/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "rhel9-playground/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             }
@@ -229,12 +239,12 @@ pipeline {
                                 "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "centos8-''' + params.SUFFIX_CUSTOM_REPOS + '''/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             },
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "rhel9-''' + params.SUFFIX_CUSTOM_REPOS + '''/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             }
@@ -263,7 +273,7 @@ pipeline {
                     //ubuntu
                     buildInfo = Artifactory.newBuildInfo()
                     buildInfo.name += '-ubuntu'
-                    uploadSpec= """{
+                    uploadSpec = """{
                         "files": [
                             {
                                 "pattern": "artifacts/carbonio-docs-connector-ce*.deb",
@@ -290,10 +300,10 @@ pipeline {
                     //rhel 8
                     buildInfo = Artifactory.newBuildInfo()
                     buildInfo.name += '-centos8'
-                    uploadSpec= """{
+                    uploadSpec = """{
                         "files": [
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "centos8-rc/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             }
@@ -317,10 +327,10 @@ pipeline {
                     //rhel 9
                     buildInfo = Artifactory.newBuildInfo()
                     buildInfo.name += '-rhel9'
-                    uploadSpec= """{
+                    uploadSpec = """{
                         "files": [
                             {
-                                "pattern": "artifacts/x86_64/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
+                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
                                 "target": "rhel9-rc/zextras/{1}/{1}-{2}.x86_64.rpm",
                                 "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
                             }
