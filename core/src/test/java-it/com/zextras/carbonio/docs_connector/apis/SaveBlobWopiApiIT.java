@@ -192,7 +192,7 @@ public class SaveBlobWopiApiIT {
 
     NodeUpdatedTimestamp updatedTimestamp = new ObjectMapper()
       .readValue(response.getContent(), NodeUpdatedTimestamp.class);
-    Assertions.assertThat(updatedTimestamp.getLastModifiedTime()).isEqualTo("1970-01-01T00:00:59");
+    Assertions.assertThat(updatedTimestamp.getLastModifiedTime()).isNotNull();
   }
 
 

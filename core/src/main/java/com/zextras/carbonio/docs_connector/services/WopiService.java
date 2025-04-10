@@ -204,7 +204,7 @@ public class WopiService {
       dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
     return dateFormat.format(modifiedTime);
-}
+  }
 
   private String createFullFilename(
     String name,
