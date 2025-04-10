@@ -37,7 +37,7 @@ public class FilesControllerImpl implements FilesController {
   }
 
   public Response openFile(
-    String cookie, UUID nodeId, Integer version, Boolean redirect, HttpServletRequest httpRequest) {
+    String cookie, UUID nodeId, Integer version, Boolean redirect, Integer offsetFromUtc, HttpServletRequest httpRequest) {
     String requesterId = (String) httpRequest.getAttribute(Context.REQUESTER_ID);
     String requesterDomain = (String) httpRequest.getAttribute(Context.REQUESTER_DOMAIN);
     Locale requesterLocale = (Locale) httpRequest.getAttribute(Context.REQUESTER_LOCALE);
@@ -48,7 +48,8 @@ public class FilesControllerImpl implements FilesController {
         requesterLocale,
         cookie,
         nodeId.toString(),
-        Optional.ofNullable(version)
+        Optional.ofNullable(version),
+        Optional.ofNullable(offsetFromUtc)
       );
       String docsRedirectURL = "%s/%s".formatted(requesterDomain, docsEditorURL);
 

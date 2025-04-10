@@ -34,7 +34,7 @@ public class WopiControllerImpl implements WopiController {
   }
 
   public Response docsEditorAttributes(
-      String accessToken, UUID nodeId, Integer version, HttpServletRequest httpRequest) {
+      String accessToken, UUID nodeId, Integer version, Integer offsetFromUtc, HttpServletRequest httpRequest) {
     logger.info("Get docs-editor attributes for: " + nodeId);
 
     OpenDocumentToken openDocumentToken =
@@ -46,7 +46,8 @@ public class WopiControllerImpl implements WopiController {
               openDocumentToken.getRequesterId(),
               openDocumentToken.getRequesterCookie(),
               nodeId,
-              Optional.ofNullable(version))
+              Optional.ofNullable(version),
+              Optional.ofNullable(offsetFromUtc))
           .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
           .orElse(Response.serverError().build());
     }
@@ -86,6 +87,7 @@ public class WopiControllerImpl implements WopiController {
       Boolean coolIsAutosave,
       Boolean coolIsExitSave,
       Long contentLength,
+      Integer offsetFromUtc,
       InputStream blob,
       HttpServletRequest httpRequest) {
     logger.info("Save blob for: " + nodeId);
@@ -96,7 +98,7 @@ public class WopiControllerImpl implements WopiController {
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
       try {
         return wopiService
-            .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, blob, contentLength, coolIsAutosave)
+            .saveBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(offsetFromUtc), blob, contentLength, coolIsAutosave)
             .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
             .orElse(Response.status(424).build());
       } catch (ServiceDependencyException exception) {

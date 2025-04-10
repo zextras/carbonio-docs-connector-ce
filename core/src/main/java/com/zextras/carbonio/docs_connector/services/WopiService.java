@@ -21,11 +21,8 @@ import io.vavr.Predicates;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.TimeZone;
-import java.util.UUID;
+import java.util.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +46,8 @@ public class WopiService {
     String requesterId,
     String requesterCookie,
     UUID nodeId,
-    Optional<Integer> optVersion
+    Optional<Integer> optVersion,
+    Optional<Integer> optOffsetFromUtc
   ) {
     UserInfo userInfo = userManagementClient
       .getUserById(requesterCookie, requesterId)
@@ -67,9 +65,14 @@ public class WopiService {
           try {
             NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-            String lastModifiedTimeFormatted = formatDateToIso8601(
-              new Date(nodeAttributes.getUpdated_at())
+            String lastModifiedTimeFormatted = formatDateToIso8601WithOffset(
+              new Date(nodeAttributes.getUpdated_at()),
+              optOffsetFromUtc
             );
+
+            logger.info("Getting blob with instant: {}", formatDateToIso8601WithOffset(
+                new Date(nodeAttributes.getUpdated_at()),
+                optOffsetFromUtc));
 
             String abbreviateFilename = abbreviateFilename(
               nodeAttributes.getName(),
@@ -131,6 +134,7 @@ public class WopiService {
   public Optional<NodeUpdatedTimestamp> saveBlob(
     String cookie,
     UUID nodeId,
+    Optional<Integer> optOffsetFromUtc,
     InputStream blob,
     long contentLength,
     boolean coolIsAutosave
@@ -173,32 +177,34 @@ public class WopiService {
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion)
         )
         .map(graphQLResponse -> {
-          try {
-            NodeAttributes updatedModeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+          NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
 
-            NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
-            updatedTimestamp.setLastModifiedTime(
-              formatDateToIso8601(new Date(updatedModeAttributes.getUpdated_at()))
-            );
+          updatedTimestamp.setLastModifiedTime(
+            formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc)
+          );
 
-            return updatedTimestamp;
+          logger.info("Saving blob with instant: {}", formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
 
-          } catch (JsonProcessingException exception) {
-            logger.error(exception.getMessage(), exception);
-            return null;
-          }
+          return updatedTimestamp;
+
         })
         .onFailure(failure -> logger.error(failure.getMessage(), failure))
         .getOrNull()
     );
   }
 
-  private String formatDateToIso8601(Date modifiedTime) {
+  private String formatDateToIso8601WithOffset(Date modifiedTime, Optional<Integer> optOffsetMinutes) {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+    if (optOffsetMinutes.isPresent()) {
+      int totalOffsetMillis = optOffsetMinutes.get() * 60 * 1000;
+      TimeZone customTz = new SimpleTimeZone(totalOffsetMillis, "Custom Offset");
+      dateFormat.setTimeZone(customTz);
+    } else {
+      dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
     return dateFormat.format(modifiedTime);
-  }
+}
 
   private String createFullFilename(
     String name,
