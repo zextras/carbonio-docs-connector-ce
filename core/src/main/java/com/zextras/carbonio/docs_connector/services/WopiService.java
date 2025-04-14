@@ -177,15 +177,22 @@ public class WopiService {
           NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion)
         )
         .map(graphQLResponse -> {
-          NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+          try {
+            NodeAttributes updatedModeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
 
-          updatedTimestamp.setLastModifiedTime(
-            formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc)
-          );
+            NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+            updatedTimestamp.setLastModifiedTime(
+              formatDateToIso8601WithOffset(new Date(updatedModeAttributes.getUpdated_at()), optOffsetFromUtc)
+            );
 
-          logger.info("Saving blob with instant: {}", formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
+            logger.info("Saving blob with instant: {}", formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
 
-          return updatedTimestamp;
+            return updatedTimestamp;
+
+          } catch (JsonProcessingException exception) {
+            logger.error(exception.getMessage(), exception);
+            return null;
+          }
 
         })
         .onFailure(failure -> logger.error(failure.getMessage(), failure))
