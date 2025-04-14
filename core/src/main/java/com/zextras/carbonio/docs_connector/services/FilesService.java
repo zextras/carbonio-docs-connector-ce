@@ -51,7 +51,8 @@ public class FilesService {
     Locale requesterLocale,
     String cookie,
     String nodeId,
-    Optional<Integer> optVersion
+    Optional<Integer> optVersion,
+    Optional<Integer> optOffsetFromUtc
   ) throws ServiceDependencyException, FileSizeTooLargeException {
 
     NodeAttributes nodeAttributes = filesClient
@@ -80,8 +81,15 @@ public class FilesService {
       .append("http://127.78.0.12:20000/wopi/")
       .append(nodeId);
 
+    if (optVersion.isPresent() || optOffsetFromUtc.isPresent()) {
+      wopiEndpointBuilder.append("?");
+    }
+
     optVersion
-      .map(version -> wopiEndpointBuilder.append("?version=").append(version));
+      .map(version -> wopiEndpointBuilder.append("version=").append(version).append("&"));
+
+    optOffsetFromUtc
+      .map(offsetFromUtc -> wopiEndpointBuilder.append("offset_from_utc=").append(offsetFromUtc));
 
     // Public URL, it contains the redirect=true to allow the controller to return 307. Optionally,
     // it can contain the version:

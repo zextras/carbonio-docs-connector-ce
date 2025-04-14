@@ -28,6 +28,7 @@ public interface WopiController {
       @QueryParam("access_token") String accessToken,
       @PathParam("nodeId") UUID nodeId,
       @QueryParam("version") Integer version,
+      @QueryParam("offset_from_utc") Integer offsetFromUtc,
       @Context HttpServletRequest httpRequest);
 
   @GET
@@ -49,6 +50,7 @@ public interface WopiController {
       @HeaderParam("X-COOL-WOPI-IsAutosave") Boolean xCOOLWOPIIsAutosave,
       @HeaderParam("X-COOL-WOPI-IsExitSave") Boolean xCOOLWOPIIsExitSave,
       @HeaderParam("Content-Length") Long contentLength,
+      @QueryParam("offset_from_utc") Integer offsetFromUtc,
       InputStream body,
       @Context HttpServletRequest httpRequest);
 }

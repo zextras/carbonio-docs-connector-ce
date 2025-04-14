@@ -39,5 +39,6 @@ public interface FilesController {
       @PathParam("nodeId") UUID nodeId,
       @QueryParam("version") Integer version,
       @QueryParam("redirect") Boolean redirect,
+      @QueryParam("offset_from_utc") Integer offsetFromUtc,
       @Context HttpServletRequest httpRequest);
 }
