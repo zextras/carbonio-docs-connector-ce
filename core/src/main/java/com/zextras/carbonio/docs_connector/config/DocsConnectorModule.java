@@ -6,8 +6,9 @@ package com.zextras.carbonio.docs_connector.config;
 
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.zextras.carbonio.docs_connector.Constants.Config.FilesService;
-import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
+import com.zextras.carbonio.docs_connector.Constants;
+import com.zextras.carbonio.docs_connector.Constants.Config.Files;
+import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.auth.AccessTokenValidationFilter;
 import com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
@@ -22,8 +23,12 @@ import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
 import java.time.Clock;
 import org.jboss.resteasy.plugins.guice.ext.RequestScopeModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DocsConnectorModule extends RequestScopeModule {
+
+  private static final Logger logger = LoggerFactory.getLogger(DocsConnectorModule.class);
 
   @Override
   public void configure() {
@@ -40,13 +45,35 @@ public class DocsConnectorModule extends RequestScopeModule {
 
   @Provides
   @Singleton
-  public UserManagementClient getUserServiceClient() {
-    return UserManagementClient.atURL(UserService.PROTOCOL, UserService.URL, UserService.PORT);
+  public DocsConnectorConfig provideConfig() throws Exception {
+      final DocsConnectorConfig config = new DocsConnectorConfig();
+      config.loadConfig();
+      return config;
   }
 
   @Provides
   @Singleton
-  public FilesClient getFilesServiceClient() {
-    return FilesClient.atURL(FilesService.PROTOCOL, FilesService.URL, FilesService.PORT);
+  public UserManagementClient provideUserManagementClient(DocsConnectorConfig config) {
+      final String userManagementUrl = String.format(
+          "%s://%s:%s",
+          Constants.Config.UserManagement.DEFAULT_PROTOCOL,
+          config.getUserManagementHost(),
+          config.getUserManagementPort());
+
+      logger.info("Creating UserManagementClient with URL: {}", userManagementUrl);
+      return UserManagementClient.atURL(userManagementUrl);
+  }
+
+  @Provides
+  @Singleton
+  public FilesClient provideFilesClient(DocsConnectorConfig config) {
+      final String filesUrl = String.format(
+          "%s://%s:%s",
+          Constants.Config.Files.DEFAULT_PROTOCOL,
+          config.getFilesHost(),
+          config.getFilesPort());
+
+      logger.info("Creating FilesClient with URL: {}", filesUrl);
+      return FilesClient.atURL(filesUrl);
   }
 }

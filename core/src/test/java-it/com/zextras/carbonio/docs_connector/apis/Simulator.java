@@ -6,8 +6,8 @@ package com.zextras.carbonio.docs_connector.apis;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.zextras.carbonio.docs_connector.Constants.Config.FilesService;
-import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
+import com.zextras.carbonio.docs_connector.Constants.Config.Files;
+import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import jakarta.ws.rs.HttpMethod;
 import java.util.Base64;
@@ -70,8 +70,8 @@ public class Simulator implements AutoCloseable {
     if (clientAndServer == null) {
       clientAndServer = ClientAndServer.startClientAndServer(
         8500,
-        UserService.PORT,
-        FilesService.PORT
+        UserManagement.DEFAULT_PORT,
+        Files.DEFAULT_PORT
       );
     }
   }
@@ -84,7 +84,7 @@ public class Simulator implements AutoCloseable {
 
   private void startUserManagementService() {
     startMockServer();
-    userManagementServiceMock = new MockServerClient(UserService.URL, UserService.PORT);
+    userManagementServiceMock = new MockServerClient(UserManagement.DEFAULT_HOST, UserManagement.DEFAULT_PORT);
   }
 
   private void stopUserManagementService() {
@@ -95,7 +95,7 @@ public class Simulator implements AutoCloseable {
 
   private void startFilesService() {
     startMockServer();
-    filesServiceMock = new MockServerClient(FilesService.URL, FilesService.PORT);
+    filesServiceMock = new MockServerClient(Files.DEFAULT_HOST, Files.DEFAULT_PORT);
   }
 
   private void stopFilesService() {
