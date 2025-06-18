@@ -12,12 +12,14 @@ public final class Constants {
 
   private Constants() {}
 
-  public static final class Service {
+  public static final class DocsConnector {
 
-    private Service() {}
+    private DocsConnector() {}
 
-    public static final String IP = "127.78.0.13";
-    public static final int PORT = 10_000;
+    public static final String DEFAULT_HOST = "127.78.0.13";
+    public static final int DEFAULT_PORT = 10_000;
+    public static final String HOST_PROPERTY = "carbonio.docs-connector.host";
+    public static final String PORT_PROPERTY = "carbonio.docs-connector.port";
     public static final String SERVICE_NAME = "carbonio-docs-connector";
     public static final class API {
 
@@ -122,22 +124,26 @@ public final class Constants {
       public static final String MAX_FILE_SIZE_IN_MB = "max-file-size-in-mb";
     }
 
-    public static final class FilesService {
+    public static final class Files {
 
-      private FilesService() {}
+      private Files() {}
 
-      public static final String PROTOCOL = "http";
-      public static final String URL = "127.78.0.13";
-      public static final int PORT = 20000;
+      public static final String DEFAULT_PROTOCOL = "http";
+      public static final String DEFAULT_HOST = "127.78.0.13";
+      public static final String HOST_PROPERTY = "carbonio.files.host";
+      public static final String PORT_PROPERTY = "carbonio.files.port";
+      public static final int DEFAULT_PORT = 20000;
     }
 
-    public static final class UserService {
+    public static final class UserManagement {
 
-      private UserService() {}
+      private UserManagement() {}
 
-      public static final String PROTOCOL = "http";
-      public static final String URL = "127.78.0.13";
-      public static final int PORT = 20001;
+      public static final String DEFAULT_PROTOCOL = "http";
+      public static final String DEFAULT_HOST = "127.78.0.13";
+      public static final String HOST_PROPERTY = "carbonio.user-management.host";
+      public static final String PORT_PROPERTY = "carbonio.user-management.port";
+      public static final int DEFAULT_PORT = 20001;
       public static final String ZM_AUTH_TOKEN = "ZM_AUTH_TOKEN=";
     }
   }

@@ -7,9 +7,9 @@ package com.zextras.carbonio.docs_connector.auth;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.zextras.carbonio.docs_connector.Constants.Config;
-import com.zextras.carbonio.docs_connector.Constants.Config.UserService;
+import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.Constants.Context;
-import com.zextras.carbonio.docs_connector.Constants.Service.API.Endpoints;
+import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
 import java.util.Optional;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -59,7 +59,7 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
         .validateUserToken(optZmCookie.get().getValue())
         .onSuccess(userId ->
           userManagementClient
-            .getUserMyself(UserService.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
+            .getUserMyself(UserManagement.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
             .onSuccess(
               myself -> {
                 requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
