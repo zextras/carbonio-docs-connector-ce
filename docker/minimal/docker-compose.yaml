@@ -180,6 +180,29 @@ services:
     networks:
       - carbonio-docs-connector-network
 
+  docs-connector:
+    container_name: carbonio-docs-connector
+    build:
+      context: ../../
+      dockerfile: docker/minimal/carbonio-docs-connector/Dockerfile
+    restart: on-failure
+    networks:
+      - carbonio-docs-connector-network
+    ports:
+      - "20009:10000"
+    environment:
+      - PREVIEW_HOST=0.0.0.0
+      - PREVIEW_PORT=10000
+      - STORAGES_HOST=storages
+      - STORAGES_PORT=10000
+      - DOCS_EDITOR_HOST=docs-connector
+      - DOCS_EDITOR_PORT=10000
+    depends_on:
+      - storages
+      - consul-mock
+      - files
+      - docs-editor
+
 networks:
   carbonio-docs-connector-network:
 
