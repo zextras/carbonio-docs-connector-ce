@@ -147,8 +147,8 @@ services:
       - CARBONIO_MESSAGE_BROKER_PORT=10000
       - CARBONIO_POSTGRESQL_HOST=postgres
       - CARBONIO_POSTGRESQL_PORT=5432
-      - CARBONIO_docs_connector_HOST=docs_connector
-      - CARBONIO_docs_connector_PORT=10000
+      - CARBONIO_PREVIEW_HOST=preview
+      - CARBONIO_PREVIEW_PORT=10000
       - CARBONIO_STORAGES_HOST=storages
       - CARBONIO_STORAGES_PORT=10000
       - CARBONIO_USER_MANAGEMENT_HOST=user-management
@@ -191,16 +191,17 @@ services:
     ports:
       - "20009:10000"
     environment:
-      - PREVIEW_HOST=0.0.0.0
-      - PREVIEW_PORT=10000
-      - STORAGES_HOST=storages
-      - STORAGES_PORT=10000
-      - DOCS_EDITOR_HOST=docs-connector
-      - DOCS_EDITOR_PORT=10000
+      - CARBONIO_DOCS_CONNECTOR_HOST=0.0.0.0
+      - CARBONIO_DOCS_CONNECTOR_PORT=10000
+      - CARBONIO_FILES_HOST=files
+      - CARBONIO_FILES_PORT=10000
+      - CARBONIO_USER_MANAGEMENT_HOST=user-management
+      - CARBONIO_USER_MANAGEMENT_PORT=10000
     depends_on:
       - storages
       - consul-mock
       - files
+      - user-management
       - docs-editor
 
 networks:
