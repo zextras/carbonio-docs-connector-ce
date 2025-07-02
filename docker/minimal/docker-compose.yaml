@@ -171,30 +171,6 @@ services:
     depends_on:
       - files
 
-  docs-editor:
-    container_name: carbonio-docs-editor
-    build:
-      context: ../../
-      dockerfile: docker/minimal/carbonio-docs-editor/Dockerfile
-    restart: on-failure
-    networks:
-      - carbonio-docs-connector-network
-    ports:
-      - "20010:10000"
-    environment:
-      - DONT_GEN_SSL_CERT=1
-      - server_name=localhost:9000
-      - dictionaries=en_US
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=false
-    cap_add:
-      - MKNOD
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
-    privileged: true
-    extra_hosts:
-      - "localhost:host-gateway"
-
   docs-connector:
     container_name: carbonio-docs-connector
     build:
@@ -219,7 +195,6 @@ services:
       - consul-mock
       - files
       - user-management
-      - docs-editor
     extra_hosts:
       - "localhost:host-gateway" #useful so docs can "see" consul on localhost without using network mode host
 
