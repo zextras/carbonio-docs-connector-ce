@@ -9,6 +9,7 @@ import ch.qos.logback.classic.Logger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector;
+import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
 import java.net.InetSocketAddress;
 import java.util.Optional;
@@ -40,7 +41,8 @@ public class Boot {
     rootLogger.setLevel(Level.toLevel(Optional.ofNullable(logLevel).orElse("WARN")));
 
     try {
-      server = new Server(InetSocketAddress.createUnresolved(DocsConnector.DEFAULT_HOST, DocsConnector.DEFAULT_PORT));
+      DocsConnectorConfig config = injector.getInstance(DocsConnectorConfig.class);
+      server = new Server(InetSocketAddress.createUnresolved(config.getDocsConnectorHost(), Integer.parseInt(config.getDocsConnectorPort())));
       ServletContextHandler servletHandler = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
       servletHandler.addEventListener(injector.getInstance(
         GuiceResteasyBootstrapServletContextListener.class)

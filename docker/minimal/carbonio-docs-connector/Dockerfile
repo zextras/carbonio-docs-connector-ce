@@ -14,6 +14,9 @@ ENV CARBONIO_FILES_PORT=20000
 ENV CARBONIO_USER_MANAGEMENT_HOST=127.0.0.1
 ENV CARBONIO_USER_MANAGEMENT_PORT=20001
 
+# This is needed to make the connection to consul work
+ENV CONSUL_HTTP_TOKEN=fake-consul-token
+
 CMD sh -c 'echo "\n\
 # Docs Connector Service\n\
 carbonio.docs-connector.host=${CARBONIO_DOCS_CONNECTOR_HOST}\n\
