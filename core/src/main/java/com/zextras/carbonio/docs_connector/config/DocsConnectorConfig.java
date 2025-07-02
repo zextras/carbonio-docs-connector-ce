@@ -92,6 +92,18 @@ public class DocsConnectorConfig {
           String.valueOf(Constants.Config.Files.DEFAULT_PORT));
   }
 
+  public String getWopiHost() {
+      return properties.getProperty(
+          Constants.Config.Wopi.HOST_PROPERTY,
+          Constants.Config.Wopi.DEFAULT_HOST);
+  }
+
+  public String getWopiPort() {
+      return properties.getProperty(
+          Constants.Config.Wopi.PORT_PROPERTY,
+          String.valueOf(Constants.Config.Wopi.DEFAULT_PORT));
+  }
+
   /**
    * Fetches the maximum file size values from the service-discover key/value if it is set,
    * otherwise it returns the default size

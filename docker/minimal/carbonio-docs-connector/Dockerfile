@@ -13,6 +13,8 @@ ENV CARBONIO_FILES_HOST=127.0.0.1
 ENV CARBONIO_FILES_PORT=20000
 ENV CARBONIO_USER_MANAGEMENT_HOST=127.0.0.1
 ENV CARBONIO_USER_MANAGEMENT_PORT=20001
+ENV CARBONIO_WOPI_HOST=127.0.0.1
+ENV CARBONIO_WOPI_PORT=20002
 
 # This is needed to make the connection to consul work
 ENV CONSUL_HTTP_TOKEN=fake-consul-token
@@ -28,7 +30,11 @@ carbonio.files.port=${CARBONIO_FILES_PORT}\n\
 \n\
 # User Management Service\n\
 carbonio.user-management.host=${CARBONIO_USER_MANAGEMENT_HOST}\n\
-carbonio.user-management.port=${CARBONIO_USER_MANAGEMENT_PORT}" > /etc/carbonio/docs-connector/config.properties && \
+carbonio.user-management.port=${CARBONIO_USER_MANAGEMENT_PORT}\n\
+\n\
+# WOPI Configuration\n\
+carbonio.wopi.host=${CARBONIO_WOPI_HOST}\n\
+carbonio.wopi.port=${CARBONIO_WOPI_PORT}" > /etc/carbonio/docs-connector/config.properties && \
 JAR=$(ls carbonio-docs-connector-*-fatjar.jar | head -n 1) && \
 java -Djava.net.preferIPv4Stack=true \
   -Xmx128m \

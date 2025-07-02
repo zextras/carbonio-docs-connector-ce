@@ -23,12 +23,40 @@ RUN apt update && \
 
 RUN mkdir -p /opt/zextras/docs/generated/systemplate \
     /opt/zextras/docs/generated/child-roots \
-    /var/log/carbonio-docs-editor
+    /var/log/carbonio-docs-editor \
+    /etc/coolwsd
+
+RUN chown -R carbonio-docs-editor:carbonio-docs-editor /opt/zextras/docs/generated \
+    && chown -R carbonio-docs-editor:carbonio-docs-editor /var/log/carbonio-docs-editor
 
 ENV LANG=C.UTF-8
+
+RUN echo '#!/bin/bash\n\
+echo "Starting Carbonio Docs Editor..."\n\
+/opt/zextras/docs/bin/coolwsd \
+    --version \
+    --o:sys_template_path=/opt/zextras/docs/generated/systemplate \
+    --o:child_root_path=/opt/zextras/docs/generated/child-roots \
+    --o:file_server_root_path=/opt/zextras/docs/share/coolwsd \
+    --o:net.listen=0.0.0.0 \
+    --o:net.port=10000 \
+    --o:ssl.enable=false \
+    --o:ssl.termination=true \
+    --o:security.seccomp=false \
+    --o:mount_jail_tree=false \
+    --o:logging.level=warning \
+    --o:logging.level_startup=trace \
+    --o:storage.wopi[@allow]=true \
+    --o:storage.wopi.host[0]=docs-connector \
+    --o:storage.wopi.host[1]=localhost \
+    --o:storage.wopi.host[2]=127.0.0.1 \
+    --o:net.frame_ancestors=localhost:9000 \
+    --port=10000' > /opt/zextras/start-coolwsd.sh
+
+RUN chmod +x /opt/zextras/start-coolwsd.sh
 
 USER carbonio-docs-editor
 
 EXPOSE 10000
 
-CMD ["/opt/zextras/docs/bin/coolwsd", "--version", "--o:sys_template_path=/opt/zextras/docs/generated/systemplate", "--o:child_root_path=/opt/zextras/docs/generated/child-roots", "--o:file_server_root_path=/opt/zextras/docs/share/coolwsd", "--port=10000"]
+CMD ["/opt/zextras/start-coolwsd.sh"]

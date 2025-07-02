@@ -181,6 +181,19 @@ services:
       - carbonio-docs-connector-network
     ports:
       - "20010:10000"
+    environment:
+      - DONT_GEN_SSL_CERT=1
+      - server_name=localhost:9000
+      - dictionaries=en_US
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:security.seccomp=false --o:logging.level=trace --o:logging.level_startup=trace --o:welcome.enable=false --o:net.frame_ancestors=localhost:9000 --o:storage.wopi.host=localhost:9000 --o:net.service_root=/services/docs/editor --o:net.proxy_prefix=http://localhost:9000/services/docs/editor
+    cap_add:
+      - MKNOD
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    privileged: true
+    extra_hosts:
+      - "localhost:host-gateway"
 
   docs-connector:
     container_name: carbonio-docs-connector
@@ -199,6 +212,8 @@ services:
       - CARBONIO_FILES_PORT=10000
       - CARBONIO_USER_MANAGEMENT_HOST=user-management
       - CARBONIO_USER_MANAGEMENT_PORT=10000
+      - CARBONIO_WOPI_HOST=localhost
+      - CARBONIO_WOPI_PORT=9000
     depends_on:
       - storages
       - consul-mock
