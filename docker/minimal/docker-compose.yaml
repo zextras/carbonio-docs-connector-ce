@@ -185,6 +185,7 @@ services:
       - DONT_GEN_SSL_CERT=1
       - server_name=localhost:9000
       - dictionaries=en_US
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false
     cap_add:
       - MKNOD
       - SYS_ADMIN

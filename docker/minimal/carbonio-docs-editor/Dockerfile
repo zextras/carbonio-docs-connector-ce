@@ -41,7 +41,9 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:net.listen=0.0.0.0 \
     --o:net.port=10000 \
     --o:ssl.enable=false \
-    --o:ssl.termination=true \
+    --o:ssl.termination=false \
+    --o:net.proto=http \
+    --o:net.service_root=/services/docs/editor \
     --o:security.seccomp=false \
     --o:mount_jail_tree=false \
     --o:logging.level=warning \
@@ -50,7 +52,11 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:storage.wopi.host[0]=docs-connector \
     --o:storage.wopi.host[1]=localhost \
     --o:storage.wopi.host[2]=127.0.0.1 \
-    --o:net.frame_ancestors=localhost:9000 \
+    --o:storage.wopi.alias_groups[@mode]=first \
+    --o:storage.wopi.alias_groups[0][@host]=http://localhost:20009 \
+    --o:storage.wopi.alias_groups[0][0]=http://docs-connector:10000 \
+    --o:net.frame_ancestors=localhost:9000,localhost:20010,http://localhost:20010 \
+    "--o:security.content_security_policy=default-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' data: blob: http://localhost:* https://localhost:*; connect-src '\''self'\'' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*; font-src '\''self'\'' data: http://localhost:* https://localhost:*; img-src '\''self'\'' data: blob: http://localhost:* https://localhost:*; style-src '\''self'\'' '\''unsafe-inline'\'' http://localhost:* https://localhost:*; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' http://localhost:* https://localhost:*; frame-src '\''self'\'' blob: http://localhost:* https://localhost:*; object-src '\''none'\'';" \
     --port=10000' > /opt/zextras/start-coolwsd.sh
 
 RUN chmod +x /opt/zextras/start-coolwsd.sh
