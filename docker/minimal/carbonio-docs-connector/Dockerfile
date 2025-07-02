@@ -38,5 +38,5 @@ carbonio.wopi.port=${CARBONIO_WOPI_PORT}" > /etc/carbonio/docs-connector/config.
 JAR=$(ls carbonio-docs-connector-*-fatjar.jar | head -n 1) && \
 java -Djava.net.preferIPv4Stack=true \
   -Xmx128m \
-  -DLOG_LEVEL=warn \
+  -DLOG_LEVEL=debug \
   -jar "$JAR"'
