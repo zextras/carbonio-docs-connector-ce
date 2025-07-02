@@ -56,9 +56,10 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:storage.wopi.alias_groups[@mode]=first \
     --o:storage.wopi.alias_groups[0][@host]=http://localhost:20009 \
     --o:storage.wopi.alias_groups[0][0]=http://docs-connector:10000 \
-    --o:net.frame_ancestors=localhost:9000,localhost:20010,http://localhost:20010,http://localhost:9000 \
-    --o:security.content_security_policy="" \
+    --o:net.frame_ancestors=localhost:20010,http://localhost:20010 \
+    --o:security.content_security_policy="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';" \
     --o:admin_console.enable=false \
+    --o:logging.level=trace \
     --port=10000' > /opt/zextras/start-coolwsd.sh
 
 RUN chmod +x /opt/zextras/start-coolwsd.sh
