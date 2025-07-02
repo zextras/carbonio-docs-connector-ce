@@ -56,7 +56,8 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:storage.wopi.alias_groups[0][@host]=http://localhost:20009 \
     --o:storage.wopi.alias_groups[0][0]=http://docs-connector:10000 \
     --o:net.frame_ancestors=localhost:9000,localhost:20010,http://localhost:20010 \
-    "--o:security.content_security_policy=default-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' data: blob: http://localhost:* https://localhost:*; connect-src '\''self'\'' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*; font-src '\''self'\'' data: http://localhost:* https://localhost:*; img-src '\''self'\'' data: blob: http://localhost:* https://localhost:*; style-src '\''self'\'' '\''unsafe-inline'\'' http://localhost:* https://localhost:*; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' http://localhost:* https://localhost:*; frame-src '\''self'\'' blob: http://localhost:* https://localhost:*; object-src '\''none'\'';" \
+    --o:security.content_security_policy="" \
+    --o:admin_console.enable=false \
     --port=10000' > /opt/zextras/start-coolwsd.sh
 
 RUN chmod +x /opt/zextras/start-coolwsd.sh
