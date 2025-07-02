@@ -44,6 +44,7 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:ssl.termination=false \
     --o:net.proto=http \
     --o:net.service_root=/services/docs/editor \
+    --o:net.proxy_prefix=true \
     --o:security.seccomp=false \
     --o:mount_jail_tree=false \
     --o:logging.level=warning \
@@ -55,7 +56,7 @@ echo "Starting Carbonio Docs Editor..."\n\
     --o:storage.wopi.alias_groups[@mode]=first \
     --o:storage.wopi.alias_groups[0][@host]=http://localhost:20009 \
     --o:storage.wopi.alias_groups[0][0]=http://docs-connector:10000 \
-    --o:net.frame_ancestors=localhost:9000,localhost:20010,http://localhost:20010 \
+    --o:net.frame_ancestors=localhost:9000,localhost:20010,http://localhost:20010,http://localhost:9000 \
     --o:security.content_security_policy="" \
     --o:admin_console.enable=false \
     --port=10000' > /opt/zextras/start-coolwsd.sh
