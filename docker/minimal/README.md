@@ -15,4 +15,5 @@ Possible configs for docs connector:
   - CARBONIO_FILES_PORT
   - CARBONIO_USER_MANAGEMENT_HOST
   - CARBONIO_USER_MANAGEMENT_PORT
+  - CARBONIO_REQUESTER_DOMAIN_OVERRIDE (useful to override domain when redirecting to docs-editor)
     

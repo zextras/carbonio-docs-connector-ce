@@ -190,6 +190,7 @@ services:
       - CARBONIO_USER_MANAGEMENT_PORT=10000
       - CARBONIO_WOPI_HOST=docs-connector
       - CARBONIO_WOPI_PORT=10000
+      - CARBONIO_REQUESTER_DOMAIN_OVERRIDE=http://docker.carbonio.localhost
     depends_on:
       - storages
       - consul-mock

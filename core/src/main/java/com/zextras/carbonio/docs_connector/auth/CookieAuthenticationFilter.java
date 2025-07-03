@@ -10,6 +10,7 @@ import com.zextras.carbonio.docs_connector.Constants.Config;
 import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
+import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
 import java.util.Optional;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -27,10 +28,12 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
   private final static Logger logger = LoggerFactory.getLogger(CookieAuthenticationFilter.class);
 
+  private final DocsConnectorConfig config;
   private final UserManagementClient userManagementClient;
 
   @Inject
-  public CookieAuthenticationFilter(UserManagementClient userManagementClient) {
+  public CookieAuthenticationFilter(DocsConnectorConfig config, UserManagementClient userManagementClient) {
+    this.config = config;
     this.userManagementClient = userManagementClient;
   }
 
@@ -64,7 +67,12 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
               myself -> {
                 requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
                 requestContext.setProperty(Context.REQUESTER_ID, userId.getUserId());
-                requestContext.setProperty(Context.REQUESTER_DOMAIN, myself.getDomain());
+                Optional<String> requesterDomainOverride = config.getRequesterDomainOverride();
+                if (requesterDomainOverride.isPresent()) {
+                  requestContext.setProperty(Context.REQUESTER_DOMAIN, requesterDomainOverride.get());
+                } else {
+                  requestContext.setProperty(Context.REQUESTER_DOMAIN, myself.getDomain());
+                }
                 requestContext.setProperty(Context.REQUESTER_LOCALE, myself.getLocale()
                 );
               })

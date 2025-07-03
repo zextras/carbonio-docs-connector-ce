@@ -104,6 +104,12 @@ public class DocsConnectorConfig {
           String.valueOf(Constants.Config.Wopi.DEFAULT_PORT));
   }
 
+  // Useful to force redirect on other domain
+  public Optional<String> getRequesterDomainOverride() {
+      return Optional.ofNullable(properties.getProperty(
+          Constants.Context.OVERRIDE_REQUESTER_DOMAIN_PROPERTY));
+  }
+
   /**
    * Fetches the maximum file size values from the service-discover key/value if it is set,
    * otherwise it returns the default size
