@@ -5,8 +5,8 @@ This minimal setup includes all necessary dependencies without mocks (with Consu
 Steps:
     1. `cd docker/minimal`
     2. `docker compose up --build`
-    3. Browse Carbonio on `http://localhost:9000/`, backend accessible on `http://localhost:20009` (docs editor on 20010)
-    4. Login using `test@demo.zextras.io`/`password`
+    3. Browse Carbonio on `http://docker.carbonio.localhost`, backend accessible on `http://localhost:20009`
+    4. Login using `test@carbonio.localhost`/`assext`
 
 Possible configs for docs connector:
   - CARBONIO_DOCS_CONNECTOR_HOST
@@ -15,5 +15,5 @@ Possible configs for docs connector:
   - CARBONIO_FILES_PORT
   - CARBONIO_USER_MANAGEMENT_HOST
   - CARBONIO_USER_MANAGEMENT_PORT
-  - CARBONIO_REQUESTER_DOMAIN_OVERRIDE (useful to override domain when redirecting to docs-editor)
+  - CARBONIO_REQUESTER_DOMAIN_OVERRIDE (used to override domain when redirecting to docs-editor, not really required in production)
     

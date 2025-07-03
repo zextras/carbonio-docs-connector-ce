@@ -220,9 +220,6 @@ services:
       - SYS_CHROOT
     security_opt:
       - apparmor:unconfined
-    privileged: true
-    extra_hosts:
-      - "localhost:host-gateway"
 
 networks:
   carbonio-docs-connector-network:

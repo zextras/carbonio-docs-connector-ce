@@ -45,8 +45,8 @@ fi
 echo "Executing provisioning commands..."
 docker exec minimal-mailbox-1 sh -c "> /tmp/prov.ls && cat > /tmp/prov.ls <<EOF
 cd carbonio.localhost
-ca test@carbonio.localhost password
-ca admin@carbonio.localhost password zimbraIsAdminAccount TRUE
+ca user@carbonio.localhost assext
+ca admin@carbonio.localhost assext zimbraIsAdminAccount TRUE
 EOF
 zmprov < /tmp/prov.ls"
 
