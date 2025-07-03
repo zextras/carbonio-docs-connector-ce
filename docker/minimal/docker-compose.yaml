@@ -206,6 +206,8 @@ services:
     restart: on-failure
     networks:
       - carbonio-docs-connector-network
+    ports:
+      - "20010:10000"
     environment:
       - LANG=C.UTF-8
       - DONT_GEN_SSL_CERT=1

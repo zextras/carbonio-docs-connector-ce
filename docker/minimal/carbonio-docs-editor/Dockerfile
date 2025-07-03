@@ -34,6 +34,15 @@ exec /opt/zextras/docs/bin/coolwsd \\\n\
     --o:child_root_path=/opt/zextras/docs/generated/child-roots \\\n\
     --o:file_server_root_path=/opt/zextras/docs/share/coolwsd \\\n\
     --o:net.listen=0.0.0.0 \\\n\
+    --o:ssl.enable=false \\\n\
+    --o:ssl.termination=false \\\n\
+    --o:net.proto=IPv4 \\\n\
+    --o:net.frame_ancestors=localhost:9000 \\\n\
+    --o:storage.wopi[@allow]=true \\\n\
+    --o:storage.wopi.host[0]=docs-connector \\\n\
+    --o:storage.wopi.host[1]=localhost \\\n\
+    --o:storage.wopi.host[2]=127.0.0.1 \\\n\
+    --o:storage.wopi.host[3]=localhost:9000 \\\n\
     --port=10000' > /opt/zextras/start.sh \
     && chmod +x /opt/zextras/start.sh
 
