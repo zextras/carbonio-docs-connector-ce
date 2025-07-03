@@ -52,6 +52,7 @@ public final class Constants {
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
     public static final String REQUESTER_DOMAIN = "requester-domain";
+    public static final String OVERRIDE_REQUESTER_DOMAIN_PROPERTY = "carbonio.docs-connector.requester-domain-override";
     public static final String REQUESTER_LOCALE = "requester-locale";
   }
 
@@ -145,6 +146,17 @@ public final class Constants {
       public static final String PORT_PROPERTY = "carbonio.user-management.port";
       public static final int DEFAULT_PORT = 20001;
       public static final String ZM_AUTH_TOKEN = "ZM_AUTH_TOKEN=";
+    }
+
+    public static final class Wopi {
+
+      private Wopi() {}
+
+      public static final String DEFAULT_PROTOCOL = "http";
+      public static final String DEFAULT_HOST = "127.78.0.12";
+      public static final String HOST_PROPERTY = "carbonio.wopi.host";
+      public static final String PORT_PROPERTY = "carbonio.wopi.port";
+      public static final int DEFAULT_PORT = 20000;
     }
   }
 }

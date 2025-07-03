@@ -5,6 +5,7 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import com.google.inject.Inject;
+import com.zextras.carbonio.docs_connector.Constants;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
@@ -77,8 +78,11 @@ public class FilesService {
       .createToken(UUID.fromString(nodeId), requesterId, cookie);
 
     // WopiSRC
+    String wopiProtocol = Constants.Config.Wopi.DEFAULT_PROTOCOL;
+    String wopiHost = config.getWopiHost();
+    String wopiPort = config.getWopiPort();
     StringBuilder wopiEndpointBuilder = new StringBuilder()
-      .append("http://127.78.0.12:20000/wopi/")
+      .append(wopiProtocol).append("://").append(wopiHost).append(":").append(wopiPort).append("/wopi/")
       .append(nodeId);
 
     if (optVersion.isPresent() || optOffsetFromUtc.isPresent()) {
