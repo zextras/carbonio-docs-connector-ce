@@ -5,7 +5,7 @@ This minimal setup includes all necessary dependencies without mocks (with Consu
 Steps:
     1. `cd docker/minimal`
     2. `docker compose up --build`
-    3. Browse Carbonio on `http://docker.carbonio.localhost`, backend accessible on `http://localhost:20009`
+    3. Browse Carbonio on `http://docker.carbonio.localhost`, backends are exposed on various ports (see docker-compose.yaml)
     4. Login using `test@carbonio.localhost`/`assext`
 
 Possible configs for docs connector:

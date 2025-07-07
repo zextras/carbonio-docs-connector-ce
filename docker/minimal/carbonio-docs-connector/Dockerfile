@@ -6,16 +6,6 @@ RUN mkdir -p /etc/carbonio/docs-connector
 
 COPY ../../boot/target/carbonio-docs-connector-*-fatjar.jar .
 
-# Default values
-ENV CARBONIO_DOCS_CONNECTOR_HOST=0.0.0.0
-ENV CARBONIO_DOCS_CONNECTOR_PORT=10000
-ENV CARBONIO_FILES_HOST=127.0.0.1
-ENV CARBONIO_FILES_PORT=20000
-ENV CARBONIO_USER_MANAGEMENT_HOST=127.0.0.1
-ENV CARBONIO_USER_MANAGEMENT_PORT=20001
-ENV CARBONIO_WOPI_HOST=127.0.0.1
-ENV CARBONIO_WOPI_PORT=20002
-
 # This is needed to make the connection to consul work
 ENV CONSUL_HTTP_TOKEN=fake-consul-token
 
