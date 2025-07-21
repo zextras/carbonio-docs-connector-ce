@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 pkgname="carbonio-docs-connector-ce"
-pkgver="0.5.3"
+pkgver="0.5.4"
 pkgrel="SNAPSHOT"
 pkgdesc="Carbonio docs connector"
 maintainer="Zextras <packages@zextras.com>"
@@ -36,9 +36,9 @@ sha256sums=(
   "d6988ce7bc56df4d549e2c62be72f10d1922078ef6928cf710bd9bc0049a3003"
   "ef16381204ec91c38af625e2bb808690223204d6738608e49330a610b9c56b51"
   "SKIP"
-  "1be6bf0e28dcdecc017c69cb29e2eb2ef1246b6eb6c8ea5abf7b35bae4ba5f2f"
+  "87abe468f275314760f245e5ec167c276be0a6c964369bdc059488c2927d1a8c"
   "f1bb6fc98883b58ba961baf343575c6debc4ed4194c91ec3971d9dc506c77318"
-  "974bf15effc141bdf5dfa4d08d774415b60f746800e37a5e328dbcd73942a74a"
+  "5f747b1711af34832ab98311b97bbf102c730c26d24cb4d117b42e4564b0a1f2"
   "ece8af20142189524c543e1fca1f42e3abdb544fb0d464b706f37db712d53149"
   "d501371cc8abc30c218e1e3e937afc64a334f07fbdb13256c06e0e50aa32aefd"
   "297da99892479666a9733d0d2ad4e18b7b75600a3253c1ddd588f6d32fffc6a4"
