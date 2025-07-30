@@ -11,9 +11,6 @@ import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Wopi;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
-import java.time.Clock;
-import java.util.List;
-import java.util.UUID;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -22,6 +19,10 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Clock;
+import java.util.List;
+import java.util.UUID;
 
 @Provider
 @Singleton
@@ -34,11 +35,15 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
 
   @Inject
   public AccessTokenValidationFilter(OpenDocumentTokenRepository openDocumentTokenRepository,
-    Clock clock) {
+                                     Clock clock) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
     this.clock = clock;
   }
 
+  /*
+  Since Collabora Online's code now makes a preliminary checkinfo operation with a hardcoded access token ttl,
+  instead of checking that ttl we just check the one saved in the repository against system clock.
+   */
   @Override
   public void filter(ContainerRequestContext requestContext) {
 
@@ -47,27 +52,26 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
 
     if (Endpoints.WOPI.equals(endpoint)) {
       MultivaluedMap<String, String> queryParameters = requestContext
-        .getUriInfo()
-        .getQueryParameters();
+          .getUriInfo()
+          .getQueryParameters();
 
       if (queryParameters.containsKey(API.Wopi.ACCESS_TOKEN_QUERY_PARAM)
-        && queryParameters.containsKey(Wopi.ACCESS_TOKEN_TTL_QUERY_PARAM)
       ) {
         List<String> accessTokens = queryParameters.get(Wopi.ACCESS_TOKEN_QUERY_PARAM);
-        List<String> tokenExpirationTimestamps = queryParameters.get(
-          Wopi.ACCESS_TOKEN_TTL_QUERY_PARAM);
-
-        if (accessTokens.size() > 0
-          && tokenExpirationTimestamps.size() > 0
-          && Long.parseLong(tokenExpirationTimestamps.get(0)) > clock.millis()
-        ) {
-
+        if (!accessTokens.isEmpty()) {
           openDocumentTokenRepository
-            .getToken(UUID.fromString(accessTokens.get(0)))
-            .ifPresentOrElse(
-              token -> requestContext.setProperty(Context.OPEN_DOCUMENT_TOKEN, token),
-              () -> requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build())
-            );
+              .getToken(UUID.fromString(accessTokens.get(0)))
+              .ifPresentOrElse(
+                  token -> {
+                    if (token.getExpirationTimestamp().toEpochMilli() > clock.millis()) {
+                      requestContext.setProperty(Context.OPEN_DOCUMENT_TOKEN, token);
+                    } else {
+                      logger.warn("Token {} is expired", accessTokens.get(0));
+                      requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+                    }
+                  },
+                  () -> requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build())
+              );
 
           return;
         }

@@ -203,6 +203,13 @@ public class WopiService {
   private String formatDateToIso8601WithOffset(Date modifiedTime, Optional<Integer> optOffsetMinutes) {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
+    // TODO marked for removal, ignore it completely and only deal with UTC
+    // we don't actually need the offset to be passed from Files' frontend, we can just format
+    // the "lastSaved" in docs-editor frontend;
+    // using a forwarded offset works but if user refreshes the docs page the offset is lost and
+    // lastSaved will be broken (calculated from UTC)
+    optOffsetMinutes = Optional.empty();
+
     if (optOffsetMinutes.isPresent()) {
       int totalOffsetMillis = optOffsetMinutes.get() * 60 * 1000;
       TimeZone customTz = new SimpleTimeZone(totalOffsetMillis, "Custom Offset");
