@@ -8,6 +8,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.3](https://github.com/zextras/carbonio-docs-connector-ce/compare/v0.5.2...v0.5.3) (2025-08-20)
+
+
+### Features
+
+* align docker compose ([#59](https://github.com/zextras/carbonio-docs-connector-ce/issues/59)) ([2bc4853](https://github.com/zextras/carbonio-docs-connector-ce/commit/2bc485362f3932a6e4e6be9d8f9cb1b8b68becc9))
+* build packages from docker ([#66](https://github.com/zextras/carbonio-docs-connector-ce/issues/66)) ([35a5d9d](https://github.com/zextras/carbonio-docs-connector-ce/commit/35a5d9df41b9615d60c1755d804df51026563086))
+
+
+### Bug Fixes
+
+* adapt jenkinsfile ([#60](https://github.com/zextras/carbonio-docs-connector-ce/issues/60)) ([eb8e7b2](https://github.com/zextras/carbonio-docs-connector-ce/commit/eb8e7b283d4ec4b62942365f0ce5ab175ed85b9a))
+* revert WantedBy for compatibility with older systems ([9cf5216](https://github.com/zextras/carbonio-docs-connector-ce/commit/9cf5216dabe80ae179d9aeab7980245bcf8b454d))
+* revert WantedBy for compatibility with older systems ([0fb5727](https://github.com/zextras/carbonio-docs-connector-ce/commit/0fb572779ca6754824d2fad59ba00658a9aef400))
+
 ### [0.5.2](https://github.com/zextras/carbonio-docs-connector-ce/compare/v0.5.1...v0.5.2) (2025-05-15)
 
 
