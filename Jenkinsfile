@@ -47,22 +47,15 @@ pipeline {
             }
         }
 
-        stage('Setup') {
-            steps {
-                container('jdk-17') {
-                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        sh 'cp $SETTINGS_PATH settings-jenkins.xml'
-                    }
-                }
-            }
-        }
-
         stage('Build jar') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B -settings settings-jenkins.xml clean package'
-                    // having every file within the package directory is great simplification
-                    sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+                    withCredentials([
+                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
+                    ]) {
+                        sh 'mvn -B -settings $SETTINGS_PATH clean package'
+                        sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+                    }
                 }
             }
         }
@@ -70,7 +63,11 @@ pipeline {
         stage('Unit tests') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-unit-tests'
+                    withCredentials([
+                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
+                    ]) {
+                        sh 'mvn -B --settings $SETTINGS_PATH verify -P run-unit-tests'
+                    }
                 }
             }
         }
@@ -78,7 +75,11 @@ pipeline {
         stage('Integration tests') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-integration-tests'
+                    withCredentials([
+                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
+                    ]) {
+                        sh 'mvn -B --settings $SETTINGS_PATH verify -P run-integration-tests'
+                    }
                 }
             }
         }
@@ -86,7 +87,11 @@ pipeline {
         stage('Coverage') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P generate-jacoco-full-report'
+                    withCredentials([
+                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
+                    ]) {
+                        sh 'mvn -B --settings $SETTINGS_PATH verify -P generate-jacoco-full-report'
+                    }
                     recordCoverage(tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED')
                 }
             }
@@ -115,7 +120,6 @@ pipeline {
 
                 stage('Build dep/rpm') {
                     steps {
-                        sh 'rm settings-jenkins.xml'
                         buildStage([
                             ubuntuSinglePkg: true,
                             rockySinglePkg: true,
