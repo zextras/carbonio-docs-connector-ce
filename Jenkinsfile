@@ -49,12 +49,10 @@ pipeline {
         stage('Build jar') {
             steps {
                 container('jdk-17') {
-                    withCredentials([
-                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
-                    ]) {
-                        sh 'mvn -B -settings $SETTINGS_PATH clean package'
-                        sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
-                    }
+                    sh '''
+                        mvn -B clean package
+                        cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar
+                    '''
                 }
             }
         }
@@ -62,11 +60,7 @@ pipeline {
         stage('Unit tests') {
             steps {
                 container('jdk-17') {
-                    withCredentials([
-                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
-                    ]) {
-                        sh 'mvn -B --settings $SETTINGS_PATH verify -P run-unit-tests'
-                    }
+                    sh 'mvn -B verify -P run-unit-tests'
                 }
             }
         }
@@ -74,11 +68,7 @@ pipeline {
         stage('Integration tests') {
             steps {
                 container('jdk-17') {
-                    withCredentials([
-                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
-                    ]) {
-                        sh 'mvn -B --settings $SETTINGS_PATH verify -P run-integration-tests'
-                    }
+                    sh 'mvn -B verify -P run-integration-tests'
                 }
             }
         }
@@ -86,11 +76,7 @@ pipeline {
         stage('Coverage') {
             steps {
                 container('jdk-17') {
-                    withCredentials([
-                        file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')
-                    ]) {
-                        sh 'mvn -B --settings $SETTINGS_PATH verify -P generate-jacoco-full-report'
-                    }
+                    sh 'mvn -B verify -P generate-jacoco-full-report'
                     recordCoverage(tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED')
                 }
             }
