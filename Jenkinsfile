@@ -1,15 +1,11 @@
-// SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
-//
-// SPDX-License-Identifier: AGPL-3.0-only
-
-def buildContainer(String title, String description, String dockerfile, String tag) {
-    sh 'docker build ' +
-            '--label org.opencontainers.image.title="' + title + '" ' +
-            '--label org.opencontainers.image.description="' + description + '" ' +
-            '--label org.opencontainers.image.vendor="Zextras" ' +
-            '-f ' + dockerfile + ' -t ' + tag + ' .'
-    sh 'docker push ' + tag
-}
+library(
+    identifier: 'jenkins-packages-build-library@1.0.4',
+    retriever: modernSCM([
+        $class: 'GitSCMSource',
+        remote: 'git@github.com:zextras/jenkins-packages-build-library.git',
+        credentialsId: 'jenkins-integration-with-github-account'
+    ])
+)
 
 pipeline {
     agent {
@@ -17,70 +13,75 @@ pipeline {
             label 'zextras-v1'
         }
     }
+
     environment {
         JAVA_OPTS = '-Dfile.encoding=UTF8'
         LC_ALL = 'C.UTF-8'
         jenkins_build = 'true'
     }
-    parameters {
-        booleanParam defaultValue: false, description: 'Whether to upload the packages in playground repositories', name: 'PLAYGROUND'
-        booleanParam defaultValue: false, description: 'Whether to upload the packages in custom repositories', name: 'CUSTOM'
-        choice choices: ['rc-jdk17'], description: 'Suffix of the custom repositories (it uploads on the specified repo only if CUSTOM flag is checked)', name: 'SUFFIX_CUSTOM_REPOS'
-    }
+
     options {
         buildDiscarder(logRotator(numToKeepStr: '25'))
+        skipDefaultCheckout()
         timeout(time: 2, unit: 'HOURS')
-        skipDefaultCheckout() // Do the checkout only manually because it is a heavy operation and it can lead to permission problems, conflicts etc
     }
+
+    parameters {
+        booleanParam defaultValue: false,
+            description: 'Whether to upload the packages in playground repositories',
+            name: 'PLAYGROUND'
+    }
+
+    tools {
+        jfrog 'jfrog-cli'
+    }
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
                 script {
-                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    gitMetadata()
                 }
             }
         }
-        stage('Setup') {
-            steps {
-                container('jdk-17') {
-                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        sh 'cp $SETTINGS_PATH settings-jenkins.xml'
-                    }
-                }
-            }
-        }
+
         stage('Build jar') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B -settings settings-jenkins.xml clean package'
-                    // having every file within the package directory is great simplification
-                    sh 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
+                    sh '''
+                        mvn -B clean package
+                        cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar
+                    '''
                 }
             }
         }
-        stage("Unit tests") {
+
+        stage('Unit tests') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-unit-tests'
+                    sh 'mvn -B verify -P run-unit-tests'
                 }
             }
         }
-        stage("Integration tests") {
+
+        stage('Integration tests') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P run-integration-tests'
+                    sh 'mvn -B verify -P run-integration-tests'
                 }
             }
         }
+
         stage('Coverage') {
             steps {
                 container('jdk-17') {
-                    sh 'mvn -B --settings settings-jenkins.xml verify -P generate-jacoco-full-report'
-                    recordCoverage(tools: [[parser: 'JACOCO']],sourceCodeRetention: 'MODIFIED')
+                    sh 'mvn -B verify -P generate-jacoco-full-report'
+                    recordCoverage(tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED')
                 }
             }
         }
+
         stage('Build deb/rpm') {
             stages {
                 // Replace the pkgrel value with the git commit hash to ensure that
@@ -88,332 +89,75 @@ pipeline {
                 // Note that the pkgrel value will remain as it was in the codebase to avoid
                 // conflicts between multiple open PRs
                 stage('Add timestamp and commit hash') {
-                    when {
+                    when{
                         branch 'develop'
                     }
-                    steps {
-                        script {
-                            def timestamp = sh(script: 'date +%s', returnStdout: true).trim()
-                            def gitCommitShort = env.GIT_COMMIT.take(8)
+                    steps{
+                        script{
+                            String timestamp = sh(script: 'date +%s', returnStdout: true).trim()
+                            String gitCommitShort = env.GIT_COMMIT.take(8)
                             sh """
                                 sed -i "s/pkgrel=\\".*\\"/pkgrel=\\"${timestamp}+${gitCommitShort}\\"/" ./package/PKGBUILD
                             """
                         }
                     }
                 }
-                stage('Stash') {
+
+                stage('Build dep/rpm') {
                     steps {
-                        stash includes: 'yap.json,package/**', name: 'binaries'
-                    }
-                }
-                stage('yap') {
-                    parallel {
-                        stage('Ubuntu') {
-                            agent {
-                                node {
-                                    label 'yap-ubuntu-20-v1'
-                                }
-                            }
-                            steps {
-                                container('yap') {
-                                    unstash 'binaries'
-                                    sh 'sudo yap build ubuntu .'
-                                    stash includes: 'artifacts/', name: 'artifacts-deb'
-                                }
-                            }
-                            post {
-                                always {
-                                    archiveArtifacts artifacts: 'artifacts/*.deb', fingerprint: true
-                                }
-                            }
-                        }
-                        stage('RHEL') {
-                            agent {
-                                node {
-                                    label 'yap-rocky-8-v1'
-                                }
-                            }
-                            steps {
-                                container('yap') {
-                                    unstash 'binaries'
-                                    sh 'sudo yap build rocky .'
-                                    stash includes: 'artifacts/*.rpm', name: 'artifacts-rpm'
-                                }
-                            }
-                            post {
-                                always {
-                                    archiveArtifacts artifacts: 'artifacts/*.rpm', fingerprint: true
-                                }
-                            }
-                        }
+                        buildStage([
+                            ubuntuSinglePkg: true,
+                            rockySinglePkg: true,
+                            skipTsOverride: true
+                        ])
                     }
                 }
             }
         }
-        stage('Upload to Develop') {
-            when {
-                branch 'develop'
-            }
-            steps {
-                unstash 'artifacts-deb'
-                unstash 'artifacts-rpm'
-                script {
-                    def server = Artifactory.server 'zextras-artifactory'
-                    def buildInfo
-                    def uploadSpec
 
-                    buildInfo = Artifactory.newBuildInfo()
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/*.deb",
-                                "target": "ubuntu-devel/pool/",
-                                "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "centos8-devel/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "rhel9-devel/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                }
+        stage('Upload artifacts')
+        {
+            steps {
+                uploadStage([
+                    packages: yapHelper.getPackageNames(),
+                    rockySinglePkg: true,
+                    ubuntuSinglePkg: true,
+                ])
             }
         }
-        stage('Upload to Playground') {
+
+        stage('Build and Publish Docker Image') {
             when {
-                anyOf {
-                    branch 'playground/*'
-                    expression { params.PLAYGROUND == true }
-                }
-            }
-            steps {
-                unstash 'artifacts-deb'
-                unstash 'artifacts-rpm'
-                script {
-                    def server = Artifactory.server 'zextras-artifactory'
-                    def buildInfo
-                    def uploadSpec
-
-                    buildInfo = Artifactory.newBuildInfo()
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/carbonio-docs-connector-ce*.deb",
-                                "target": "ubuntu-playground/pool/",
-                                "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "centos8-playground/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "rhel9-playground/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                }
-            }
-        }
-        stage('Upload to Custom') {
-            when {
-                anyOf {
-                    expression { params.CUSTOM == true }
-                }
-            }
-            steps {
-                unstash 'artifacts-deb'
-                unstash 'artifacts-rpm'
-                script {
-                    def server = Artifactory.server 'zextras-artifactory'
-                    def buildInfo
-                    def uploadSpec
-
-                    buildInfo = Artifactory.newBuildInfo()
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/carbonio-docs-connector-ce*.deb",
-                                "target": "ubuntu-''' + params.SUFFIX_CUSTOM_REPOS + '''/pool/",
-                                "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "centos8-''' + params.SUFFIX_CUSTOM_REPOS + '''/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            },
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "rhel9-''' + params.SUFFIX_CUSTOM_REPOS + '''/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                }
-            }
-        }
-        stage('Upload & Promotion Config') {
-            when {
-                anyOf {
-                    branch 'release/*'
-                    buildingTag()
-                }
-            }
-            steps {
-                unstash 'artifacts-deb'
-                unstash 'artifacts-rpm'
-                script {
-                    def server = Artifactory.server 'zextras-artifactory'
-                    def buildInfo
-                    def uploadSpec
-                    def config
-
-                    //ubuntu
-                    buildInfo = Artifactory.newBuildInfo()
-                    buildInfo.name += '-ubuntu'
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/carbonio-docs-connector-ce*.deb",
-                                "target": "ubuntu-rc/pool/",
-                                "props": "deb.distribution=focal;deb.distribution=jammy;deb.distribution=noble;deb.component=main;deb.architecture=amd64;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                    config = [
-                            'buildName'          : buildInfo.name,
-                            'buildNumber'        : buildInfo.number,
-                            'sourceRepo'         : 'ubuntu-rc',
-                            'targetRepo'         : 'ubuntu-release',
-                            'comment'            : 'Do not change anything! Just press the button',
-                            'status'             : 'Released',
-                            'includeDependencies': false,
-                            'copy'               : true,
-                            'failFast'           : true
-                    ]
-                    Artifactory.addInteractivePromotion server: server, promotionConfig: config, displayName: 'Ubuntu Promotion to Release'
-                    server.publishBuildInfo buildInfo
-
-                    //rhel 8
-                    buildInfo = Artifactory.newBuildInfo()
-                    buildInfo.name += '-centos8'
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "centos8-rc/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                    config = [
-                            'buildName'          : buildInfo.name,
-                            'buildNumber'        : buildInfo.number,
-                            'sourceRepo'         : 'centos8-rc',
-                            'targetRepo'         : 'centos8-release',
-                            'comment'            : 'Do not change anything! Just press the button',
-                            'status'             : 'Released',
-                            'includeDependencies': false,
-                            'copy'               : true,
-                            'failFast'           : true
-                    ]
-                    Artifactory.addInteractivePromotion server: server, promotionConfig: config, displayName: 'RHEL8 Promotion to Release'
-                    server.publishBuildInfo buildInfo
-
-                    //rhel 9
-                    buildInfo = Artifactory.newBuildInfo()
-                    buildInfo.name += '-rhel9'
-                    uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "artifacts/(carbonio-docs-connector-ce)-(*).x86_64.rpm",
-                                "target": "rhel9-rc/zextras/{1}/{1}-{2}.x86_64.rpm",
-                                "props": "rpm.metadata.arch=x86_64;rpm.metadata.vendor=zextras;vcs.revision=${env.GIT_COMMIT}"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec, buildInfo: buildInfo, failNoOp: false
-                    config = [
-                            'buildName'          : buildInfo.name,
-                            'buildNumber'        : buildInfo.number,
-                            'sourceRepo'         : 'rhel9-rc',
-                            'targetRepo'         : 'rhel9-release',
-                            'comment'            : 'Do not change anything! Just press the button',
-                            'status'             : 'Released',
-                            'includeDependencies': false,
-                            'copy'               : true,
-                            'failFast'           : true
-                    ]
-                    Artifactory.addInteractivePromotion server: server, promotionConfig: config, displayName: 'RHEL9 Promotion to Release'
-                    server.publishBuildInfo buildInfo
-                }
-            }
-        }
-        stage('Build and Publish Docker Image - Dev') {
-            when {
-                not {
-                    buildingTag()
-                }
                 not {
                     expression { env.BRANCH_NAME.startsWith("PR-") }
                 }
             }
             steps {
                 container('dind') {
-                    withDockerRegistry(credentialsId: 'private-registry', url: 'https://registry.dev.zextras.com') {
+                    withDockerRegistry([
+                        credentialsId: 'private-registry',
+                        url: 'https://registry.dev.zextras.com'
+                    ]) {
                         script {
-                            def branchTag = env.BRANCH_NAME.replaceAll('/', '-').toLowerCase()
-                            def imageTag = "registry.dev.zextras.com/dev/carbonio-docs-connector-ce:${branchTag}"
+                            String branchTag = env.BRANCH_NAME.replaceAll('/', '-').toLowerCase()
+                            Set<String> imageTags = [ branchTag ]
 
-                            buildContainer(
-                                'Carbonio Docs Connector CE',
-                                'Carbonio Docs Connector Community Edition',
-                                'docker/minimal/carbonio-docs-connector/Dockerfile',
-                                imageTag
-                            )
-
-                            // alias "latest" for last build of develop
                             if (env.BRANCH_NAME == 'develop') {
-                                def latestTag = "registry.dev.zextras.com/dev/carbonio-docs-connector-ce:latest"
-
-                                sh "docker tag ${imageTag} ${latestTag}"
-                                sh "docker push ${latestTag}"
+                                imageTags.add('latest')
+                            } else if (buildingTag() && env.TAG_NAME?.trim()) {
+                                imageTags.add(env.TAG_NAME?.startsWith('v') ? env.TAG_NAME.substring(1) : env.TAG_NAME)
                             }
-                        }
-                    }
-                }
-            }
-        }
-        stage('Build and Publish Docker Image - Stable') {
-            when {
-                buildingTag()
-            }
-            steps {
-                container('dind') {
-                    withDockerRegistry(credentialsId: 'private-registry', url: 'https://registry.dev.zextras.com') {
-                        script {
-                            def releaseTag = env.TAG_NAME.startsWith('v') ? env.TAG_NAME.substring(1) : env.TAG_NAME
-                            def imageTag = "registry.dev.zextras.com/dev/carbonio-docs-connector-ce:${releaseTag}"
 
-                            buildContainer(
-                                'Carbonio Docs Connector CE',
-                                'Carbonio Docs Connector Community Edition',
-                                'docker/minimal/carbonio-docs-connector/Dockerfile',
-                                imageTag
-                            )
+                            dockerHelper.buildImage([
+                                imageName: 'registry.dev.zextras.com/dev/carbonio-docs-connector-ce',
+                                imageTags: imageTags,
+                                dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
+                                ocLabels: [
+                                    title: 'Carbonio Docs Connector CE',
+                                    description: 'Carbonio Docs Connector Advanced Community Edition',
+                                    version: branchTag
+                                ]
+                            ])
                         }
                     }
                 }
