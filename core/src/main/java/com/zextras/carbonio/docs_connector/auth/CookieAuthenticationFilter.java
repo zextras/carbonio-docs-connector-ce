@@ -12,7 +12,6 @@ import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
-import java.util.Optional;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
@@ -21,6 +20,8 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 @Provider
 @Singleton
@@ -46,11 +47,11 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
     if (Endpoints.FILES.equals(endpoint)) {
 
       Optional<Cookie> optZmCookie = requestContext
-        .getCookies()
-        .values()
-        .stream()
-        .filter(cookie -> Config.ACCEPTED_COOKIE_TYPE.equals(cookie.getName()))
-        .findFirst();
+          .getCookies()
+          .values()
+          .stream()
+          .filter(cookie -> Config.ACCEPTED_COOKIE_TYPE.equals(cookie.getName()))
+          .findFirst();
 
       if (optZmCookie.isEmpty()) {
         logger.error("The request is unauthorized: the cookie is missing");
@@ -59,14 +60,11 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       }
 
       userManagementClient
-        .validateUserToken(optZmCookie.get().getValue())
-        .onSuccess(userId ->
-          userManagementClient
-            .getUserMyself(UserManagement.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
-            .onSuccess(
+          .getUserMyself(UserManagement.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
+          .onSuccess(
               myself -> {
                 requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
-                requestContext.setProperty(Context.REQUESTER_ID, userId.getUserId());
+                requestContext.setProperty(Context.REQUESTER_ID, myself.getId().getUserId());
                 Optional<String> requesterDomainOverride = config.getRequesterDomainOverride();
                 if (requesterDomainOverride.isPresent()) {
                   requestContext.setProperty(Context.REQUESTER_DOMAIN, requesterDomainOverride.get());
@@ -76,15 +74,10 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
                 requestContext.setProperty(Context.REQUESTER_LOCALE, myself.getLocale()
                 );
               })
-            .onFailure(throwable -> {
-              logger.error("The request is unauthorized: the cookie is invalid");
-              requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-            })
-        )
-        .onFailure(failure -> {
-          logger.error("The request is unauthorized: the cookie is invalid");
-          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-        });
+          .onFailure(throwable -> {
+            logger.error("The request is unauthorized: the cookie is invalid");
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          });
     }
   }
 }
