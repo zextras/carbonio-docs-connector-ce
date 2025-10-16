@@ -48,11 +48,17 @@ pipeline {
 
         stage('Build jar') {
             steps {
-                container('jdk-17') {
-                    sh '''
-                        mvn -B clean package
-                        cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar
-                    '''
+                script {
+                    def profile = '-P dev'
+                    if (env.TAG_NAME) {
+                        profile = '-P prod'
+                    }
+                    container('jdk-17') {
+                        sh """
+                            mvn -B clean package ${profile}
+                            cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar
+                        """
+                    }
                 }
             }
         }
@@ -89,11 +95,11 @@ pipeline {
                 // Note that the pkgrel value will remain as it was in the codebase to avoid
                 // conflicts between multiple open PRs
                 stage('Add timestamp and commit hash') {
-                    when{
+                    when {
                         branch 'develop'
                     }
-                    steps{
-                        script{
+                    steps {
+                        script {
                             String timestamp = sh(script: 'date +%s', returnStdout: true).trim()
                             String gitCommitShort = env.GIT_COMMIT.take(8)
                             sh """
@@ -129,7 +135,7 @@ pipeline {
         stage('Build and Publish Docker Image') {
             when {
                 not {
-                    expression { env.BRANCH_NAME.startsWith("PR-") }
+                    expression { env.BRANCH_NAME.startsWith('PR-') }
                 }
             }
             steps {
