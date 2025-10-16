@@ -13,3 +13,6 @@ boot/dependency-reduced-pom.xml
 
 # License
 LICENSES
+
+# VS Code
+.vscode/
