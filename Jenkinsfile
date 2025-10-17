@@ -95,8 +95,9 @@ pipeline {
                 // Note that the pkgrel value will remain as it was in the codebase to avoid
                 // conflicts between multiple open PRs
                 stage('Add timestamp and commit hash') {
-                    when {
-                        branch 'develop'
+
+                    when{
+                        branch 'devel'
                     }
                     steps {
                         script {
@@ -148,7 +149,7 @@ pipeline {
                             String branchTag = env.BRANCH_NAME.replaceAll('/', '-').toLowerCase()
                             Set<String> imageTags = [ branchTag ]
 
-                            if (env.BRANCH_NAME == 'develop') {
+                            if (env.BRANCH_NAME == 'devel') {
                                 imageTags.add('latest')
                             } else if (buildingTag() && env.TAG_NAME?.trim()) {
                                 imageTags.add(env.TAG_NAME?.startsWith('v') ? env.TAG_NAME.substring(1) : env.TAG_NAME)
