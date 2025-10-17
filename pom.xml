@@ -21,7 +21,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
   <groupId>com.zextras.carbonio.docs-connector</groupId>
   <artifactId>carbonio-docs-connector-ce</artifactId>
-  <version>0.5.4-SNAPSHOT</version>
+  <!-- Versione gestita in modo CI-friendly: ${revision}${changelist} -->
+  <version>${revision}${changelist}</version>
   <packaging>pom</packaging>
 
   <name>carbonio-docs-connector-ce</name>
@@ -33,6 +34,8 @@ SPDX-License-Identifier: AGPL-3.0-only
   </modules>
 
   <properties>
+    <!-- Versione base per CI-friendly versioning -->
+    <revision>0.5.4</revision>
     <assertj.version>3.27.3</assertj.version>
     <caffeine.version>3.2.0</caffeine.version>
     <carbonio-user-management-sdk.version>0.5.3</carbonio-user-management-sdk.version>
@@ -73,6 +76,25 @@ SPDX-License-Identifier: AGPL-3.0-only
     <skip.unit.tests>true</skip.unit.tests>
     <skip.jacoco.full.report.generation>true</skip.jacoco.full.report.generation>
   </properties>
+
+  <!-- Profili per CI-friendly versioning -->
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <changelist>-SNAPSHOT</changelist>
+      </properties>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties>
+        <changelist></changelist>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencyManagement>
     <dependencies>
