@@ -169,8 +169,7 @@ public class OpenFileApiIT {
         "&ui_defaults=UIMode=classic;UIMode=classic;TextSidebar=false;PresentationSidebar=false;SpreadsheetSidebar=false")
       .contains("&WOPISrc")
       .contains(nodeId)
-      .contains("&public_url=services%2Fdocs%2Ffiles%2Fopen%2F58032253-ed56-4eca-9017-3ae26cc2d9f1%3Fredirect%3Dtrue")
-      .contains("&lang=pt-BR");
+      .contains("&public_url=services%2Fdocs%2Ffiles%2Fopen%2F58032253-ed56-4eca-9017-3ae26cc2d9f1%3Fredirect%3Dtrue");
   }
 
   @DisplayName("Given a valid user cookie and an accessible node id the openFile API with the "

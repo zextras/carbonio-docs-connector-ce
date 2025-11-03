@@ -12,6 +12,8 @@ import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
 import com.zextras.carbonio.usermanagement.UserManagementClient;
+import com.zextras.carbonio.usermanagement.enumerations.UserStatus;
+import com.zextras.carbonio.usermanagement.enumerations.UserType;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
@@ -63,6 +65,19 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
           .getUserMyself(UserManagement.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
           .onSuccess(
               myself -> {
+
+                if(!myself.getStatus().equals(UserStatus.ACTIVE)){
+                  logger.error("The request is unauthorized: the user is not active");
+                  requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+                  return;
+                }
+
+                if(!myself.getType().equals(UserType.INTERNAL)){
+                  logger.error("The request is unauthorized: the user type is not internal");
+                  requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+                  return;
+                }
+
                 requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
                 requestContext.setProperty(Context.REQUESTER_ID, myself.getId().getUserId());
                 Optional<String> requesterDomainOverride = config.getRequesterDomainOverride();
