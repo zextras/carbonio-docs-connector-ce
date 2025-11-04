@@ -9,9 +9,16 @@ import com.google.inject.Injector;
 import com.zextras.carbonio.docs_connector.Constants.Config.Files;
 import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorModule;
+import com.zextras.carbonio.usermanagement.entities.UserId;
+import com.zextras.carbonio.usermanagement.entities.UserMyself;
+import com.zextras.carbonio.usermanagement.enumerations.UserStatus;
+import com.zextras.carbonio.usermanagement.enumerations.UserType;
 import jakarta.ws.rs.HttpMethod;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.LocalConnector;
@@ -23,6 +30,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.ExpectationId;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
+import org.mockserver.model.JsonBody;
 
 public class Simulator implements AutoCloseable {
 
@@ -173,6 +181,17 @@ public class Simulator implements AutoCloseable {
   }
 
   public String mockGetMyself(String cookie, String userId, String locale) {
+    final UserMyself userInfo =
+        new UserMyself(
+            new UserId(userId),
+            "fake-email@example.com",
+            "Fake User",
+            "example.com",
+            UserStatus.ACTIVE,
+            Locale.ENGLISH,
+            UserType.INTERNAL,
+            Map.of());
+
     return userManagementServiceMock
       .when(
         HttpRequest.request()
@@ -182,17 +201,7 @@ public class Simulator implements AutoCloseable {
       .respond(
         HttpResponse.response()
           .withStatusCode(200)
-          .withBody("""
-            {
-                "id": {
-                    "userId": "%s"
-                },
-                "email": "fake@example.com",
-                "fullName": "Fake User",
-                "domain": "https://example.com",
-                "locale": "%s"
-            }
-            """.formatted(userId, locale))
+          .withBody(JsonBody.json(userInfo))
       )[0].getId();
   }
 
