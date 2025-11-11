@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 library(
-    identifier: 'jenkins-dt3-lib@v1.1.0',
+    identifier: 'jenkins-dt3-lib@v1.2.0',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         remote: 'git@github.com:zextras/jenkins-dt3-lib.git',
@@ -146,35 +146,16 @@ pipeline {
             }
         }
 
-        /*
-        * Here we build the deb/rpm packages: since the build uses the PKGBUILD file, we set its pkgrel
-        * value here dynamically without committing the changes.
-        */
         stage('Build deb/rpm') {
             steps {
                 script {
-                    if (env.GIT_BRANCH == 'devel') {
-                        env.PKGREL = '1'
-                        echo "Building RELEASE packages with pkgrel=1"
-                    } else {
-                        env.PKGREL = "SNAPSHOT-${env.GIT_COMMIT_SHORT}"
-                        echo "Building SNAPSHOT packages with pkgrel=${env.PKGREL}"
-                    }
-
-                    sh """
-                        sed -i 's/pkgrel="SNAPSHOT"/pkgrel="${env.PKGREL}"/' package/PKGBUILD
-                        cat package/PKGBUILD | grep pkgrel
-                    """
-                }
-
-                echo 'Building deb/rpm packages'
-                buildStage([
-                    rockySinglePkg: true,
-                    ubuntuSinglePkg: true
-                ])
-
-                script {
-                    sh 'git checkout -- package/PKGBUILD'
+                    buildPackages([
+                        pkgbuildPath: 'package/PKGBUILD',
+                        buildStageConfig: [
+                            rockySinglePkg: true,
+                            ubuntuSinglePkg: true
+                        ]
+                    ])
                 }
             }
         }
