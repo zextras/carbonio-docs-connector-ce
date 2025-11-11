@@ -1,3 +1,10 @@
+## [0.5.4](https://github.com/zextras/carbonio-docs-connector-ce/compare/v0.5.3...v0.5.4) (2025-11-11)
+
+### Bug Fixes
+
+* filter out guests and not active users ([#72](https://github.com/zextras/carbonio-docs-connector-ce/issues/72)) ([0502361](https://github.com/zextras/carbonio-docs-connector-ce/commit/05023615be0fbeb5f141b1640aa8bca14b7bed92))
+* remove redundant token validation ([#69](https://github.com/zextras/carbonio-docs-connector-ce/issues/69)) ([2d2e46c](https://github.com/zextras/carbonio-docs-connector-ce/commit/2d2e46cc61a6c2a43ba03e425e58dcabd90e2d45))
+
 ## [0.5.3](https://github.com/zextras/carbonio-docs-connector-ce/compare/v0.5.2...v0.5.3) (2025-08-20)
 
 ### Features
