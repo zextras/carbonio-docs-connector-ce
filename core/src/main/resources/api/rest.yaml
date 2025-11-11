@@ -6,7 +6,7 @@ openapi: 3.0.3
 info:
   title: Carbonio Docs Connector API
   description: Carbonio Docs Connector API
-  version: 0.1.0
+  version: latest
 servers:
   - url: 'https://example.com/services/docs/'
 tags:
