@@ -1,3 +1,16 @@
+// SPDX-FileCopyrightText: 2023 Zextras <https://www.zextras.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
+library(
+    identifier: 'jenkins-dt3-lib@v1.1.0',
+    retriever: modernSCM([
+        $class: 'GitSCMSource',
+        remote: 'git@github.com:zextras/jenkins-dt3-lib.git',
+        credentialsId: 'jenkins-integration-with-github-account'
+    ])
+)
+
 library(
     identifier: 'jenkins-packages-build-library@1.0.4',
     retriever: modernSCM([
@@ -30,6 +43,21 @@ pipeline {
         booleanParam defaultValue: false,
             description: 'Whether to upload the packages in playground repositories',
             name: 'PLAYGROUND'
+        booleanParam(
+            name: 'PREPARE_RELEASE',
+            defaultValue: false,
+            description: 'Check this to prepare a new release (creates pre-release branch and PR)'
+        )
+        booleanParam(
+            name: 'SKIP_TESTS',
+            defaultValue: false,
+            description: 'Skip unit tests and integration tests'
+        )
+        booleanParam(
+            name: 'SKIP_CHECKS',
+            defaultValue: false,
+            description: 'Skip coverage and SonarQube analysis'
+        )
     }
 
     tools {
@@ -39,9 +67,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
                 script {
-                    gitMetadata()
+                    checkoutWithMetadata()
                 }
             }
         }
@@ -64,6 +91,9 @@ pipeline {
         }
 
         stage('Unit tests') {
+            when {
+                expression { params.SKIP_TESTS == false }
+            }
             steps {
                 container('jdk-17') {
                     sh 'mvn -B verify -P run-unit-tests'
@@ -72,6 +102,9 @@ pipeline {
         }
 
         stage('Integration tests') {
+            when {
+                expression { params.SKIP_TESTS == false }
+            }
             steps {
                 container('jdk-17') {
                     sh 'mvn -B verify -P run-integration-tests'
@@ -80,56 +113,125 @@ pipeline {
         }
 
         stage('Coverage') {
+            when {
+                expression { params.SKIP_CHECKS == false }
+            }
             steps {
                 container('jdk-17') {
                     sh 'mvn -B verify -P generate-jacoco-full-report'
-                    recordCoverage(tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED')
+                    recordCoverage(
+                        tools: [[parser: 'JACOCO']],
+                        sourceCodeRetention: 'MODIFIED'
+                    )
                 }
             }
         }
 
-        stage('Build deb/rpm') {
-            stages {
-                // Replace the pkgrel value with the git commit hash to ensure that
-                // each merged PR has unique artifacts and to prevent conflicts between them.
-                // Note that the pkgrel value will remain as it was in the codebase to avoid
-                // conflicts between multiple open PRs
-                stage('Add timestamp and commit hash') {
-
-                    when{
-                        branch 'devel'
+        stage('SonarQube analysis') {
+            when {
+               allOf {
+                   expression { params.SKIP_CHECKS == false }
+                   anyOf {
+                       branch 'devel'
+                       expression { env.BRANCH_NAME.contains("PR") }
+                   }
+               }
+            }
+            steps {
+                container('jdk-17') {
+                    withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
+                        sh 'mvn -B sonar:sonar'
                     }
-                    steps {
-                        script {
-                            String timestamp = sh(script: 'date +%s', returnStdout: true).trim()
-                            String gitCommitShort = env.GIT_COMMIT.take(8)
-                            sh """
-                                sed -i "s/pkgrel=\\".*\\"/pkgrel=\\"${timestamp}+${gitCommitShort}\\"/" ./package/PKGBUILD
-                            """
+                }
+            }
+        }
+
+        /*
+        * Here we build the deb/rpm packages: since the build uses the PKGBUILD file, we set its pkgrel
+        * value here dynamically without committing the changes.
+        */
+        stage('Build deb/rpm') {
+            steps {
+                script {
+                    if (env.GIT_BRANCH == 'devel') {
+                        env.PKGREL = '1'
+                        echo "Building RELEASE packages with pkgrel=1"
+                    } else {
+                        env.PKGREL = "SNAPSHOT-${env.GIT_COMMIT_SHORT}"
+                        echo "Building SNAPSHOT packages with pkgrel=${env.PKGREL}"
+                    }
+
+                    sh """
+                        sed -i 's/pkgrel="SNAPSHOT"/pkgrel="${env.PKGREL}"/' package/PKGBUILD
+                        cat package/PKGBUILD | grep pkgrel
+                    """
+                }
+
+                echo 'Building deb/rpm packages'
+                buildStage([
+                    rockySinglePkg: true,
+                    ubuntuSinglePkg: true
+                ])
+
+                script {
+                    sh 'git checkout -- package/PKGBUILD'
+                }
+            }
+        }
+
+        stage('Upload artifacts') {
+            steps {
+                uploadStage(
+                    packages: yapHelper.getPackageNames(),
+                    rockySinglePkg: true,
+                    ubuntuSinglePkg: true
+                )
+            }
+        }
+
+        stage('Prepare Release') {
+            agent {
+                node {
+                    label 'nodejs-v1'
+                }
+            }
+            when {
+                allOf {
+                    branch 'devel'
+                    expression { params.PREPARE_RELEASE == true }
+                    not {
+                        expression {
+                            return env.GIT_COMMIT_MSG.contains('[skip ci]') ||
+                                   env.GIT_COMMIT_MSG.contains('chore(release):')
                         }
                     }
                 }
-
-                stage('Build dep/rpm') {
-                    steps {
-                        buildStage([
-                            ubuntuSinglePkg: true,
-                            rockySinglePkg: true,
-                            skipTsOverride: true
-                        ])
+            }
+            steps {
+                script {
+                    container('nodejs-20') {
+                        prepareRelease(
+                            repoName: 'carbonio-docs-connector-ce'
+                        )
                     }
                 }
             }
         }
 
-        stage('Upload artifacts')
-        {
+        stage('Tag for release') {
+            when {
+                allOf {
+                    branch 'devel'
+                    expression {
+                        return env.GIT_COMMIT_MSG.contains('chore(release):') &&
+                               env.GIT_COMMIT_MSG.contains('[skip ci]')
+                    }
+                }
+            }
             steps {
-                uploadStage([
-                    packages: yapHelper.getPackageNames(),
-                    rockySinglePkg: true,
-                    ubuntuSinglePkg: true,
-                ])
+                script {
+                    tagRelease()
+                }
             }
         }
 
@@ -140,34 +242,12 @@ pipeline {
                 }
             }
             steps {
-                container('dind') {
-                    withDockerRegistry([
-                        credentialsId: 'private-registry',
-                        url: 'https://registry.dev.zextras.com'
-                    ]) {
-                        script {
-                            String branchTag = env.BRANCH_NAME.replaceAll('/', '-').toLowerCase()
-                            Set<String> imageTags = [ branchTag ]
-
-                            if (env.BRANCH_NAME == 'devel') {
-                                imageTags.add('latest')
-                            } else if (buildingTag() && env.TAG_NAME?.trim()) {
-                                imageTags.add(env.TAG_NAME?.startsWith('v') ? env.TAG_NAME.substring(1) : env.TAG_NAME)
-                            }
-
-                            dockerHelper.buildImage([
-                                imageName: 'registry.dev.zextras.com/dev/carbonio-docs-connector-ce',
-                                imageTags: imageTags,
-                                dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
-                                ocLabels: [
-                                    title: 'Carbonio Docs Connector CE',
-                                    description: 'Carbonio Docs Connector Advanced Community Edition',
-                                    version: branchTag
-                                ]
-                            ])
-                        }
-                    }
-                }
+                buildAndPublishDockerImage(
+                    projectName: 'carbonio-docs-connector-ce',
+                    dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
+                    imageTitle: 'Carbonio Docs Connector CE',
+                    imageDescription: 'Carbonio Docs Connector Advanced Community Edition'
+                )
             }
         }
     }
