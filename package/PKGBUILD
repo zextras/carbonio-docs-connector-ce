@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 pkgname="carbonio-docs-connector-ce"
-pkgver="0.5.3"
+pkgver="1.0.0"
 pkgrel="SNAPSHOT"
 pkgdesc="Carbonio docs connector"
 maintainer="Zextras <packages@zextras.com>"
