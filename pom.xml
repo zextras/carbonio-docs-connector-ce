@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <junit5.version>5.11.0</junit5.version>
     <logback-classic.version>1.5.7</logback-classic.version>
     <mock-server.version>5.15.0</mock-server.version>
-    <mockito.version>5.13.0</mockito.version>
+    <mockito.version>5.20.0</mockito.version>
     <resteasy.version>6.2.7.Final</resteasy.version>
     <resteasy-guice.version>6.2.7-alpha</resteasy-guice.version>
     <swagger-core-version>2.2.22</swagger-core-version>
@@ -61,12 +61,12 @@ SPDX-License-Identifier: AGPL-3.0-only
     <maven-jacoco.version>0.8.12</maven-jacoco.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-    <maven-surfire.version>3.3.1</maven-surfire.version>
+    <maven-surefire.version>3.5.4</maven-surefire.version>
 
     <!-- Other properties -->
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <java-compiler.version>17</java-compiler.version>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <java-compiler.version>21</java-compiler.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!-- Flags to skip/run tests and the report generation -->

@@ -92,7 +92,8 @@ public class Simulator implements AutoCloseable {
 
   private void startUserManagementService() {
     startMockServer();
-    userManagementServiceMock = new MockServerClient(UserManagement.DEFAULT_HOST, UserManagement.DEFAULT_PORT);
+    userManagementServiceMock = new MockServerClient("localhost", UserManagement.DEFAULT_PORT);
+    System.setProperty(UserManagement.HOST_PROPERTY, "localhost");
   }
 
   private void stopUserManagementService() {
@@ -103,7 +104,8 @@ public class Simulator implements AutoCloseable {
 
   private void startFilesService() {
     startMockServer();
-    filesServiceMock = new MockServerClient(Files.DEFAULT_HOST, Files.DEFAULT_PORT);
+    filesServiceMock = new MockServerClient("localhost", Files.DEFAULT_PORT);
+    System.setProperty(Files.HOST_PROPERTY, "localhost");
   }
 
   private void stopFilesService() {
