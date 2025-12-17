@@ -76,7 +76,7 @@ pipeline {
                     if (env.TAG_NAME) {
                         profile = '-P prod'
                     }
-                    container('jdk-17') {
+                    container('jdk-21') {
                         sh """
                             mvn -B clean package ${profile}
                             cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar
@@ -91,7 +91,7 @@ pipeline {
                 expression { params.SKIP_TESTS == false }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     sh 'mvn -B verify -P run-unit-tests'
                 }
             }
@@ -102,7 +102,7 @@ pipeline {
                 expression { params.SKIP_TESTS == false }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     sh 'mvn -B verify -P run-integration-tests'
                 }
             }
@@ -113,7 +113,7 @@ pipeline {
                 expression { params.SKIP_CHECKS == false }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     sh 'mvn -B verify -P generate-jacoco-full-report'
                     recordCoverage(
                         tools: [[parser: 'JACOCO']],
@@ -134,7 +134,7 @@ pipeline {
                }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
                         sh 'mvn -B sonar:sonar'
                     }
