@@ -165,7 +165,9 @@ public class WopiService {
                 new ServiceDependencyException("Unable to save blob %s to Files (500)".formatted(nodeId)))
         ).get();
 
-    Optional<Integer> uploadedNodeVersion = Optional.of(uploadedNodeIdVersion.getVersion());
+    Optional<Integer> uploadedNodeVersion = uploadedNodeIdVersion != null
+        ? Optional.ofNullable(uploadedNodeIdVersion.getVersion())
+        : Optional.empty();
 
     /*
      * Retrieve the last update timestamp of the saved file
