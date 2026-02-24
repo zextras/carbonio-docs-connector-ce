@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.0.0...v1.0.1) (2026-02-23)
+
+### Bug Fixes
+
+* extract entrypoint script from Dockerfile ([#80](https://github.com/zextras/carbonio-docs-connector-ce/issues/80)) ([b76b59f](https://github.com/zextras/carbonio-docs-connector-ce/commit/b76b59f58eca32fcbdde4aa87e03fe01a3f7e57b))
+* null safe version on save ([#93](https://github.com/zextras/carbonio-docs-connector-ce/issues/93)) ([6d52cf3](https://github.com/zextras/carbonio-docs-connector-ce/commit/6d52cf3417b596f85efd92581ff8d39a0607922e))
+
 ## [1.0.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v0.5.3...v1.0.0) (2025-11-14)
 
 ### ⚠ BREAKING CHANGES
