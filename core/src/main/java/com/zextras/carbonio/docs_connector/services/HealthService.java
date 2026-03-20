@@ -9,23 +9,24 @@ import com.zextras.carbonio.docs_connector.types.health.DependencyType;
 import com.zextras.carbonio.docs_connector.types.health.HealthStatus;
 import com.zextras.carbonio.docs_connector.types.health.ServiceHealth;
 import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.usermanagement.UserManagementClient;
+import io.grpc.ConnectivityState;
+import io.grpc.ManagedChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HealthService {
 
-  private final UserManagementClient userManagementClient;
+  private final ManagedChannel userManagementChannel;
   private final FilesClient filesClient;
 
   @Inject
-  public HealthService(UserManagementClient userManagementClient, FilesClient filesClient) {
-    this.userManagementClient = userManagementClient;
+  public HealthService(ManagedChannel userManagementChannel, FilesClient filesClient) {
+    this.userManagementChannel = userManagementChannel;
     this.filesClient = filesClient;
   }
 
   public boolean areServiceDependenciesReady() {
-    return userManagementClient.healthCheck();
+    return isUserManagementAlive();
   }
 
   public HealthStatus getServiceHealthStatus() {
@@ -42,13 +43,18 @@ public class HealthService {
   }
 
   public ServiceHealth getUserManagementHealth() {
-    boolean userManagementIsLive = userManagementClient.healthCheck();
+    boolean userManagementIsLive = isUserManagementAlive();
 
     return new ServiceHealth()
         .setName("carbonio-user-management")
         .setType(DependencyType.REQUIRED)
         .setLive(userManagementIsLive)
         .setReady(userManagementIsLive);
+  }
+
+  private boolean isUserManagementAlive() {
+    ConnectivityState state = userManagementChannel.getState(true);
+    return state == ConnectivityState.READY || state == ConnectivityState.IDLE;
   }
 
   public ServiceHealth getFilesHealth() {

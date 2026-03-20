@@ -4,6 +4,9 @@
 
 package com.zextras.carbonio.docs_connector.services;
 
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
@@ -15,30 +18,29 @@ import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
 import com.zextras.carbonio.files.exceptions.InternalServerError;
 import com.zextras.carbonio.files.exceptions.UnAuthorized;
-import com.zextras.carbonio.usermanagement.UserManagementClient;
-import com.zextras.carbonio.usermanagement.entities.UserInfo;
+import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
+import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
+import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
+import io.grpc.StatusRuntimeException;
 import io.vavr.Predicates;
 import io.vavr.control.Try;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
 
 public class WopiService {
 
   private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
 
-  private final UserManagementClient userManagementClient;
+  private final UserManagementServiceBlockingStub userManagementStub;
   private final FilesClient filesClient;
 
   @Inject
-  public WopiService(UserManagementClient userManagementClient, FilesClient filesClient) {
-    this.userManagementClient = userManagementClient;
+  public WopiService(
+      UserManagementServiceBlockingStub userManagementStub, FilesClient filesClient) {
+    this.userManagementStub = userManagementStub;
     this.filesClient = filesClient;
   }
 
@@ -49,11 +51,18 @@ public class WopiService {
     Optional<Integer> optVersion,
     Optional<Integer> optOffsetFromUtc
   ) {
-    UserInfo userInfo = userManagementClient
-      .getUserById(requesterCookie, requesterId)
-      .onFailure(
-        failure -> logger.error("Unable to retrieve user info of user id {}", requesterId, failure))
-      .getOrElseThrow(() -> new NoSuchElementException()); // Think more about it
+    // Extract raw token from cookie string (format: "ZM_AUTH_TOKEN=<value>" or full cookie header)
+    String token = extractToken(requesterCookie);
+
+    UserInfoProto userInfo;
+    try {
+      GetUserByIdRequest request =
+          GetUserByIdRequest.newBuilder().setToken(token).setUserId(requesterId).build();
+      userInfo = userManagementStub.getUserById(request).getUser();
+    } catch (StatusRuntimeException e) {
+      logger.error("Unable to retrieve user info of user id {}", requesterId, e);
+      throw new NoSuchElementException();
+    }
 
     return Optional.ofNullable(
       filesClient
@@ -83,7 +92,7 @@ public class WopiService {
 
             DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
             docsEditorAttributes.setOwnerId(nodeOwnerId);
-            docsEditorAttributes.setUserId(UUID.fromString(userInfo.getId().getUserId()));
+            docsEditorAttributes.setUserId(UUID.fromString(userInfo.getUserId()));
             docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
             docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
             docsEditorAttributes.setBaseFileName(abbreviateFilename);
@@ -240,5 +249,22 @@ public class WopiService {
     return (fullFilename.length() > 64)
       ? createFullFilename(name.substring(0, 50), extension)
       : fullFilename;
+  }
+
+  /**
+   * Extracts the raw token value from a cookie string. The cookie may be in the format
+   * "ZM_AUTH_TOKEN=value", "ZM_AUTH_TOKEN=value;", or just the raw token value.
+   */
+  private String extractToken(String cookie) {
+    if (cookie == null) {
+      throw new IllegalArgumentException("Cookie is null");
+    }
+    if (cookie.contains("ZM_AUTH_TOKEN=")) {
+      int start = cookie.indexOf("ZM_AUTH_TOKEN=") + "ZM_AUTH_TOKEN=".length();
+      int end = cookie.indexOf(';', start);
+      return end > 0 ? cookie.substring(start, end) : cookie.substring(start);
+    }
+    // If no ZM_AUTH_TOKEN prefix, assume it's already the raw token
+    return cookie;
   }
 }
