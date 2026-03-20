@@ -417,6 +417,11 @@ public class Simulator implements AutoCloseable {
 
     public Simulator build() {
       simulator.createInjector();
+      // If UM was not started, shut down the channel so the health check sees SHUTDOWN
+      // (not IDLE, which would be reported as healthy).
+      if (simulator.umGrpcServer == null && simulator.umChannel != null) {
+        simulator.umChannel.shutdownNow();
+      }
       return simulator;
     }
   }
