@@ -245,14 +245,33 @@ public class Simulator implements AutoCloseable {
     return httpLocalConnector;
   }
 
+  /**
+   * Registers a token-to-userId mapping so that subsequent gRPC {@code getUserMyself} calls
+   * with the given token will return a minimal valid user. This replaces the old HTTP
+   * {@code /auth/token/} MockServer expectation.
+   *
+   * @return a synthetic expectation id for use with {@link #resetAllExpectations(List)}.
+   */
   public String mockValidateUser(String token, String userId) {
+    String id = "um-validate-" + token;
     mockUmService.registerToken(token, userId);
-    return userId;
+    return id;
   }
 
+  /**
+   * Registers a full user profile for the given token so that gRPC {@code getUserMyself}
+   * returns a complete {@link UserMyselfResponse}. This replaces the old HTTP
+   * {@code /users/myself/} MockServer expectation.
+   *
+   * @return a synthetic expectation id for use with {@link #resetAllExpectations(List)}.
+   */
   public String mockGetMyself(String cookie, String userId, String locale) {
-    mockUmService.registerToken(cookie, userId);
-    return userId;
+    String id = "um-myself-" + cookie;
+    // Extract raw token from cookie header format "ZM_AUTH_TOKEN=<value>"
+    String rawToken = cookie.contains("=") ? cookie.split("=", 2)[1] : cookie;
+    mockUmService.registerMyself(rawToken, userId, "fake-email@example.com",
+        "Fake User", "example.com", "active", locale);
+    return id;
   }
 
   public String mockServiceDiscoverConfig(String key, String value) {
@@ -284,8 +303,14 @@ public class Simulator implements AutoCloseable {
   }
 
   public void resetAllExpectations(List<String> expectationIds) {
+    // Clear UM mock registrations
+    mockUmService.clearAll();
+
+    // Clear MockServer expectations for non-UM services
     if (clientAndServer != null && clientAndServer.hasStarted()) {
-      expectationIds.forEach(id -> clientAndServer.clear(ExpectationId.expectationId(id)));
+      expectationIds.stream()
+          .filter(id -> !id.startsWith("um-"))
+          .forEach(id -> clientAndServer.clear(ExpectationId.expectationId(id)));
     }
   }
 
@@ -310,6 +335,10 @@ public class Simulator implements AutoCloseable {
     private final Map<String, UserMyselfResponse> tokenToMyself = new ConcurrentHashMap<>();
     private final Map<String, UserInfoProto> userIdToInfo = new ConcurrentHashMap<>();
 
+    /**
+     * Registers a minimal token-to-userId mapping. A full {@link UserMyselfResponse} is built
+     * with default values for email, name, domain, status, and locale.
+     */
     void registerToken(String token, String userId) {
       if (!tokenToMyself.containsKey(token)) {
         UserInfoProto info = UserInfoProto.newBuilder()
@@ -330,6 +359,28 @@ public class Simulator implements AutoCloseable {
       }
     }
 
+    /**
+     * Registers a full user profile for the given token with specific details.
+     */
+    void registerMyself(String token, String userId, String email, String fullName,
+        String domain, String status, String locale) {
+      UserInfoProto info = UserInfoProto.newBuilder()
+          .setUserId(userId)
+          .setEmail(email)
+          .setFullName(fullName)
+          .setDomain(domain)
+          .setStatus(status)
+          .setType(UserTypeProto.INTERNAL)
+          .build();
+      UserMyselfProto myself = UserMyselfProto.newBuilder()
+          .setInfo(info)
+          .setLocale(locale)
+          .addFeatures("carbonioFeatureDocsEnabled")
+          .build();
+      tokenToMyself.put(token, UserMyselfResponse.newBuilder().setUser(myself).build());
+      userIdToInfo.put(userId, info);
+    }
+
     public void registerUserById(String userId, String email, String fullName,
         String domain, String status) {
       UserInfoProto info = UserInfoProto.newBuilder()
@@ -341,6 +392,11 @@ public class Simulator implements AutoCloseable {
           .setType(UserTypeProto.INTERNAL)
           .build();
       userIdToInfo.put(userId, info);
+    }
+
+    void clearAll() {
+      tokenToMyself.clear();
+      userIdToInfo.clear();
     }
 
     @Override
