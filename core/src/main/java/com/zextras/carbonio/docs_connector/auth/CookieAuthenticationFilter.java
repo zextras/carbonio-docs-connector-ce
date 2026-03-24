@@ -7,37 +7,39 @@ package com.zextras.carbonio.docs_connector.auth;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.zextras.carbonio.docs_connector.Constants.Config;
-import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorConfig;
-import com.zextras.carbonio.usermanagement.UserManagementClient;
-import com.zextras.carbonio.usermanagement.enumerations.UserStatus;
-import com.zextras.carbonio.usermanagement.enumerations.UserType;
+import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
+import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
+import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfProto;
+import com.zextras.carbonio.user_management.sdk.grpc.UserTypeProto;
+import io.grpc.StatusRuntimeException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
+import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
 
 @Provider
 @Singleton
 public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
-  private final static Logger logger = LoggerFactory.getLogger(CookieAuthenticationFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(CookieAuthenticationFilter.class);
 
   private final DocsConnectorConfig config;
-  private final UserManagementClient userManagementClient;
+  private final UserManagementServiceBlockingStub userManagementStub;
 
   @Inject
-  public CookieAuthenticationFilter(DocsConnectorConfig config, UserManagementClient userManagementClient) {
+  public CookieAuthenticationFilter(
+      DocsConnectorConfig config, UserManagementServiceBlockingStub userManagementStub) {
     this.config = config;
-    this.userManagementClient = userManagementClient;
+    this.userManagementStub = userManagementStub;
   }
 
   @Override
@@ -61,38 +63,48 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
         return;
       }
 
-      userManagementClient
-          .getUserMyself(UserManagement.ZM_AUTH_TOKEN.concat(optZmCookie.get().getValue()))
-          .onSuccess(
-              myself -> {
+      String token = optZmCookie.get().getValue();
 
-                if(!myself.getStatus().equals(UserStatus.ACTIVE)){
-                  logger.error("The request is unauthorized: the user is not active");
-                  requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-                  return;
-                }
+      try {
+        GetUserMyselfRequest request =
+            GetUserMyselfRequest.newBuilder().setToken(token).build();
+        UserMyselfProto myself = userManagementStub.getUserMyself(request).getUser();
 
-                if(!myself.getType().equals(UserType.INTERNAL)){
-                  logger.error("The request is unauthorized: the user type is not internal");
-                  requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-                  return;
-                }
+        if (!myself.getInfo().getStatus().equalsIgnoreCase("active")) {
+          logger.error("The request is unauthorized: the user is not active");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          return;
+        }
 
-                requestContext.setProperty(Context.REQUESTER_COOKIE, optZmCookie.get().getValue());
-                requestContext.setProperty(Context.REQUESTER_ID, myself.getId().getUserId());
-                Optional<String> requesterDomainOverride = config.getRequesterDomainOverride();
-                if (requesterDomainOverride.isPresent()) {
-                  requestContext.setProperty(Context.REQUESTER_DOMAIN, requesterDomainOverride.get());
-                } else {
-                  requestContext.setProperty(Context.REQUESTER_DOMAIN, myself.getDomain());
-                }
-                requestContext.setProperty(Context.REQUESTER_LOCALE, myself.getLocale()
-                );
-              })
-          .onFailure(throwable -> {
-            logger.error("The request is unauthorized: the cookie is invalid");
-            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-          });
+        if (myself.getInfo().getType() != UserTypeProto.INTERNAL) {
+          logger.error("The request is unauthorized: the user type is not internal");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          return;
+        }
+
+        requestContext.setProperty(Context.REQUESTER_COOKIE, token);
+        requestContext.setProperty(Context.REQUESTER_ID, myself.getInfo().getUserId());
+        Optional<String> requesterDomainOverride = config.getRequesterDomainOverride();
+        if (requesterDomainOverride.isPresent()) {
+          requestContext.setProperty(Context.REQUESTER_DOMAIN, requesterDomainOverride.get());
+        } else {
+          requestContext.setProperty(Context.REQUESTER_DOMAIN, myself.getInfo().getDomain());
+        }
+        String localeStr = myself.getLocale();
+        requestContext.setProperty(
+            Context.REQUESTER_LOCALE,
+            localeStr != null && !localeStr.isEmpty()
+                ? Locale.forLanguageTag(localeStr.replace('_', '-'))
+                : Locale.ENGLISH);
+
+      } catch (StatusRuntimeException e) {
+        if (e.getStatus().getCode() == io.grpc.Status.Code.UNAUTHENTICATED) {
+          logger.error("The request is unauthorized: the cookie is invalid");
+        } else {
+          logger.error("The request is unauthorized: gRPC error {}", e.getStatus(), e);
+        }
+        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+      }
     }
   }
 }

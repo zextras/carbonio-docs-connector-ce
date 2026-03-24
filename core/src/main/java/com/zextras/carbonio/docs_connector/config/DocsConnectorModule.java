@@ -7,8 +7,6 @@ package com.zextras.carbonio.docs_connector.config;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.zextras.carbonio.docs_connector.Constants;
-import com.zextras.carbonio.docs_connector.Constants.Config.Files;
-import com.zextras.carbonio.docs_connector.Constants.Config.UserManagement;
 import com.zextras.carbonio.docs_connector.auth.AccessTokenValidationFilter;
 import com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter;
 import com.zextras.carbonio.docs_connector.controllers.FilesController;
@@ -20,7 +18,10 @@ import com.zextras.carbonio.docs_connector.controllers.impl.WopiControllerImpl;
 import com.zextras.carbonio.docs_connector.dal.repositories.impl.OpenDocumentTokenRepositoryInMemory;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.usermanagement.UserManagementClient;
+import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc;
+import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.time.Clock;
 import org.jboss.resteasy.plugins.guice.ext.RequestScopeModule;
 import org.slf4j.Logger;
@@ -53,15 +54,20 @@ public class DocsConnectorModule extends RequestScopeModule {
 
   @Provides
   @Singleton
-  public UserManagementClient provideUserManagementClient(DocsConnectorConfig config) {
-      final String userManagementUrl = String.format(
-          "%s://%s:%s",
-          Constants.Config.UserManagement.DEFAULT_PROTOCOL,
-          config.getUserManagementHost(),
-          config.getUserManagementPort());
+  public ManagedChannel provideUserManagementChannel(DocsConnectorConfig config) {
+      String host = config.getUserManagementHost();
+      int port = Integer.parseInt(config.getUserManagementPort());
+      logger.info("Creating UserManagement gRPC channel to {}:{}", host, port);
+      return ManagedChannelBuilder.forAddress(host, port)
+          .usePlaintext()
+          .build();
+  }
 
-      logger.info("Creating UserManagementClient with URL: {}", userManagementUrl);
-      return UserManagementClient.atURL(userManagementUrl);
+  @Provides
+  @Singleton
+  public UserManagementServiceBlockingStub provideUserManagementStub(
+      ManagedChannel userManagementChannel) {
+      return UserManagementServiceGrpc.newBlockingStub(userManagementChannel);
   }
 
   @Provides

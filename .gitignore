@@ -15,4 +15,4 @@ boot/dependency-reduced-pom.xml
 LICENSES
 
 # VS Code
-.vscode/
+.vscode/.run/

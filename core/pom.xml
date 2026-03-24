@@ -86,7 +86,14 @@ SPDX-License-Identifier: AGPL-3.0-only
     <!-- SDKs -->
     <dependency>
       <groupId>com.zextras.carbonio.user-management</groupId>
-      <artifactId>carbonio-user-management-sdk</artifactId>
+      <artifactId>carbonio-user-management-grpc-sdk</artifactId>
+    </dependency>
+
+    <!-- gRPC dependencies -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -97,6 +104,12 @@ SPDX-License-Identifier: AGPL-3.0-only
     <dependency>
       <groupId>com.orbitz.consul</groupId>
       <artifactId>consul-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-inprocess</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- Testing -->

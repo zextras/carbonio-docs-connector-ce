@@ -37,11 +37,9 @@ public class HealthApiIT {
     try (Simulator simulator = simulatorBuilder.build().start()) {
 
       LocalConnector localConnector = simulator.getHttpLocalConnector();
-      MockServerClient userManagementServiceMock = simulator.getUserManagementService();
 
-      userManagementServiceMock
-        .when(HttpRequest.request().withMethod(HttpMethod.GET).withPath("/health/"))
-        .respond(HttpResponse.response().withStatusCode(HttpStatus.OK_200));
+      // UserManagement health: the InProcess gRPC server is running, so the channel
+      // will be in READY/IDLE state and isUserManagementAlive() returns true.
 
       MockServerClient filesServiceMock = simulator.getFilesService();
 
@@ -156,11 +154,9 @@ public class HealthApiIT {
     try (Simulator simulator = simulatorBuilder.build().start()) {
 
       LocalConnector localConnector = simulator.getHttpLocalConnector();
-      MockServerClient userManagementServiceMock = simulator.getUserManagementService();
 
-      userManagementServiceMock
-        .when(HttpRequest.request().withMethod(HttpMethod.GET).withPath("/health/"))
-        .respond(HttpResponse.response().withStatusCode(HttpStatus.OK_200));
+      // UserManagement health: the InProcess gRPC server is running, so the channel
+      // will be in READY/IDLE state and isUserManagementAlive() returns true.
 
       MockServerClient filesServiceMock = simulator.getFilesService();
 

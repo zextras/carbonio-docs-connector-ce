@@ -124,9 +124,7 @@ SPDX-License-Identifier: AGPL-3.0-only
                   <mainClass>com.zextras.carbonio.docs_connector.Boot</mainClass>
                 </transformer>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                  <resource>META-INF/services/jakarta.ws.rs.ext.Providers</resource>
-                </transformer>
+                  implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
             </configuration>
             <goals>
