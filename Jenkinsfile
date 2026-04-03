@@ -12,7 +12,7 @@ library(
 )
 
 library(
-    identifier: 'jenkins-lib-common@1.1.2',
+    identifier: 'jenkins-lib-common@1.5.0',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         credentialsId: 'jenkins-integration-with-github-account',
@@ -148,6 +148,7 @@ pipeline {
                     buildPackages([
                         pkgbuildPath: 'package/PKGBUILD',
                         buildStageConfig: [
+                            buildFlags: ' -ds ',
                             rockySinglePkg: true,
                             ubuntuSinglePkg: true
                         ]
