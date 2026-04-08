@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [Unit]
-Description=Carbonio docs connector daemon
+Description=Carbonio Docs Connector
 Wants=network.target
 Requires=network-online.target
 After=network-online.target
@@ -15,9 +15,9 @@ ExecStart=/usr/bin/carbonio-docs-connector
 User=carbonio-docs-connector
 Group=carbonio-docs-connector
 Restart=on-failure
-RestartSec=15
-TimeoutSec=60
-TimeoutStopSec=120
+RestartSec=15s
+TimeoutSec=60s
+TimeoutStopSec=120s
 
 
 [Install]
