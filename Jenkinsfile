@@ -64,7 +64,7 @@ pipeline {
                 script {
                     mavenStage(
                         splitTests: true,
-                        postBuildScript: 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar',
+                        postBuildScript: 'cp boot/target/carbonio-docs-connector-*-fatjar.jar package/carbonio-docs-connector.jar'
                     )
                 }
             }
