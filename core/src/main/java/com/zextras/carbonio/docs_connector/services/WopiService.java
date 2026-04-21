@@ -51,13 +51,10 @@ public class WopiService {
     Optional<Integer> optVersion,
     Optional<Integer> optOffsetFromUtc
   ) {
-    // Extract raw token from cookie string (format: "ZM_AUTH_TOKEN=<value>" or full cookie header)
-    String token = extractToken(requesterCookie);
-
     UserInfoProto userInfo;
     try {
       GetUserByIdRequest request =
-          GetUserByIdRequest.newBuilder().setToken(token).setUserId(requesterId).build();
+          GetUserByIdRequest.newBuilder().setUserId(requesterId).build();
       userInfo = userManagementStub.getUserById(request).getUser();
     } catch (StatusRuntimeException e) {
       logger.error("Unable to retrieve user info of user id {}", requesterId, e);
