@@ -16,3 +16,6 @@ LICENSES
 
 # VS Code
 .vscode/.run/
+
+# Build artifacts
+docker/packaging/artifacts/
