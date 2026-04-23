@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <jackson.version>2.17.2</jackson.version>
     <jakarta-servlet-api.version>6.1.0</jakarta-servlet-api.version>
     <jakarta-enterprise.version>4.1.0</jakarta-enterprise.version>
-    <jetty.version>12.0.12</jetty.version>
+    <jetty.version>12.0.32</jetty.version>
     <jsonassert.version>1.5.3</jsonassert.version>
     <junit5.version>5.11.0</junit5.version>
     <logback-classic.version>1.5.7</logback-classic.version>
