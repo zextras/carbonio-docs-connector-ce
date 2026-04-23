@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <logback-classic.version>1.5.7</logback-classic.version>
     <mock-server.version>5.15.0</mock-server.version>
     <mockito.version>5.20.0</mockito.version>
-    <resteasy.version>6.2.7.Final</resteasy.version>
+    <resteasy.version>6.2.16.Final</resteasy.version>
     <resteasy-guice.version>6.2.7-alpha</resteasy-guice.version>
     <swagger-core-version>2.2.22</swagger-core-version>
 
