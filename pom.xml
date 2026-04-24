@@ -142,6 +142,18 @@ SPDX-License-Identifier: AGPL-3.0-only
       </dependency>
 
       <!-- RestEasy dependencies -->
+      <!--
+        resteasy-guice:6.2.7-alpha pulls resteasy-core-spi:6.2.7.Final, but
+        resteasy-core:6.2.16.Final calls ContextualExecutors.newThreadPool() which was
+        added in 6.2.11+. Force core-spi to match the main resteasy version so all
+        artifacts are aligned.
+      -->
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-core-spi</artifactId>
+        <version>${resteasy.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.jboss.resteasy</groupId>
         <artifactId>resteasy-jackson2-provider</artifactId>
