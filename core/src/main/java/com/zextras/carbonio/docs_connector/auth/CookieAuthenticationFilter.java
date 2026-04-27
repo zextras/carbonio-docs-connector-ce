@@ -67,7 +67,10 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
       try {
         GetUserMyselfRequest request =
-            GetUserMyselfRequest.newBuilder().setToken(token).build();
+            GetUserMyselfRequest.newBuilder()
+                .setToken(token)
+                .setBypassCache(true)
+                .build();
         UserMyselfProto myself = userManagementStub.getUserMyself(request).getUser();
 
         if (!myself.getInfo().getStatus().equalsIgnoreCase("active")) {
