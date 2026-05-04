@@ -1,3 +1,14 @@
+## [1.1.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.0.1...v1.1.0) (2026-05-04)
+
+### Features
+
+* migrate to gRPC UM SDK ([#105](https://github.com/zextras/carbonio-docs-connector-ce/issues/105)) ([9e693de](https://github.com/zextras/carbonio-docs-connector-ce/commit/9e693deba7643df9c4496c01accea62ee680fd46))
+* systemd hardening and service-discover.target orchestration ([#107](https://github.com/zextras/carbonio-docs-connector-ce/issues/107)) ([9d6b872](https://github.com/zextras/carbonio-docs-connector-ce/commit/9d6b87265f2e620213d95ebc211c22a5555b36fb))
+
+### Bug Fixes
+
+* spellcheck uses passed lang ([#114](https://github.com/zextras/carbonio-docs-connector-ce/issues/114)) ([30873f5](https://github.com/zextras/carbonio-docs-connector-ce/commit/30873f58ac076488d1ff38a6739847c86afd0578))
+
 ## [1.0.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.0.0...v1.0.1) (2026-02-23)
 
 ### Bug Fixes
