@@ -38,7 +38,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 public class CeStackTestResource implements QuarkusTestResourceLifecycleManager {
 
   /** Fixed ZM_AUTH_TOKEN used across all IT tests. */
-  public static final String AUTH_TOKEN = "test-auth-token-docs-ce";
+  public static final String AUTH_TOKEN = "test_auth_token_docs_ce";
 
   /** WireMock server instance (exposed to tests for stub registration). */
   public static volatile WireMockServer FILES_MOCK;
