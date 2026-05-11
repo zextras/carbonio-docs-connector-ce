@@ -1,20 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!--
-SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
-
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
 
   <licenses>
     <license>
-      <comments>Copyright (C) 2022 Zextras, https://www.zextras.com</comments>
+      <comments>Copyright (C) 2026 Zextras, https://www.zextras.com</comments>
       <name>AGPL-3.0-only</name>
     </license>
   </licenses>
@@ -25,296 +15,60 @@ SPDX-License-Identifier: AGPL-3.0-only
   <packaging>pom</packaging>
 
   <name>carbonio-docs-connector-ce</name>
-  <url>https://www.github.com/Zextras/carbonio-docs-connector-ce</url>
 
   <modules>
-    <module>boot</module>
-    <module>core</module>
+    <module>app</module>
   </modules>
 
   <properties>
-    <revision>1.1.0</revision>
-    <assertj.version>3.27.7</assertj.version>
-    <caffeine.version>3.2.3</caffeine.version>
     <carbonio-user-management-grpc-sdk.version>1.0.3-dev.24.f9dd5647</carbonio-user-management-grpc-sdk.version>
-    <io.grpc.version>1.75.0</io.grpc.version>
     <carbonio-files-sdk.version>1.0.1</carbonio-files-sdk.version>
-    <consul-client.version>1.5.3</consul-client.version>
-    <guice.version>7.0.0</guice.version>
-    <jackson.version>2.18.6</jackson.version>
-    <jakarta-servlet-api.version>6.1.0</jakarta-servlet-api.version>
-    <jakarta-enterprise.version>4.1.0</jakarta-enterprise.version>
-    <jetty.version>12.0.32</jetty.version>
-    <jsonassert.version>1.5.3</jsonassert.version>
-    <junit5.version>5.14.3</junit5.version>
-    <logback-classic.version>1.5.32</logback-classic.version>
-    <mock-server.version>5.15.0</mock-server.version>
-    <mockito.version>5.23.0</mockito.version>
-    <resteasy.version>6.2.16.Final</resteasy.version>
-    <resteasy-guice.version>6.2.7-alpha</resteasy-guice.version>
-    <swagger-core-version>2.2.22</swagger-core-version>
 
-    <!-- Plugins -->
-    <build-helper-maven.version>3.6.1</build-helper-maven.version>
-    <maven-compiler.version>3.15.0</maven-compiler.version>
-    <maven-shade.version>3.6.2</maven-shade.version>
+    <maven-compiler.version>3.13.0</maven-compiler.version>
     <maven-failsafe.version>3.5.5</maven-failsafe.version>
     <maven-jacoco.version>0.8.14</maven-jacoco.version>
-    <maven-jar-plugin.version>3.5.0</maven-jar-plugin.version>
-    <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
     <maven-surefire.version>3.5.5</maven-surefire.version>
 
-    <!-- Other properties -->
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
-    <java-compiler.version>21</java-compiler.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Flags to skip/run tests and the report generation -->
     <skip.integration.tests>true</skip.integration.tests>
     <skip.unit.tests>true</skip.unit.tests>
     <skip.jacoco.full.report.generation>true</skip.jacoco.full.report.generation>
+
+    <revision>2.0.0</revision>
+    <changelist>-SNAPSHOT</changelist>
   </properties>
-
-  <profiles>
-    <profile>
-      <id>dev</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <changelist>-SNAPSHOT</changelist>
-      </properties>
-    </profile>
-    <profile>
-      <id>prod</id>
-      <properties>
-        <changelist></changelist>
-      </properties>
-    </profile>
-  </profiles>
-
-  <dependencyManagement>
-    <dependencies>
-      <!-- Guice dependencies -->
-      <dependency>
-        <groupId>com.google.inject</groupId>
-        <artifactId>guice</artifactId>
-        <version>${guice.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.inject.extensions</groupId>
-        <artifactId>guice-assistedinject</artifactId>
-        <version>${guice.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.federicorispo</groupId>
-        <artifactId>resteasy-guice</artifactId>
-        <version>${resteasy-guice.version}</version>
-      </dependency>
-
-      <!-- Logging -->
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-
-      <!-- Jetty dependencies -->
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-server</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-servlet</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>${jakarta-servlet-api.version}</version>
-      </dependency>
-
-      <!-- RestEasy dependencies -->
-      <!--
-        resteasy-guice:6.2.7-alpha pulls resteasy-core-spi:6.2.7.Final, but
-        resteasy-core:6.2.16.Final calls ContextualExecutors.newThreadPool() which was
-        added in 6.2.11+. Force core-spi to match the main resteasy version so all
-        artifacts are aligned.
-      -->
-      <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-core-spi</artifactId>
-        <version>${resteasy.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-jackson2-provider</artifactId>
-        <version>${resteasy.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-servlet-initializer</artifactId>
-        <version>${resteasy.version}</version>
-      </dependency>
-
-      <!-- Jackson dependencies -->
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-        <artifactId>jackson-datatype-jsr310</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <!-- Swagger dependencies -->
-      <dependency>
-        <groupId>io.swagger</groupId>
-        <artifactId>swagger-annotations</artifactId>
-        <version>${swagger-core-version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.swagger</groupId>
-        <artifactId>swagger-jaxrs</artifactId>
-        <version>${swagger-core-version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <!-- Cache -->
-      <dependency>
-        <groupId>com.github.ben-manes.caffeine</groupId>
-        <artifactId>caffeine</artifactId>
-        <version>${caffeine.version}</version>
-      </dependency>
-
-      <!-- SDKs -->
-      <dependency>
-        <groupId>com.zextras.carbonio.user-management</groupId>
-        <artifactId>carbonio-user-management-grpc-sdk</artifactId>
-        <version>${carbonio-user-management-grpc-sdk.version}</version>
-      </dependency>
-
-      <!-- gRPC dependencies -->
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-netty-shaded</artifactId>
-        <version>${io.grpc.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-inprocess</artifactId>
-        <version>${io.grpc.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.zextras.carbonio.files</groupId>
-        <artifactId>carbonio-files-sdk</artifactId>
-        <version>${carbonio-files-sdk.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.orbitz.consul</groupId>
-        <artifactId>consul-client</artifactId>
-        <version>${consul-client.version}</version>
-      </dependency>
-
-      <!-- Testing -->
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit5.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
-        <version>${junit5.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>${mockito.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>${assertj.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mock-server</groupId>
-        <artifactId>mockserver-netty-no-dependencies</artifactId>
-        <version>${mock-server.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mock-server</groupId>
-        <artifactId>mockserver-client-java-no-dependencies</artifactId>
-        <version>${mock-server.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <!-- Helper to test JSON responses -->
-      <dependency>
-        <groupId>org.skyscreamer</groupId>
-        <artifactId>jsonassert</artifactId>
-        <version>${jsonassert.version}</version>
-        <scope>test</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>${maven-jar-plugin.version}</version>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.7.3</version>
+          <configuration>
+            <updatePomFile>true</updatePomFile>
+            <flattenMode>resolveCiFriendliesOnly</flattenMode>
+          </configuration>
+          <executions>
+            <execution>
+              <id>flatten</id>
+              <phase>validate</phase>
+              <goals><goal>flatten</goal></goals>
+            </execution>
+            <execution>
+              <id>flatten.clean</id>
+              <phase>clean</phase>
+              <goals><goal>clean</goal></goals>
+            </execution>
+          </executions>
         </plugin>
-
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>${maven-resources-plugin.version}</version>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${maven-jacoco.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -323,8 +77,27 @@ SPDX-License-Identifier: AGPL-3.0-only
   <repositories>
     <repository>
       <id>zextras-java-sdk</id>
-      <name>Zextras public maven repo</name>
       <url>https://zextras.jfrog.io/artifactory/java-sdk</url>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>artifactory</id>
+      <name>Zextras releases</name>
+      <url>https://zextras.jfrog.io/artifactory/public-maven-repo</url>
+    </repository>
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <activation><activeByDefault>true</activeByDefault></activation>
+      <properties><changelist>-SNAPSHOT</changelist></properties>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties><changelist></changelist></properties>
+    </profile>
+  </profiles>
 </project>

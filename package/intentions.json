@@ -17,7 +17,7 @@
         {
           "Action": "allow",
           "HTTP": {
-            "PathPrefix": "/health/live",
+            "PathPrefix": "/q/health/live",
             "Methods": [
               "GET"
             ]
