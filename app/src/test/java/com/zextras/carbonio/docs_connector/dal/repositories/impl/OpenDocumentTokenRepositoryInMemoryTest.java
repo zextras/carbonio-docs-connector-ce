@@ -127,4 +127,36 @@ class OpenDocumentTokenRepositoryInMemoryTest {
     // Then
     Assertions.assertThat(created.getRequesterCookie()).isNull();
   }
+
+  @Test
+  @DisplayName("createToken with cookie containing multiple key-value pairs should extract only ZM_AUTH_TOKEN")
+  void givenCookieWithMultipleKeyValuePairsCreateTokenShouldExtractOnlyZmAuthToken() {
+    // Given
+    UUID documentId = UUID.randomUUID();
+    // A realistic browser Cookie header containing multiple entries
+    String multiCookie = "SESSION=abcdef123; ZM_AUTH_TOKEN=mytoken456; PREF=dark";
+
+    // When
+    OpenDocumentToken created = repository.createToken(documentId, "user-id", multiCookie);
+
+    // Then — only the ZM_AUTH_TOKEN segment is stored
+    Assertions.assertThat(created.getRequesterCookie()).isEqualTo("ZM_AUTH_TOKEN=mytoken456;");
+    Assertions.assertThat(created.getRequesterCookie()).doesNotContain("SESSION");
+    Assertions.assertThat(created.getRequesterCookie()).doesNotContain("PREF");
+  }
+
+  @Test
+  @DisplayName("createToken with ZM_AUTH_TOKEN at end of cookie string (no trailing semicolon) should be extracted")
+  void givenZmAuthTokenAtEndOfCookieStringCreateTokenShouldBeExtracted() {
+    // Given — ZM_AUTH_TOKEN is the last field, no trailing semicolon
+    UUID documentId = UUID.randomUUID();
+    String cookieAtEnd = "OTHER=val; ZM_AUTH_TOKEN=endtoken789";
+
+    // When
+    OpenDocumentToken created = repository.createToken(documentId, "user-id", cookieAtEnd);
+
+    // Then — regex group(0) captures "ZM_AUTH_TOKEN=endtoken789" (no trailing semicolon)
+    Assertions.assertThat(created.getRequesterCookie()).contains("ZM_AUTH_TOKEN=endtoken789");
+    Assertions.assertThat(created.getRequesterCookie()).doesNotContain("OTHER");
+  }
 }

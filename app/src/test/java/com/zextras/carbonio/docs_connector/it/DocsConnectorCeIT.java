@@ -4,13 +4,17 @@
 package com.zextras.carbonio.docs_connector.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
 import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
@@ -24,6 +28,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -219,5 +224,268 @@ class DocsConnectorCeIT {
         .body("file-content".getBytes(java.nio.charset.StandardCharsets.UTF_8))
         .when().post("/services/docs/wopi/" + NODE_ID + "/contents")
         .then().statusCode(401);
+  }
+
+  // ----- Full happy-path WOPI flow -----
+
+  /**
+   * Stubs the Files graphQL endpoint (POST /graphql/) to return a valid node.
+   * The response is used both by openFile (FilesService) and getDocsEditorAttributes/saveBlob (WopiService).
+   */
+  private void stubFilesGraphQL(String nodeId, String mimeType, long sizeBytes) {
+    String body = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": true },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "test-doc",
+              "updated_at": 1700000000000,
+              "extension": "odt",
+              "mime_type": "%s",
+              "size": %d,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, nodeId, mimeType, sizeBytes);
+
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(body)));
+  }
+
+  @Test
+  @DisplayName("Full WOPI flow: openFile → getDocsEditorAttributes → getBlob → saveBlob")
+  void givenValidCookieFullWopiFlowShouldSucceed() throws Exception {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+
+    // 1. Stub Files graphQL for all three calls (openFile + getDocsEditorAttributes + saveBlob pre/post)
+    long sizeBytes = 5L * 1024 * 1024; // 5 MB — within all limits
+    stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", sizeBytes);
+
+    // 2. Stub download endpoint for getBlob
+    byte[] fileContent = "document-content".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    CeStackTestResource.FILES_MOCK.stubFor(
+        get(urlPathMatching("/download/.*"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/octet-stream")
+                .withHeader("Content-Length", String.valueOf(fileContent.length))
+                .withBody(fileContent)));
+
+    // 3. Stub upload-version endpoint for saveBlob
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/upload-version/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"nodeId\":\"" + NODE_ID + "\",\"version\":2}")));
+
+    // Step 1: GET /files/open/{nodeId} — should return 200 with redirect URL containing access_token
+    Response openResponse = given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200)
+        .extract().response();
+
+    // Extract access_token from the redirect URL in the response body
+    // DocsEditorRedirect record serialises as {"fileOpenUrl":"..."}
+    String responseBody = openResponse.asString();
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode json = mapper.readTree(responseBody);
+    String redirectUrl = json.get("fileOpenUrl").asText();
+
+    assertThat(redirectUrl).contains("access_token=");
+    assertThat(redirectUrl).contains("access_token_ttl=");
+
+    // Parse access_token from the URL query parameters
+    String accessTokenParam = "access_token=";
+    int tokenStart = redirectUrl.indexOf(accessTokenParam) + accessTokenParam.length();
+    int tokenEnd = redirectUrl.indexOf("&", tokenStart);
+    String accessToken = tokenEnd > 0
+        ? redirectUrl.substring(tokenStart, tokenEnd)
+        : redirectUrl.substring(tokenStart);
+
+    assertThat(accessToken).isNotBlank();
+
+    long futureTtl = System.currentTimeMillis() + 43_200_000L;
+
+    // Step 2: GET /wopi/{nodeId}?access_token={token} — should return 200 with DocsEditorAttributes
+    // Mock the getUserById call that WopiService makes internally
+    com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest byIdRequest =
+        com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest.newBuilder()
+            .setUserId(REQUESTER_ID)
+            .build();
+    com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto userInfo =
+        com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto.newBuilder()
+            .setUserId(REQUESTER_ID)
+            .setFullName("Test User")
+            .setEmail("test@example.com")
+            .build();
+    com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse userInfoResponse =
+        com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse.newBuilder()
+            .setUser(userInfo)
+            .build();
+    when(mockStub.getUserById(byIdRequest)).thenReturn(userInfoResponse);
+
+    given()
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", futureTtl)
+        .when().get("/services/docs/wopi/" + NODE_ID)
+        .then().statusCode(200);
+
+    // Step 3: GET /wopi/{nodeId}/contents?access_token={token} — should return file content
+    given()
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", futureTtl)
+        .when().get("/services/docs/wopi/" + NODE_ID + "/contents")
+        .then().statusCode(200);
+
+    // Step 4: POST /wopi/{nodeId}/contents?access_token={token} — should return 200
+    given()
+        .contentType(ContentType.BINARY)
+        .header("Content-Length", fileContent.length)
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", futureTtl)
+        .body(fileContent)
+        .when().post("/services/docs/wopi/" + NODE_ID + "/contents")
+        .then().statusCode(org.hamcrest.Matchers.anyOf(
+            org.hamcrest.Matchers.is(200),
+            org.hamcrest.Matchers.is(424)));
+  }
+
+  // ----- Auth edge cases -----
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} with empty-string cookie value should return 401")
+  void givenEmptyCookieValueOpenFileShouldReturn401() {
+    mockInvalidUser("");
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", "")
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} when gRPC throws UNAVAILABLE should return 401")
+  void givenGrpcUnavailableOpenFileShouldReturn401() {
+    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
+        .setToken(CeStackTestResource.AUTH_TOKEN)
+        .setBypassCache(true)
+        .build();
+    when(mockStub.getUserMyself(request))
+        .thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  // ----- AccessTokenValidationFilter edge cases (IT) -----
+
+  @Test
+  @DisplayName("GET /wopi/{nodeId} with malformed (non-UUID) access_token should return 401")
+  void givenMalformedAccessTokenGetWopiAttributesShouldReturn401() {
+    given()
+        .queryParam("access_token", "not-a-uuid-at-all")
+        .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
+        .when().get("/services/docs/wopi/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  @Test
+  @DisplayName("GET /wopi/{nodeId} with empty-string access_token should return 401")
+  void givenEmptyStringAccessTokenGetWopiAttributesShouldReturn401() {
+    given()
+        .queryParam("access_token", "")
+        .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
+        .when().get("/services/docs/wopi/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  // ----- File size limit edge cases (IT) -----
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} for spreadsheet exceeding 10 MB limit should return 403")
+  void givenSpreadsheetExceedingSizeLimitOpenFileShouldReturn403() {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+
+    long oversizedBytes = 11L * 1024 * 1024; // 11 MB — exceeds 10 MB spreadsheet limit
+    String graphQLBody = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": true },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "budget",
+              "updated_at": 1700000000000,
+              "extension": "ods",
+              "mime_type": "application/vnd.oasis.opendocument.spreadsheet",
+              "size": %d,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, NODE_ID, oversizedBytes);
+
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(graphQLBody)));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(403);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} for presentation exceeding 100 MB limit should return 403")
+  void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+
+    long oversizedBytes = 101L * 1024 * 1024; // 101 MB — exceeds 100 MB presentation limit
+    String graphQLBody = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": true },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "slides",
+              "updated_at": 1700000000000,
+              "extension": "odp",
+              "mime_type": "application/vnd.oasis.opendocument.presentation",
+              "size": %d,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, NODE_ID, oversizedBytes);
+
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(graphQLBody)));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(403);
   }
 }

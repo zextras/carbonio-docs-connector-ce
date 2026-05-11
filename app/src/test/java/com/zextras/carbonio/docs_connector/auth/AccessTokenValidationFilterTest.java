@@ -201,4 +201,38 @@ class AccessTokenValidationFilterTest {
     Assertions.assertThat(responseCaptor.getValue().getStatus())
         .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
+
+  @Test
+  @DisplayName("Given a malformed (non-UUID) access_token the filter should return 401 not 500")
+  void givenMalformedAccessTokenTheFilterShouldReturn401() {
+    // Given — "not-a-uuid" is not a valid UUID → UUID.fromString throws IllegalArgumentException
+    ContainerRequestContext ctx = buildWopiRequestContext("not-a-uuid");
+
+    // When
+    filter.filter(ctx);
+
+    // Then — filter must catch the parse error and abort with 401, not propagate as 500
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    verify(tokenRepository, never()).getToken(any());
+  }
+
+  @Test
+  @DisplayName("Given an empty-string access_token the filter should return 401")
+  void givenEmptyStringAccessTokenTheFilterShouldReturn401() {
+    // Given — empty string is not a valid UUID
+    ContainerRequestContext ctx = buildWopiRequestContext("");
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    verify(tokenRepository, never()).getToken(any());
+  }
 }

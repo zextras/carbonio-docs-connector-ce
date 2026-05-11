@@ -59,8 +59,17 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
       if (queryParameters.containsKey(API.Wopi.ACCESS_TOKEN_QUERY_PARAM)) {
         List<String> accessTokens = queryParameters.get(Wopi.ACCESS_TOKEN_QUERY_PARAM);
         if (!accessTokens.isEmpty()) {
+          UUID tokenUuid;
+          try {
+            tokenUuid = UUID.fromString(accessTokens.get(0));
+          } catch (IllegalArgumentException e) {
+            logger.warn("Malformed access_token: {}", accessTokens.get(0));
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+            return;
+          }
+
           openDocumentTokenRepository
-              .getToken(UUID.fromString(accessTokens.get(0)))
+              .getToken(tokenUuid)
               .ifPresentOrElse(
                   token -> {
                     if (token.getExpirationTimestamp().toEpochMilli() > clock.millis()) {

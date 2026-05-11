@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.zextras.carbonio.files.exceptions.UnAuthorized;
+
 import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
@@ -230,5 +232,106 @@ class WopiServiceTest {
     Assertions.assertThatThrownBy(() ->
             wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("saveBlob should throw ServiceDependencyException when uploadFileVersion returns UnAuthorized")
+  void givenUploadReturnsUnAuthorizedSaveBlobShouldThrowServiceDependencyException() {
+    // Given
+    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    when(filesClient.uploadFileVersion(eq(COOKIE), eq(NODE_ID.toString()), anyString(),
+        anyString(), any(InputStream.class), anyLong(), eq(false)))
+        .thenReturn(Try.failure(new UnAuthorized()));
+
+    InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes when filename exceeds 64 chars should abbreviate to 50 chars of name + extension")
+  void givenFilenameExceeding64CharsGetDocsEditorAttributesShouldAbbreviate() {
+    // Given
+    String longName = "a".repeat(60); // 60-char name + ".odt" = 64 chars → abbreviate to 50 + ".odt" = 54
+    UserInfoProto userInfo = UserInfoProto.newBuilder()
+        .setUserId(REQUESTER_ID)
+        .setFullName("Test User")
+        .setEmail("test@example.com")
+        .build();
+    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
+
+    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
+        .setUserId(REQUESTER_ID).build();
+    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+
+    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, longName, "odt",
+        "application/vnd.oasis.opendocument.text", 100000L, 1024L * 1024, 1, true);
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    // When
+    Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
+        REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+
+    // Then — baseFileName should be abbreviated: first 50 chars of name + ".odt"
+    Assertions.assertThat(result).isPresent();
+    String baseFileName = result.get().getBaseFileName();
+    Assertions.assertThat(baseFileName.length()).isLessThanOrEqualTo(64);
+    Assertions.assertThat(baseFileName).endsWith(".odt");
+    Assertions.assertThat(baseFileName).startsWith("a".repeat(50));
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes with null extension should not throw and return filename without extension")
+  void givenNullExtensionGetDocsEditorAttributesShouldHandleGracefully() {
+    // Given — null extension in JSON
+    String graphQLResponseNullExt = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": true },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "nodoc",
+              "updated_at": 1000,
+              "extension": null,
+              "mime_type": "application/vnd.oasis.opendocument.text",
+              "size": 1024,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, NODE_ID);
+
+    UserInfoProto userInfo = UserInfoProto.newBuilder()
+        .setUserId(REQUESTER_ID)
+        .setFullName("Test User")
+        .setEmail("test@example.com")
+        .build();
+    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
+
+    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
+        .setUserId(REQUESTER_ID).build();
+    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponseNullExt));
+
+    // When / Then — must not throw, baseFileName is just the name
+    Assertions.assertThatCode(() -> {
+      Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
+          REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+      Assertions.assertThat(result).isPresent();
+      Assertions.assertThat(result.get().getBaseFileName()).isEqualTo("nodoc");
+    }).doesNotThrowAnyException();
   }
 }

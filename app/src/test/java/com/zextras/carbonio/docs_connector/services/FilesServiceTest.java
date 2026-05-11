@@ -281,4 +281,152 @@ class FilesServiceTest {
     Assertions.assertThat(result).isPresent();
     Assertions.assertThat(result.get().getNodeId().toString()).isEqualTo(expectedNodeId);
   }
+
+  @Test
+  @DisplayName("openFile with spreadsheet MIME type should apply the 10 MB limit")
+  void givenSpreadsheetMimeTypeOpenFileShouldApply10MbLimit() {
+    // Given — exactly at the limit: 10 MB is not strictly greater than 10 MB
+    long exactLimitBytes = 10L * 1024 * 1024;
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "budget", "ods",
+        "application/vnd.oasis.opendocument.spreadsheet", exactLimitBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    OpenDocumentToken token = new OpenDocumentToken(
+        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
+        Instant.now().plusSeconds(43200));
+    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
+
+    // When — should NOT throw because size == limit (not strictly greater)
+    Assertions.assertThatCode(() ->
+            filesService.openFile(REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  @DisplayName("openFile with spreadsheet MIME type exceeding 10 MB should throw FileSizeTooLargeException")
+  void givenSpreadsheetExceeding10MbOpenFileShouldThrowFileSizeTooLargeException() {
+    // Given — 1 byte over the limit
+    long oversizedBytes = 10L * 1024 * 1024 + 1;
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "budget", "ods",
+        "application/vnd.oasis.opendocument.spreadsheet", oversizedBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            filesService.openFile(REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException.class)
+        .satisfies(e -> Assertions.assertThat(
+            ((com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException) e).getMaxSizeLimitInMB()
+        ).isEqualTo(10L));
+  }
+
+  @Test
+  @DisplayName("openFile with presentation MIME type exceeding 100 MB should throw FileSizeTooLargeException")
+  void givenPresentationExceeding100MbOpenFileShouldThrowFileSizeTooLargeException() {
+    // Given — 101 MB
+    long oversizedBytes = 101L * 1024 * 1024;
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "slides", "odp",
+        "application/vnd.oasis.opendocument.presentation", oversizedBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            filesService.openFile(REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException.class)
+        .satisfies(e -> Assertions.assertThat(
+            ((com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException) e).getMaxSizeLimitInMB()
+        ).isEqualTo(100L));
+  }
+
+  @Test
+  @DisplayName("openFile when applicationConfig returns empty for max-file-size key should fall back to default")
+  void givenEmptyMaxFileSizeConfigOpenFileShouldFallBackToDefault()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    // Given — override config to return empty (simulate missing Consul key)
+    when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT))
+        .thenReturn(Optional.empty());
+
+    long fileSizeBytes = 40L * 1024 * 1024; // 40 MB, within default 50 MB limit
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    OpenDocumentToken token = new OpenDocumentToken(
+        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
+        Instant.now().plusSeconds(43200));
+    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
+
+    // When — default is 50 MB, file is 40 MB so it should succeed
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+
+    // Then
+    Assertions.assertThat(url).contains("services/docs/editor/browser/dist/cool.html");
+  }
+
+  @Test
+  @DisplayName("openFile with both version and offsetFromUtc should include version in wopi endpoint query string")
+  void givenVersionAndOffsetFromUtcOpenFileShouldIncludeVersionInWopiSrc()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    // Given
+    long fileSizeBytes = 5L * 1024 * 1024;
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    OpenDocumentToken token = new OpenDocumentToken(
+        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
+        Instant.now().plusSeconds(43200));
+    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
+
+    // When
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.of(3), Optional.of(60));
+
+    // Then — version param in WOPISrc and also in public_url
+    Assertions.assertThat(url).contains("version%3D3");  // URL-encoded version=3 in WOPISrc
+    Assertions.assertThat(url).contains("permission=readonly"); // version requested → read-only
+  }
+
+  @Test
+  @DisplayName("uploadTemplate for LIBRE_PRESENTATION type should return a CreatedFile on success")
+  void givenLibrePresentationTypeUploadTemplateShouldReturnCreatedFile() {
+    // Given
+    InsertFile insertFile = new InsertFile();
+    insertFile.setType(FileType.LIBRE_PRESENTATION);
+    insertFile.setFilename("New Presentation");
+    insertFile.setDestinationFolderId("LOCAL_ROOT");
+
+    String expectedNodeId = "22222222-2222-2222-2222-222222222222";
+    NodeId nodeId = new NodeId(expectedNodeId);
+
+    when(filesClient.uploadFile(anyString(), anyString(), anyString(), anyString(), any(InputStream.class), anyLong()))
+        .thenReturn(Try.success(nodeId));
+
+    // When
+    Optional<CreatedFile> result = filesService.uploadTemplate(COOKIE, insertFile);
+
+    // Then
+    Assertions.assertThat(result).isPresent();
+    Assertions.assertThat(result.get().getNodeId().toString()).isEqualTo(expectedNodeId);
+  }
 }
