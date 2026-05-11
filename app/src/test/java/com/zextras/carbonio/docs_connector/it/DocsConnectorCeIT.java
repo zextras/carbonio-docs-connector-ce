@@ -350,7 +350,6 @@ class DocsConnectorCeIT {
     // Step 4: POST /wopi/{nodeId}/contents?access_token={token} — should return 200
     given()
         .contentType(ContentType.BINARY)
-        .header("Content-Length", fileContent.length)
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
         .body(fileContent)
