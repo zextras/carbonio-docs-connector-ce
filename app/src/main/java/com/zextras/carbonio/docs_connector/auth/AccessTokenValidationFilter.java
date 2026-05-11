@@ -8,6 +8,7 @@ import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Wopi;
+import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Provider
@@ -68,19 +70,19 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
             return;
           }
 
-          openDocumentTokenRepository
-              .getToken(tokenUuid)
-              .ifPresentOrElse(
-                  token -> {
-                    if (token.getExpirationTimestamp().toEpochMilli() > clock.millis()) {
-                      requestContext.setProperty(Context.OPEN_DOCUMENT_TOKEN, token);
-                    } else {
-                      logger.warn("Token {} is expired", accessTokens.get(0));
-                      requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
-                    }
-                  },
-                  () -> requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build())
-              );
+          Optional<OpenDocumentToken> maybeToken =
+              openDocumentTokenRepository.getToken(tokenUuid);
+          if (maybeToken.isEmpty()) {
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+            return;
+          }
+          OpenDocumentToken token = maybeToken.get();
+          if (token.getExpirationTimestamp().toEpochMilli() > clock.millis()) {
+            requestContext.setProperty(Context.OPEN_DOCUMENT_TOKEN, token);
+          } else {
+            logger.warn("Token {} is expired", accessTokens.get(0));
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          }
 
           return;
         }
