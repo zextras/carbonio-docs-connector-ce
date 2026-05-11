@@ -487,4 +487,242 @@ class DocsConnectorCeIT {
         .when().get("/services/docs/files/open/" + NODE_ID)
         .then().statusCode(403);
   }
+
+  // ----- 8 new IT cases -----
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} for .docx (OOXML) returns 200")
+  void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    long sizeBytes = 2L * 1024 * 1024;
+    String body = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": true },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "report",
+              "updated_at": 1700000000000,
+              "extension": "docx",
+              "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "size": %d,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, NODE_ID, sizeBytes);
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(body)));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} with GUEST user type should return 401")
+  void givenValidCookieAndExternalUser_whenOpenFile_thenReturn401() {
+    UserInfoProto info = UserInfoProto.newBuilder()
+        .setUserId(REQUESTER_ID)
+        .setType(UserTypeProto.GUEST)
+        .setStatus("active")
+        .setDomain("example.com")
+        .setFullName("Ext User")
+        .setEmail("ext@example.com")
+        .build();
+    UserMyselfProto myself = UserMyselfProto.newBuilder().setInfo(info).setLocale("en_US").build();
+    UserMyselfResponse response = UserMyselfResponse.newBuilder().setUser(myself).build();
+    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
+        .setToken(CeStackTestResource.AUTH_TOKEN)
+        .setBypassCache(true)
+        .build();
+    when(mockStub.getUserMyself(request)).thenReturn(response);
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} with non-active user should return 401")
+  void givenValidCookieAndInactiveUser_whenOpenFile_thenReturn401() {
+    UserInfoProto info = UserInfoProto.newBuilder()
+        .setUserId(REQUESTER_ID)
+        .setType(UserTypeProto.INTERNAL)
+        .setStatus("locked")
+        .setDomain("example.com")
+        .setFullName("Locked User")
+        .setEmail("locked@example.com")
+        .build();
+    UserMyselfProto myself = UserMyselfProto.newBuilder().setInfo(info).setLocale("en_US").build();
+    UserMyselfResponse response = UserMyselfResponse.newBuilder().setUser(myself).build();
+    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
+        .setToken(CeStackTestResource.AUTH_TOKEN)
+        .setBypassCache(true)
+        .build();
+    when(mockStub.getUserMyself(request)).thenReturn(response);
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(401);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} for read-only file injects permission=readonly")
+  void givenValidCookieAndReadOnlyFile_whenOpenFile_thenRedirectUrlContainsPermissionReadonly()
+      throws Exception {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    long sizeBytes = 1L * 1024 * 1024;
+    String body = """
+        {
+          "data": {
+            "getNode": {
+              "permissions": { "can_write_file": false },
+              "owner": { "id": "%s", "full_name": "Owner" },
+              "parent": { "id": "LOCAL_ROOT" },
+              "id": "%s",
+              "name": "readonly-doc",
+              "updated_at": 1700000000000,
+              "extension": "odt",
+              "mime_type": "application/vnd.oasis.opendocument.text",
+              "size": %d,
+              "version": 1
+            }
+          }
+        }
+        """.formatted(REQUESTER_ID, NODE_ID, sizeBytes);
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(body)));
+
+    Response r = given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200)
+        .extract().response();
+
+    JsonNode json = new ObjectMapper().readTree(r.asString());
+    String url = json.get("fileOpenUrl").asText();
+    assertThat(url).contains("permission=readonly");
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId}?redirect=true returns 307")
+  void givenValidCookie_whenOpenFileWithRedirectTrue_thenReturn307() {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .redirects().follow(false)
+        .queryParam("redirect", true)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(307);
+  }
+
+  @Test
+  @DisplayName("Open then GET /wopi/{nodeId} returns DocsEditorAttributes with user info")
+  void givenValidCookieAndOpenedFile_whenGetWopiAttributes_thenReturn200WithCorrectFields()
+      throws Exception {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
+
+    Response openR = given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200)
+        .extract().response();
+    String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
+    String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
+    if (accessToken.contains("&")) accessToken = accessToken.substring(0, accessToken.indexOf("&"));
+
+    com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest byIdRequest =
+        com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest.newBuilder()
+            .setUserId(REQUESTER_ID).build();
+    com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto info =
+        com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto.newBuilder()
+            .setUserId(REQUESTER_ID)
+            .setFullName("Test User")
+            .setEmail("test@example.com")
+            .build();
+    com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse infoResp =
+        com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse.newBuilder()
+            .setUser(info).build();
+    when(mockStub.getUserById(byIdRequest)).thenReturn(infoResp);
+
+    given()
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
+        .when().get("/services/docs/wopi/" + NODE_ID)
+        .then().statusCode(200)
+        .body("$", org.hamcrest.Matchers.notNullValue());
+  }
+
+  @Test
+  @DisplayName("Open then GET /wopi/{nodeId}/contents returns file bytes")
+  void givenValidCookieAndOpenedFile_whenGetFileContents_thenReturnFileBytes() throws Exception {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
+
+    byte[] fileContent = "hello-docs-connector".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    CeStackTestResource.FILES_MOCK.stubFor(
+        get(urlPathMatching("/download/.*"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/octet-stream")
+                .withHeader("Content-Length", String.valueOf(fileContent.length))
+                .withBody(fileContent)));
+
+    Response openR = given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200).extract().response();
+    String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
+    String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
+    if (accessToken.contains("&")) accessToken = accessToken.substring(0, accessToken.indexOf("&"));
+
+    byte[] returned = given()
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
+        .when().get("/services/docs/wopi/" + NODE_ID + "/contents")
+        .then().statusCode(200)
+        .extract().asByteArray();
+
+    assertThat(returned).isEqualTo(fileContent);
+  }
+
+  @Test
+  @DisplayName("WOPI token bound to nodeId A returns 401 when used against nodeId B")
+  void givenWopiAccessToken_whenAccessedAcrossDifferentNodeId_thenReturn401() throws Exception {
+    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+    stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
+
+    Response openR = given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/services/docs/files/open/" + NODE_ID)
+        .then().statusCode(200).extract().response();
+    String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
+    String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
+    if (accessToken.contains("&")) accessToken = accessToken.substring(0, accessToken.indexOf("&"));
+
+    String otherNode = "12345678-1234-1234-1234-123456789012";
+
+    given()
+        .queryParam("access_token", accessToken)
+        .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
+        .when().get("/services/docs/wopi/" + otherNode)
+        .then().statusCode(401);
+  }
 }
