@@ -238,9 +238,14 @@ public class FilesService {
       case PRESENTATION -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_PRESENTATION;
       case SPREADSHEET -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_SPREADSHEET;
     };
+    long defaultSize = switch (fileType) {
+      case DOCUMENT -> 50L;
+      case PRESENTATION -> 100L;
+      case SPREADSHEET -> 10L;
+    };
     return applicationConfig
         .get(configKey)
         .map(Long::parseLong)
-        .orElseThrow();
+        .orElse(defaultSize);
   }
 }
