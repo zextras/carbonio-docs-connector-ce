@@ -5,6 +5,7 @@
 package com.zextras.carbonio.docs_connector.resources;
 
 import com.zextras.carbonio.docs_connector.Constants;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.FilesService;
@@ -54,10 +55,14 @@ public class FilesResource {
       @HeaderParam("Cookie") String cookie,
       InsertFile insertFile,
       @jakarta.ws.rs.core.Context ContainerRequestContext requestContext) {
-    return filesService
-        .uploadTemplate(cookie, insertFile)
-        .map(createdFile -> Response.ok().entity(createdFile).build())
-        .orElse(Response.serverError().build());
+    try {
+      return filesService
+          .uploadTemplate(cookie, insertFile)
+          .map(createdFile -> Response.ok().entity(createdFile).build())
+          .orElse(Response.serverError().build());
+    } catch (AccountOverQuotaException e) {
+      return Response.status(422).build();
+    }
   }
 
   @GET

@@ -10,12 +10,14 @@ import static io.vavr.API.Case;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.NodeUpdatedTimestamp;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
+import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
 import com.zextras.carbonio.files.exceptions.InternalServerError;
 import com.zextras.carbonio.files.exceptions.UnAuthorized;
 import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
@@ -43,11 +45,16 @@ public class WopiService {
 
   private final UserManagementClient userManagementClient;
   private final FilesClient filesClient;
+  private final SaveBlobCallback saveBlobCallback;
 
   @Inject
-  public WopiService(UserManagementClient userManagementClient, FilesClient filesClient) {
+  public WopiService(
+      UserManagementClient userManagementClient,
+      FilesClient filesClient,
+      SaveBlobCallback saveBlobCallback) {
     this.userManagementClient = userManagementClient;
     this.filesClient = filesClient;
+    this.saveBlobCallback = saveBlobCallback;
   }
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
@@ -149,7 +156,7 @@ public class WopiService {
       InputStream blob,
       long contentLength,
       boolean coolIsAutosave
-  ) throws ServiceDependencyException {
+  ) throws ServiceDependencyException, AccountOverQuotaException {
     NodeAttributes nodeAttributes = filesClient
         .genericGraphQLRequest(
             cookie,
@@ -169,12 +176,19 @@ public class WopiService {
             coolIsAutosave
         ).mapFailure(
             Case(
+                $(Predicates.instanceOf(AccountInOverQuota.class)),
+                new AccountOverQuotaException(
+                    "Unable to save blob %s to Files (owner is over quota)".formatted(nodeId))),
+            Case(
                 $(Predicates.instanceOf(UnAuthorized.class)),
                 new ServiceDependencyException("Unable to save blob %s to Files (424)".formatted(nodeId))),
             Case(
                 $(Predicates.instanceOf(InternalServerError.class)),
                 new ServiceDependencyException("Unable to save blob %s to Files (500)".formatted(nodeId)))
         ).get();
+
+    // Notify callback (Advanced: updates savedAt on open_document record)
+    saveBlobCallback.onBlobSaved(nodeId);
 
     Optional<Integer> uploadedNodeVersion = uploadedNodeIdVersion != null
         ? Optional.ofNullable(uploadedNodeIdVersion.getVersion())

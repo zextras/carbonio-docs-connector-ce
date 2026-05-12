@@ -11,9 +11,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.zextras.carbonio.docs_connector.cluster.DocsEditorInstanceSelector;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorServiceConfig;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.CreatedFile;
@@ -43,6 +45,8 @@ class FilesServiceTest {
   private ApplicationConfigService applicationConfig;
   private NetworkingConfigService networkingConfig;
   private FilesClient filesClient;
+  private QuotaChecker quotaChecker;
+  private DocsEditorInstanceSelector instanceSelector;
   private FilesService filesService;
 
   private static final String NODE_ID = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
@@ -79,6 +83,8 @@ class FilesServiceTest {
     applicationConfig = mock(ApplicationConfigService.class);
     networkingConfig = mock(NetworkingConfigService.class);
     filesClient = mock(FilesClient.class);
+    quotaChecker = mock(QuotaChecker.class);
+    instanceSelector = mock(DocsEditorInstanceSelector.class);
 
     // Defaults: no domain override, use defaults for wopi host/port, use default max sizes
     when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.REQUESTER_DOMAIN_OVERRIDE))
@@ -93,8 +99,12 @@ class FilesServiceTest {
         .thenReturn(Optional.of("127.78.0.12"));
     when(networkingConfig.get(DocsConnectorServiceConfig.NetworkingConfig.WOPI_PORT))
         .thenReturn(Optional.of("20000"));
+    when(quotaChecker.isOverQuota(anyString(), anyString())).thenReturn(false);
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
 
-    filesService = new FilesService(tokenRepository, applicationConfig, networkingConfig, filesClient);
+    filesService = new FilesService(
+        tokenRepository, applicationConfig, networkingConfig, filesClient,
+        quotaChecker, instanceSelector);
   }
 
   @Test
@@ -241,7 +251,8 @@ class FilesServiceTest {
 
   @Test
   @DisplayName("uploadTemplate should return empty Optional when FilesClient upload fails")
-  void givenFilesClientUploadFailureUploadTemplateShouldReturnEmpty() {
+  void givenFilesClientUploadFailureUploadTemplateShouldReturnEmpty()
+      throws AccountOverQuotaException {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_DOCUMENT);
@@ -261,7 +272,8 @@ class FilesServiceTest {
 
   @Test
   @DisplayName("uploadTemplate should return a CreatedFile with the node id when FilesClient upload succeeds")
-  void givenSuccessfulUploadUploadTemplateShouldReturnCreatedFile() {
+  void givenSuccessfulUploadUploadTemplateShouldReturnCreatedFile()
+      throws AccountOverQuotaException {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_SPREADSHEET);
@@ -351,14 +363,13 @@ class FilesServiceTest {
   }
 
   @Test
-  @DisplayName("openFile when applicationConfig returns empty for max-file-size key should fall back to default")
-  void givenEmptyMaxFileSizeConfigOpenFileShouldFallBackToDefault()
-      throws ServiceDependencyException, FileSizeTooLargeException {
+  @DisplayName("openFile when applicationConfig returns empty for max-file-size key should throw (no hardcoded fallback)")
+  void givenEmptyMaxFileSizeConfigOpenFileShouldThrow() {
     // Given — override config to return empty (simulate missing Consul key)
     when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT))
         .thenReturn(Optional.empty());
 
-    long fileSizeBytes = 40L * 1024 * 1024; // 40 MB, within default 50 MB limit
+    long fileSizeBytes = 40L * 1024 * 1024; // 40 MB
     String graphQLResponse = buildGetNodeResponse(
         NODE_ID, REQUESTER_ID, "doc", "odt",
         "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
@@ -366,17 +377,11 @@ class FilesServiceTest {
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
-    OpenDocumentToken token = new OpenDocumentToken(
-        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
-        Instant.now().plusSeconds(43200));
-    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
-
-    // When — default is 50 MB, file is 40 MB so it should succeed
-    String url = filesService.openFile(
-        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
-
-    // Then
-    Assertions.assertThat(url).contains("services/docs/editor/browser/dist/cool.html");
+    // When / Then — no fallback, should throw NoSuchElementException
+    Assertions.assertThatThrownBy(() ->
+            filesService.openFile(REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(java.util.NoSuchElementException.class);
   }
 
   @Test
@@ -409,7 +414,8 @@ class FilesServiceTest {
 
   @Test
   @DisplayName("uploadTemplate for LIBRE_PRESENTATION type should return a CreatedFile on success")
-  void givenLibrePresentationTypeUploadTemplateShouldReturnCreatedFile() {
+  void givenLibrePresentationTypeUploadTemplateShouldReturnCreatedFile()
+      throws AccountOverQuotaException {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_PRESENTATION);

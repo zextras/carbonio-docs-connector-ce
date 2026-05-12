@@ -193,8 +193,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("saveBlob should return 200 with NodeUpdatedTimestamp when save succeeds")
-  void givenValidInputsSaveBlobShouldReturn200WithTimestamp()
-      throws ServiceDependencyException {
+  void givenValidInputsSaveBlobShouldReturn200WithTimestamp() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
@@ -220,8 +219,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("saveBlob should return 424 when service throws ServiceDependencyException")
-  void givenServiceDependencyExceptionSaveBlobShouldReturn424()
-      throws ServiceDependencyException {
+  void givenServiceDependencyExceptionSaveBlobShouldReturn424() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
@@ -242,8 +240,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("saveBlob should return 401 when token documentId does not match nodeId")
-  void givenTokenDocumentIdMismatchSaveBlobShouldReturn401()
-      throws ServiceDependencyException {
+  void givenTokenDocumentIdMismatchSaveBlobShouldReturn401() throws Exception {
     // Given
     UUID differentNodeId = UUID.randomUUID();
     OpenDocumentToken token = buildValidToken(UUID.fromString(ACCESS_TOKEN_STR), differentNodeId);
@@ -262,8 +259,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("saveBlob should return 424 when service returns empty Optional")
-  void givenServiceReturnsEmptySaveBlobShouldReturn424()
-      throws ServiceDependencyException {
+  void givenServiceReturnsEmptySaveBlobShouldReturn424() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);

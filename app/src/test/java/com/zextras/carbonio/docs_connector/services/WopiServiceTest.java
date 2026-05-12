@@ -81,7 +81,8 @@ class WopiServiceTest {
 
     when(userManagementClient.getBlockingStub()).thenReturn(blockingStub);
 
-    wopiService = new WopiService(userManagementClient, filesClient);
+    SaveBlobCallback saveBlobCallback = mock(SaveBlobCallback.class);
+    wopiService = new WopiService(userManagementClient, filesClient, saveBlobCallback);
   }
 
   @Test
@@ -192,7 +193,7 @@ class WopiServiceTest {
 
   @Test
   @DisplayName("saveBlob should return NodeUpdatedTimestamp when everything succeeds")
-  void givenValidInputsSaveBlobShouldReturnUpdatedTimestamp() throws ServiceDependencyException {
+  void givenValidInputsSaveBlobShouldReturnUpdatedTimestamp() throws Exception {
     // Given
     String graphQLResponseBefore = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
         "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);

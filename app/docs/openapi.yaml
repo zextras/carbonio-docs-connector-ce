@@ -192,7 +192,4 @@ info:
   title: carbonio-docs-connector-ce-app API
   version: unversioned
 servers:
-- url: http://localhost:8080
-  description: Auto generated value
-- url: http://0.0.0.0:8080
-  description: Auto generated value
+- url: http://127.78.0.13:10000/services/docs

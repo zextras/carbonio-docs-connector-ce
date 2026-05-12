@@ -29,11 +29,11 @@ public class FilesClientProducer {
   public FilesClient filesClient() {
     String host = networkingConfig
         .get(DocsConnectorServiceConfig.NetworkingConfig.FILES_HOST)
-        .orElse("127.78.0.13");
+        .orElseThrow();
     int port = Integer.parseInt(
         networkingConfig
             .get(DocsConnectorServiceConfig.NetworkingConfig.FILES_PORT)
-            .orElse("20000")
+            .orElseThrow()
     );
     return FilesClient.atURL("http://" + host + ":" + port);
   }

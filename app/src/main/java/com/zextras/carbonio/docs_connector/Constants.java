@@ -16,11 +16,6 @@ public final class Constants {
 
     private DocsConnector() {}
 
-    public static final String DEFAULT_HOST = "127.78.0.13";
-    public static final int DEFAULT_PORT = 10_000;
-    public static final String HOST_PROPERTY = "carbonio.docs-connector.host";
-    public static final String PORT_PROPERTY = "carbonio.docs-connector.port";
-    public static final String SERVICE_NAME = "carbonio-docs-connector";
     public static final class API {
 
       private API() {}
@@ -111,52 +106,11 @@ public final class Constants {
         GenericFileType.SPREADSHEET, SPREADSHEET_MIME_TYPES
       );
 
-    public static final Map<GenericFileType, Long> DEFAULT_MAX_FILE_SIZE_IN_MB_PER_TYPE =
-      Map.of(
-        GenericFileType.DOCUMENT, 50L,
-        GenericFileType.PRESENTATION, 100L,
-        GenericFileType.SPREADSHEET, 10L
-      );
-
-    public static final class Key {
-
-      private Key() {}
-
-      public static final String MAX_FILE_SIZE_IN_MB = "max-file-size-in-mb";
-    }
-
-    public static final class Files {
-
-      private Files() {}
-
-      public static final String DEFAULT_PROTOCOL = "http";
-      public static final String DEFAULT_HOST = "127.78.0.13";
-      public static final String HOST_PROPERTY = "carbonio.files.host";
-      public static final String PORT_PROPERTY = "carbonio.files.port";
-      public static final int DEFAULT_PORT = 20000;
-    }
-
-    public static final class UserManagement {
-
-      private UserManagement() {}
-
-      public static final String DEFAULT_PROTOCOL = "http";
-      public static final String DEFAULT_HOST = "127.78.0.13";
-      public static final String HOST_PROPERTY = "carbonio.user-management.host";
-      public static final String PORT_PROPERTY = "carbonio.user-management.port";
-      public static final int DEFAULT_PORT = 20001;
-      public static final String ZM_AUTH_TOKEN = "ZM_AUTH_TOKEN=";
-    }
-
     public static final class Wopi {
 
       private Wopi() {}
 
       public static final String DEFAULT_PROTOCOL = "http";
-      public static final String DEFAULT_HOST = "127.78.0.12";
-      public static final String HOST_PROPERTY = "carbonio.wopi.host";
-      public static final String PORT_PROPERTY = "carbonio.wopi.port";
-      public static final int DEFAULT_PORT = 20000;
     }
   }
 }

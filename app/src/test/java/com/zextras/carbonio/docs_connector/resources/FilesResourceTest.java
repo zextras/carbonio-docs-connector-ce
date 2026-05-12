@@ -56,7 +56,7 @@ class FilesResourceTest {
 
   @Test
   @DisplayName("createFile should return 200 with CreatedFile when upload succeeds")
-  void givenValidInsertFileCreateFileShouldReturn200WithCreatedFile() {
+  void givenValidInsertFileCreateFileShouldReturn200WithCreatedFile() throws Exception {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_DOCUMENT);
@@ -83,7 +83,7 @@ class FilesResourceTest {
 
   @Test
   @DisplayName("createFile should return 500 when upload returns empty Optional")
-  void givenFailedUploadCreateFileShouldReturn500() {
+  void givenFailedUploadCreateFileShouldReturn500() throws Exception {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_DOCUMENT);

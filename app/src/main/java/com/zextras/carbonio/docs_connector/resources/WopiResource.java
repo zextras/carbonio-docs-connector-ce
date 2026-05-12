@@ -6,6 +6,7 @@ package com.zextras.carbonio.docs_connector.resources;
 
 import com.zextras.carbonio.docs_connector.Constants;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.WopiService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -140,6 +141,9 @@ public class WopiResource {
                 xCOOLWOPIIsAutosave != null && xCOOLWOPIIsAutosave)
             .map(nodeUpdatedTimestamp -> Response.ok().entity(nodeUpdatedTimestamp).build())
             .orElse(Response.status(424).build());
+      } catch (AccountOverQuotaException exception) {
+        logger.error(exception.getMessage());
+        return Response.status(413).build();
       } catch (ServiceDependencyException exception) {
         logger.error(exception.getMessage());
         return Response.status(424).build();
