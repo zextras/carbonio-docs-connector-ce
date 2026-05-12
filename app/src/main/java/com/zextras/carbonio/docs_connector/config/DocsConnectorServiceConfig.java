@@ -5,7 +5,12 @@ package com.zextras.carbonio.docs_connector.config;
 
 import com.zextras.carbonio.quarkus.extensions.bootstrap.CarbonioServiceConfig;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.ConfigKey;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection(targets = {
+    DocsConnectorServiceConfig.NetworkingConfig.class,
+    DocsConnectorServiceConfig.ApplicationConfig.class
+})
 public final class DocsConnectorServiceConfig implements CarbonioServiceConfig {
 
   private DocsConnectorServiceConfig() {}
