@@ -363,14 +363,13 @@ class FilesServiceTest {
   }
 
   @Test
-  @DisplayName("openFile when applicationConfig returns empty for max-file-size key should use fallback default (50 MB for documents)")
-  void givenEmptyMaxFileSizeConfigOpenFileShouldUseFallbackDefault()
-      throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given — override config to return empty (simulate missing Consul key)
+  @DisplayName("openFile when applicationConfig returns empty for max-file-size key should throw (no hardcoded fallback)")
+  void givenEmptyMaxFileSizeConfigOpenFileShouldThrow() {
+    // Given — override config to return empty (simulate broken extension)
     when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT))
         .thenReturn(Optional.empty());
 
-    long fileSizeBytes = 40L * 1024 * 1024; // 40 MB, under 50 MB default
+    long fileSizeBytes = 40L * 1024 * 1024;
     String graphQLResponse = buildGetNodeResponse(
         NODE_ID, REQUESTER_ID, "doc", "odt",
         "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
@@ -378,18 +377,11 @@ class FilesServiceTest {
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
-    OpenDocumentToken token = new OpenDocumentToken(
-        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
-        Instant.now().plusSeconds(43200));
-    when(tokenRepository.createToken(UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE))
-        .thenReturn(token);
-
-    // When — should succeed using fallback default of 50 MB
-    String url = filesService.openFile(
-        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
-
-    // Then
-    Assertions.assertThat(url).contains(NODE_ID);
+    // When/Then — should fail loudly instead of silently using a hardcoded default
+    Assertions.assertThatThrownBy(() ->
+        filesService.openFile(
+            REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
+        .isInstanceOf(java.util.NoSuchElementException.class);
   }
 
   @Test

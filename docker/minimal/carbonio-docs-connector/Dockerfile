@@ -1,10 +1,11 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM --platform=linux/amd64 ubuntu:noble
 
 WORKDIR /app
 
 RUN mkdir -p /etc/carbonio/docs-connector
 
-COPY ../../boot/target/carbonio-docs-connector-*-fatjar.jar .
+COPY ../../app/target/*-runner carbonio-docs-connector-ce-runner
+RUN chmod +x carbonio-docs-connector-ce-runner
 
 COPY docker/minimal/carbonio-docs-connector/entrypoint.sh entrypoint.sh
 

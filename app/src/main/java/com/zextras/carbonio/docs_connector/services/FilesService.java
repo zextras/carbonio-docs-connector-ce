@@ -230,7 +230,8 @@ public class FilesService {
 
   /**
    * Resolves the max file size limit (in MB) for the given file type from Consul KV via
-   * ApplicationConfigService. Falls back to spec-defined defaults if the key is not present.
+   * ApplicationConfigService. Defaults are guaranteed by {@code @ConfigKey(ifNotPresent = ...)}
+   * on the config constants.
    */
   private long getMaxSizeLimitForFileType(GenericFileType fileType) {
     String configKey = switch (fileType) {
@@ -238,14 +239,9 @@ public class FilesService {
       case PRESENTATION -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_PRESENTATION;
       case SPREADSHEET -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_SPREADSHEET;
     };
-    long defaultSize = switch (fileType) {
-      case DOCUMENT -> 50L;
-      case PRESENTATION -> 100L;
-      case SPREADSHEET -> 10L;
-    };
     return applicationConfig
         .get(configKey)
         .map(Long::parseLong)
-        .orElse(defaultSize);
+        .orElseThrow();
   }
 }

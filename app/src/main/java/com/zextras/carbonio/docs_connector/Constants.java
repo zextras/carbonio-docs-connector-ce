@@ -47,6 +47,8 @@ public final class Constants {
     public static final String REQUESTER_COOKIE = "requester-cookie";
     public static final String REQUESTER_ID = "requester-id";
     public static final String REQUESTER_DOMAIN = "requester-domain";
+    /** @deprecated Use {@link com.zextras.carbonio.docs_connector.config.DocsConnectorServiceConfig.ApplicationConfig#REQUESTER_DOMAIN_OVERRIDE} instead. */
+    @Deprecated(forRemoval = true)
     public static final String OVERRIDE_REQUESTER_DOMAIN_PROPERTY = "carbonio.docs-connector.requester-domain-override";
     public static final String REQUESTER_LOCALE = "requester-locale";
   }
