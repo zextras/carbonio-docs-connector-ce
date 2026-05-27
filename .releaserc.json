@@ -1,5 +1,5 @@
 {
-  "branches": ["pre-release"],
+  "branches": ["devel"],
   "repositoryUrl": "https://github.com/zextras/carbonio-docs-connector-ce",
   "tagFormat": "v${version}",
   "plugins": [
