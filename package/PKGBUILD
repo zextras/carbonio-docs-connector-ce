@@ -19,6 +19,7 @@ depends=(
   "carbonio-openjdk"
   "pending-setups"
   "service-discover"
+  "service-discover-base"
 )
 source=(
   "521-carbonio-docs-connector.sh"

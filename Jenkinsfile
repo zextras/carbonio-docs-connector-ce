@@ -12,11 +12,11 @@ library(
 )
 
 library(
-    identifier: 'jenkins-lib-common@1.7.5',
+    identifier: 'jenkins-lib-common@v2.8.6',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         credentialsId: 'jenkins-integration-with-github-account',
-        remote: 'git@github.com:zextras/jenkins-lib-common.git',
+        remote: 'git@github.com:zextras/jenkins-lib-common.git'
     ])
 )
 
@@ -45,7 +45,7 @@ pipeline {
         booleanParam(
             name: 'PREPARE_RELEASE',
             defaultValue: false,
-            description: 'Check this to prepare a new release (creates pre-release branch and PR)'
+            description: 'Check this to prepare a new release (runs semantic-release)'
         )
     }
 
@@ -55,6 +55,7 @@ pipeline {
                 checkout scm
                 script {
                     gitMetadata()
+                    semanticRelease.guard()
                 }
             }
         }
@@ -73,12 +74,9 @@ pipeline {
         stage('Build deb/rpm') {
             steps {
                 script {
-                    buildPackages([
-                        pkgbuildPath: 'package/PKGBUILD',
-                        buildStageConfig: [
-                            buildFlags: ' -ds ',
-                        ]
-                    ])
+                    buildStage(
+                        buildFlags: ' -ds '
+                    )
                 }
             }
         }
@@ -91,68 +89,34 @@ pipeline {
                 jfrog 'jfrog-cli'
             }
             steps {
-                uploadStage([
-                    packages: yapHelper.resolvePackageNames(),
-                ])
+                uploadStage()
             }
         }
 
         stage('Prepare Release') {
-            agent {
-                node {
-                    label 'sm-release-v1'
-                }
-            }
             when {
                 allOf {
                     branch 'devel'
                     expression { params.PREPARE_RELEASE == true }
-                    not {
-                        expression {
-                            return env.GIT_COMMIT_MSG.contains('[skip ci]') ||
-                                   env.GIT_COMMIT_MSG.contains('chore(release):')
-                        }
-                    }
                 }
             }
             steps {
                 script {
-                    container('nodejs-22') {
-                        prepareRelease(
-                            repoName: 'carbonio-docs-connector-ce'
-                        )
-                    }
-                }
-            }
-        }
-
-        stage('Tag for release') {
-            when {
-                allOf {
-                    branch 'devel'
-                    expression {
-                        return env.GIT_COMMIT_MSG.contains('chore(release):') &&
-                               env.GIT_COMMIT_MSG.contains('[skip ci]')
-                    }
-                }
-            }
-            steps {
-                script {
-                    tagRelease()
+                    semanticRelease()
                 }
             }
         }
 
         stage('Publish docker images') {
             steps {
-                dockerStage([
+                dockerStage(
                     dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
                     imageName: 'registry.dev.zextras.com/dev/carbonio-docs-connector-ce',
                     ocLabels: [
                         title: 'Carbonio Docs Connector CE',
-                        description: 'Carbonio Docs Connector Advanced Community Edition',
+                        description: 'Carbonio Docs Connector Advanced Community Edition'
                     ]
-                ])
+                )
             }
         }
     }
