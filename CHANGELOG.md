@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.0...v1.1.1) (2026-05-27)
+
+### Bug Fixes
+
+* **deps:** add explicit service-discover-base dependency ([#123](https://github.com/zextras/carbonio-docs-connector-ce/issues/123)) ([9dc92c4](https://github.com/zextras/carbonio-docs-connector-ce/commit/9dc92c4803d9e8ca807ad19d34fc032439f41c92))
+* **releaserc:** publish from devel instead of pre-release ([#125](https://github.com/zextras/carbonio-docs-connector-ce/issues/125)) ([8472d32](https://github.com/zextras/carbonio-docs-connector-ce/commit/8472d320e2bad4edac15d6d44fbf4d95b9d358ae))
+
 ## [1.1.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.0.1...v1.1.0) (2026-05-04)
 
 ### Features
