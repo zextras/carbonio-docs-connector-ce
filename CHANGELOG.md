@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.1...v1.1.2) (2026-05-28)
+
+### Bug Fixes
+
+* **package:** set pkgrel to 1 for release builds ([#126](https://github.com/zextras/carbonio-docs-connector-ce/issues/126)) ([98f175e](https://github.com/zextras/carbonio-docs-connector-ce/commit/98f175efc6f38a303f300064a8bfdf0233e4981b))
+
 ## [1.1.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.0...v1.1.1) (2026-05-27)
 
 ### Bug Fixes
