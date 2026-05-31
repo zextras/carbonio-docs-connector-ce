@@ -112,6 +112,7 @@ pipeline {
                 dockerStage(
                     dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
                     imageName: 'registry.dev.zextras.com/dev/carbonio-docs-connector-ce',
+                    platforms: ['linux/amd64', 'linux/arm64'] as Set,
                     ocLabels: [
                         title: 'Carbonio Docs Connector CE',
                         description: 'Carbonio Docs Connector Advanced Community Edition'
