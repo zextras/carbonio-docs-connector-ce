@@ -22,20 +22,10 @@ dt3_pipeline(
     repoName: 'carbonio-docs-connector-ce',
     appModule: 'boot',
     packaging: [
-        pkgbuildPath: 'package/PKGBUILD',
         buildFlags: '-ds',
-        overrides: [
-            ubuntu: [
-                preBuildScript: '''
+        preBuildScript: '''
                     cp -a boot/target/carbonio-docs-connector-ce-*-fatjar.jar package/carbonio-docs-connector.jar
                 ''',
-            ],
-            rocky: [
-                preBuildScript: '''
-                    cp -a boot/target/carbonio-docs-connector-ce-*-fatjar.jar package/carbonio-docs-connector.jar
-                ''',
-            ],
-        ],
     ],
     docker: [[
         dockerfile: 'docker/minimal/carbonio-docs-connector/Dockerfile',
