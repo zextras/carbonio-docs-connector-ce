@@ -1,7 +1,6 @@
 AGPL-3.0-only (https://spdx.org/licenses/AGPL-3.0-only.html) applies to:
 
   Carbonio User Management - gRPC SDK (com.zextras.carbonio.user-management:carbonio-user-management-grpc-sdk:1.0.3-dev.24.f9dd5647)
-  carbonio-docs-connector-ce-core (com.zextras.carbonio.docs-connector:carbonio-docs-connector-ce-core:0.0.0-SNAPSHOT)
   carbonio-files-sdk (com.zextras.carbonio.files:carbonio-files-sdk:1.0.1)
 
 Apache Software License, version 2.0 (https://spdx.org/licenses/Apache Software License, version 2.0.html) applies to:
