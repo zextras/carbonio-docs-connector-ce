@@ -3,7 +3,7 @@
 FROM --platform=$BUILDPLATFORM docker.io/library/busybox AS prep
 RUN mkdir -p /staging/etc/carbonio/docs-connector
 
-FROM docker.io/library/eclipse-temurin:21-jdk-alpine
+FROM docker.io/library/eclipse-temurin:25-jdk-alpine
 
 WORKDIR /app
 
