@@ -56,3 +56,9 @@ path = "app/src/main/resources/templates/empty.**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2022 Zextras s.r.l"
 SPDX-License-Identifier = "AGPL-3.0-only"
+
+[[annotations]]
+path = "COPYING"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2022 Zextras <https://www.zextras.com>"
+SPDX-License-Identifier = "AGPL-3.0-only"

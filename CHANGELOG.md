@@ -1,3 +1,22 @@
+## [1.2.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.3...v1.2.0) (2026-06-23)
+
+### Features
+
+* migrate to dt3-pipeline ([#121](https://github.com/zextras/carbonio-docs-connector-ce/issues/121)) ([abd5331](https://github.com/zextras/carbonio-docs-connector-ce/commit/abd5331b0bae73b720e544483c33c724e211d8f0))
+
+## [1.1.2](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.1...v1.1.2) (2026-05-28)
+
+### Bug Fixes
+
+* **package:** set pkgrel to 1 for release builds ([#126](https://github.com/zextras/carbonio-docs-connector-ce/issues/126)) ([98f175e](https://github.com/zextras/carbonio-docs-connector-ce/commit/98f175efc6f38a303f300064a8bfdf0233e4981b))
+
+## [1.1.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.0...v1.1.1) (2026-05-27)
+
+### Bug Fixes
+
+* **deps:** add explicit service-discover-base dependency ([#123](https://github.com/zextras/carbonio-docs-connector-ce/issues/123)) ([9dc92c4](https://github.com/zextras/carbonio-docs-connector-ce/commit/9dc92c4803d9e8ca807ad19d34fc032439f41c92))
+* **releaserc:** publish from devel instead of pre-release ([#125](https://github.com/zextras/carbonio-docs-connector-ce/issues/125)) ([8472d32](https://github.com/zextras/carbonio-docs-connector-ce/commit/8472d320e2bad4edac15d6d44fbf4d95b9d358ae))
+
 ## [1.1.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.0.1...v1.1.0) (2026-05-04)
 
 ### Features

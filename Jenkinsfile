@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
+//
 // SPDX-License-Identifier: AGPL-3.0-only
 
 library(
-    identifier: 'jenkins-lib-common@dt3-migration',
+    identifier: 'jenkins-lib-common@dt3-pipeline',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         credentialsId: 'jenkins-integration-with-github-account',
@@ -10,24 +11,20 @@ library(
     ])
 )
 
-properties(defaultPipelineProperties())
-
 dt3_pipeline(
     repoName: 'carbonio-docs-connector-ce',
     projectType: 'CE',
     mavenPublish: ['app'],
-    nativeBuild: [runnerName: 'carbonio-docs-connector-ce-runner', appModule: 'app'],
+    nativeBuild: [runnerName: 'carbonio-docs-connector-ce-runner'],
     packaging: [
-        pkgbuildPath: 'package/PKGBUILD',
         buildFlags: '-ds',
-        ubuntuSinglePkg: false,
-        rockySinglePkg: false,
     ],
     docker: [
         [dockerfile: 'docker/Dockerfile',
          imageName: 'carbonio-docs-connector-ce',
          title: 'Carbonio Docs Connector CE',
-         description: 'Carbonio Docs Connector Community Edition'],
+         description: 'Carbonio Docs Connector Community Edition',
+         platforms: ['linux/amd64', 'linux/arm64'] as Set],
     ],
     sonarqube: true,
     reuse: [:],

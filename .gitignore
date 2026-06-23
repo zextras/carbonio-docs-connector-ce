@@ -11,9 +11,6 @@ boot/dependency-reduced-pom.xml
 .idea/
 *.iml
 
-# License
-LICENSES
-
 # VS Code
 .vscode/.run/
 

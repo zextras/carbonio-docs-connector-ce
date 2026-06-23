@@ -21,6 +21,8 @@
   </modules>
 
   <properties>
+    <assertj.version>3.27.7</assertj.version>
+    <caffeine.version>3.2.3</caffeine.version>
     <carbonio-user-management-grpc-sdk.version>1.0.3-dev.24.f9dd5647</carbonio-user-management-grpc-sdk.version>
     <carbonio-files-sdk.version>1.0.1</carbonio-files-sdk.version>
 
