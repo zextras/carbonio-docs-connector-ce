@@ -17,6 +17,7 @@ license=("AGPL-3.0-only")
 url="https://www.zextras.com/"
 depends=(
   "service-discover"
+  "service-discover-base"
   "pending-setups"
 )
 source=(
