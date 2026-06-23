@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.3...v1.2.0) (2026-06-23)
+
+### Features
+
+* migrate to dt3-pipeline ([#121](https://github.com/zextras/carbonio-docs-connector-ce/issues/121)) ([abd5331](https://github.com/zextras/carbonio-docs-connector-ce/commit/abd5331b0bae73b720e544483c33c724e211d8f0))
+
 ## [1.1.2](https://github.com/zextras/carbonio-docs-connector-ce/compare/v1.1.1...v1.1.2) (2026-05-28)
 
 ### Bug Fixes
