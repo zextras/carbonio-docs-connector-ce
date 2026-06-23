@@ -27,6 +27,8 @@ import jakarta.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,15 +112,17 @@ public class FilesService {
         .append("/wopi/")
         .append(nodeId);
 
-    if (optVersion.isPresent() || optOffsetFromUtc.isPresent()) {
-      wopiEndpointBuilder.append("?");
+    // Query params order: version -> service_id -> offset_from_utc.
+    // Collect present params then join with "&" so there is never a trailing "&".
+    List<String> wopiParams = new ArrayList<>();
+    optVersion.ifPresent(version -> wopiParams.add("version=" + version));
+    selectedInstanceId.ifPresent(
+        instanceId -> wopiParams.add("service_id=" + instanceId));
+    optOffsetFromUtc.ifPresent(
+        offsetFromUtc -> wopiParams.add("offset_from_utc=" + offsetFromUtc));
+    if (!wopiParams.isEmpty()) {
+      wopiEndpointBuilder.append("?").append(String.join("&", wopiParams));
     }
-
-    optVersion
-        .map(version -> wopiEndpointBuilder.append("version=").append(version).append("&"));
-
-    optOffsetFromUtc
-        .map(offsetFromUtc -> wopiEndpointBuilder.append("offset_from_utc=").append(offsetFromUtc));
 
     // Public URL, it contains the redirect=true to allow the controller to return 307. Optionally,
     // it can contain the version:

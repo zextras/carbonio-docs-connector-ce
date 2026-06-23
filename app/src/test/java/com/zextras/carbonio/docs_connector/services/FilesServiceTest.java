@@ -23,6 +23,7 @@ import com.zextras.carbonio.docs_connector.types.FileType;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.NodeId;
+import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.ApplicationConfigService;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.NetworkingConfigService;
 import io.vavr.control.Try;
@@ -434,5 +435,274 @@ class FilesServiceTest {
     // Then
     Assertions.assertThat(result).isPresent();
     Assertions.assertThat(result.get().getNodeId().toString()).isEqualTo(expectedNodeId);
+  }
+
+  // ----- Over-quota behavior tests (task 5 — TDD additions) -----
+
+  @Test
+  @DisplayName("uploadTemplate should throw AccountOverQuotaException when FilesClient throws AccountInOverQuota")
+  void givenAccountInOverQuotaUploadTemplateShouldThrowAccountOverQuotaException() {
+    // Given
+    InsertFile insertFile = new InsertFile();
+    insertFile.setType(FileType.LIBRE_DOCUMENT);
+    insertFile.setFilename("New Doc");
+    insertFile.setDestinationFolderId("LOCAL_ROOT");
+
+    when(filesClient.uploadFile(anyString(), anyString(), anyString(), anyString(),
+        any(InputStream.class), anyLong()))
+        .thenReturn(Try.failure(new AccountInOverQuota("account is over quota")));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() -> filesService.uploadTemplate(COOKIE, insertFile))
+        .isInstanceOf(AccountOverQuotaException.class);
+  }
+
+  @Test
+  @DisplayName("openFile when quotaChecker reports over-quota should add permission=readonly to URL")
+  void givenOverQuotaAccountOpenFileShouldAddReadonlyPermission()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    // Given
+    long fileSizeBytes = 5L * 1024 * 1024;
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    OpenDocumentToken token = new OpenDocumentToken(
+        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
+        Instant.now().plusSeconds(43200));
+    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
+
+    // Override default: account is over quota
+    when(quotaChecker.isOverQuota(anyString(), anyString())).thenReturn(true);
+
+    // When
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+
+    // Then — over-quota forces read-only even if node allows writes
+    Assertions.assertThat(url).contains("permission=readonly");
+  }
+
+  // ----- WOPISrc exact query-string tests -----
+
+  /** Decodes the WOPISrc parameter value from the cool.html URL. */
+  private static String extractDecodedWopiSrc(String url) {
+    String prefix = "WOPISrc=";
+    int start = url.indexOf(prefix);
+    if (start < 0) {
+      throw new AssertionError("WOPISrc not found in URL: " + url);
+    }
+    int valueStart = start + prefix.length();
+    int end = url.indexOf("&", valueStart);
+    String encoded = end > 0 ? url.substring(valueStart, end) : url.substring(valueStart);
+    return java.net.URLDecoder.decode(encoded, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  private OpenDocumentToken stubValidNode(long fileSizeBytes) {
+    String graphQLResponse = buildGetNodeResponse(
+        NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", fileSizeBytes, true);
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+    OpenDocumentToken token = new OpenDocumentToken(
+        UUID.randomUUID(), UUID.fromString(NODE_ID), REQUESTER_ID, COOKIE,
+        Instant.now().plusSeconds(43200));
+    when(tokenRepository.createToken(any(), anyString(), anyString())).thenReturn(token);
+    return token;
+  }
+
+  private static final UUID INSTANCE_ID =
+      UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+  private static final String WOPI_BASE =
+      "http://127.78.0.12:20000/wopi/" + NODE_ID;
+
+  @Test
+  @DisplayName("WOPISrc: Advanced, no version, no offset → ends with ?service_id=<id>, no trailing &")
+  void wopiSrc_advancedNoVersionNoOffset_exactServiceId()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.empty(), Optional.empty());
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?service_id=" + INSTANCE_ID);
+  }
+
+  @Test
+  @DisplayName("WOPISrc: Advanced, version present, no offset → ?version=V&service_id=<id>, no trailing & or &&")
+  void wopiSrc_advancedVersionNoOffset_exactVersionAndServiceId()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.of(3), Optional.empty());
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?version=3&service_id=" + INSTANCE_ID);
+  }
+
+  @Test
+  @DisplayName("WOPISrc: CE (no instance), version present → ?version=V, no trailing &")
+  void wopiSrc_ceVersionNoInstance_exactVersion()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.of(2), Optional.empty());
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?version=2");
+  }
+
+  @Test
+  @DisplayName("WOPISrc: CE (no instance), no version, no offset → bare path, no query string")
+  void wopiSrc_ceNoVersionNoInstance_noQueryString()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.empty(), Optional.empty());
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc).isEqualTo(WOPI_BASE);
+  }
+
+  @Test
+  @DisplayName("WOPISrc: Advanced, version + offset → ?version=V&service_id=<id>&offset_from_utc=O")
+  void wopiSrc_advancedVersionAndOffset_exactAllParams()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.of(5), Optional.of(60));
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(
+            WOPI_BASE + "?version=5&service_id=" + INSTANCE_ID + "&offset_from_utc=60");
+  }
+
+  @Test
+  @DisplayName("WOPISrc: Advanced, no version, offset present → ?service_id=<id>&offset_from_utc=O")
+  void wopiSrc_advancedNoVersionWithOffset_exactServiceIdAndOffset()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.empty(), Optional.of(120));
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?service_id=" + INSTANCE_ID + "&offset_from_utc=120");
+  }
+
+  @Test
+  @DisplayName("WOPISrc: CE (no instance), no version, offset present → ?offset_from_utc=O")
+  void wopiSrc_ceNoVersionWithOffset_exactOffset()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.empty(), Optional.of(180));
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?offset_from_utc=180");
+  }
+
+  @Test
+  @DisplayName("WOPISrc: CE (no instance), version + offset → ?version=V&offset_from_utc=O")
+  void wopiSrc_ceVersionAndOffset_exactVersionAndOffset()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+        Optional.of(7), Optional.of(240));
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .isEqualTo(WOPI_BASE + "?version=7&offset_from_utc=240");
+  }
+
+  @Test
+  @DisplayName("openFile when selectInstance returns a UUID should embed service_id in both WOPISrc and cool.html URL")
+  void givenSelectedInstanceOpenFileShouldEmbedServiceIdInWopiSrcAndCoolHtml()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+
+    String wopiSrc = extractDecodedWopiSrc(url);
+    Assertions.assertThat(wopiSrc)
+        .as("service_id must be present inside the decoded WOPISrc URL")
+        .contains("service_id=" + INSTANCE_ID);
+
+    // service_id must also appear at the top-level cool.html URL (outside WOPISrc)
+    String wopiSrcPrefix = "WOPISrc=";
+    int wopiSrcStart = url.indexOf(wopiSrcPrefix);
+    int valueStart = wopiSrcStart + wopiSrcPrefix.length();
+    int end = url.indexOf("&", valueStart);
+    String encoded = end > 0 ? url.substring(valueStart, end) : url.substring(valueStart);
+    String afterWopiSrc = url.substring(valueStart + encoded.length());
+    Assertions.assertThat(afterWopiSrc)
+        .as("service_id must appear in cool.html parameters after WOPISrc")
+        .contains("service_id=" + INSTANCE_ID);
+  }
+
+  @Test
+  @DisplayName("openFile with version AND instance should produce version=V&service_id=ID (single &, correct order) in WOPISrc")
+  void givenVersionAndSelectedInstanceOpenFileShouldProduceSingleAmpersandInWopiSrc()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.of(INSTANCE_ID));
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.of(3), Optional.empty());
+
+    String wopiSrcDecoded = extractDecodedWopiSrc(url);
+
+    Assertions.assertThat(wopiSrcDecoded)
+        .isEqualTo(WOPI_BASE + "?version=3&service_id=" + INSTANCE_ID);
+    Assertions.assertThat(wopiSrcDecoded)
+        .as("WOPISrc must not contain double ampersand (&&)")
+        .doesNotContain("&&");
+  }
+
+  @Test
+  @DisplayName("openFile when selectInstance returns empty should NOT embed service_id in WOPISrc")
+  void givenNoSelectedInstanceOpenFileShouldNotEmbedServiceIdInWopiSrc()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    when(instanceSelector.selectInstance(any())).thenReturn(Optional.empty());
+    stubValidNode(5L * 1024 * 1024);
+
+    String url = filesService.openFile(
+        REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+
+    Assertions.assertThat(url).doesNotContain("service_id");
   }
 }
