@@ -234,8 +234,13 @@ public class FilesService {
 
   /**
    * Resolves the max file size limit (in MB) for the given file type from Consul KV via
-   * ApplicationConfigService. Defaults are guaranteed by {@code @ConfigKey(ifNotPresent = ...)}
-   * on the config constants.
+   * {@link ApplicationConfigService}. Operators may override the limits via Consul KV
+   * ({@code carbonio-docs-connector/max-file-size-in-mb/{document|presentation|spreadsheet}});
+   * when absent, the defaults declared in {@code application.properties} under the
+   * {@code application-config.} prefix apply (legacy 50/100/10 MB). The lookup therefore always
+   * resolves a value, so {@code orElseThrow} only fires on a genuine misconfiguration (a default
+   * was removed). Note: {@code @ConfigKey(ifNotPresent = ...)} is documentation-only and is NOT a
+   * runtime default.
    */
   private long getMaxSizeLimitForFileType(GenericFileType fileType) {
     String configKey = switch (fileType) {

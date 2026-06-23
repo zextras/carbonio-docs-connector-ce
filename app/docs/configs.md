@@ -23,9 +23,9 @@ Overridable by Consul KV
 
 | Key | Default | If not set |
 | --- | ------- | ---------- |
-| `carbonio-docs-connector/max-file-size-in-mb/document` | *(not set)* | 50 |
-| `carbonio-docs-connector/max-file-size-in-mb/presentation` | *(not set)* | 100 |
-| `carbonio-docs-connector/max-file-size-in-mb/spreadsheet` | *(not set)* | 10 |
+| `carbonio-docs-connector/max-file-size-in-mb/document` | `50` |  |
+| `carbonio-docs-connector/max-file-size-in-mb/presentation` | `100` |  |
+| `carbonio-docs-connector/max-file-size-in-mb/spreadsheet` | `10` |  |
 | `carbonio-docs-connector/requester-domain-override` | *(not set)* |  |
 | `carbonio-docs-connector/server/idle-timeout` | *(not set)* | Quarkus default: 30s |
 | `carbonio-docs-connector/server/max-connections` | *(not set)* | Quarkus default: no limit |
