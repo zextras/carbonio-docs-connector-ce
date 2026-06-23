@@ -24,7 +24,8 @@ dt3_pipeline(
         [dockerfile: 'docker/Dockerfile',
          imageName: 'carbonio-docs-connector-ce',
          title: 'Carbonio Docs Connector CE',
-         description: 'Carbonio Docs Connector Community Edition'],
+         description: 'Carbonio Docs Connector Community Edition',
+         platforms: ['linux/amd64', 'linux/arm64'] as Set],
     ],
     reuse: [projectType: 'CE'],
 )
