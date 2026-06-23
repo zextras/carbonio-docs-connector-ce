@@ -10,15 +10,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.zextras.carbonio.files.exceptions.UnAuthorized;
-
 import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.NodeUpdatedTimestamp;
 import com.zextras.carbonio.files.FilesClient;
 import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
+import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
+import com.zextras.carbonio.files.exceptions.UnAuthorized;
 import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
 import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
 import com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse;
@@ -255,6 +256,31 @@ class WopiServiceTest {
     Assertions.assertThatThrownBy(() ->
             wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  // ----- Over-quota saveBlob tests (task 5 — TDD additions) -----
+
+  @Test
+  @DisplayName("saveBlob should throw AccountOverQuotaException when Files returns AccountInOverQuota")
+  void givenAccountInOverQuotaSaveBlobShouldThrowAccountOverQuotaException() {
+    // Given
+    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
+        "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success(graphQLResponse));
+
+    // Files SDK throws AccountInOverQuota when saving
+    when(filesClient.uploadFileVersion(eq(COOKIE), eq(NODE_ID.toString()), anyString(),
+        anyString(), any(InputStream.class), anyLong(), eq(false)))
+        .thenReturn(Try.failure(new AccountInOverQuota("account is over quota")));
+
+    InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
+
+    // When / Then — WopiService must propagate AccountOverQuotaException (mapped from AccountInOverQuota)
+    Assertions.assertThatThrownBy(() ->
+            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+        .isInstanceOf(AccountOverQuotaException.class);
   }
 
   @Test

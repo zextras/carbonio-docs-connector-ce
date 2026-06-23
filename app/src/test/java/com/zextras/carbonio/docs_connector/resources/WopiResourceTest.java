@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.zextras.carbonio.docs_connector.Constants;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.WopiService;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
@@ -276,5 +277,28 @@ class WopiResourceTest {
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(424);
+  }
+
+  // ----- Over-quota saveBlob test (task 5 — TDD additions) -----
+
+  @Test
+  @DisplayName("saveBlob should return 413 when service throws AccountOverQuotaException")
+  void givenAccountOverQuotaSaveBlobShouldReturn413() throws Exception {
+    // Given
+    UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
+    OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
+    ContainerRequestContext ctx = buildContextWithToken(token);
+
+    when(wopiService.saveBlob(anyString(), any(), any(), any(), anyLong(), anyBoolean()))
+        .thenThrow(new AccountOverQuotaException("Account is over quota"));
+
+    InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
+
+    // When
+    Response response = wopiResource.saveBlob(
+        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+
+    // Then — over-quota save maps to 413 (Payload Too Large)
+    Assertions.assertThat(response.getStatus()).isEqualTo(413);
   }
 }

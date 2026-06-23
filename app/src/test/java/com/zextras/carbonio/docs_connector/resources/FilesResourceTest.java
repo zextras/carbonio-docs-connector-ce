@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.zextras.carbonio.docs_connector.Constants;
+import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.services.FilesService;
@@ -188,5 +189,28 @@ class FilesResourceTest {
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  // ----- Over-quota behavior tests (task 5 — TDD additions) -----
+
+  @Test
+  @DisplayName("createFile should return 422 when uploadTemplate throws AccountOverQuotaException")
+  void givenOverQuotaAccountCreateFileShouldReturn422() throws Exception {
+    // Given
+    InsertFile insertFile = new InsertFile();
+    insertFile.setType(FileType.LIBRE_DOCUMENT);
+    insertFile.setFilename("New Document");
+    insertFile.setDestinationFolderId("LOCAL_ROOT");
+
+    when(filesService.uploadTemplate(eq(COOKIE), any(InsertFile.class)))
+        .thenThrow(new AccountOverQuotaException("Account is over quota"));
+
+    ContainerRequestContext ctx = buildRequestContext();
+
+    // When
+    Response response = filesResource.createFile(COOKIE, insertFile, ctx);
+
+    // Then
+    Assertions.assertThat(response.getStatus()).isEqualTo(422);
   }
 }

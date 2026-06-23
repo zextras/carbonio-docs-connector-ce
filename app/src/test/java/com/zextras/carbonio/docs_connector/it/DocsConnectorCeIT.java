@@ -130,13 +130,13 @@ class DocsConnectorCeIT {
   }
 
   @Test
-  @DisplayName("POST /files/create with valid cookie should attempt template upload to Files")
+  @DisplayName("POST /files/create with valid cookie should upload template and return 200 with nodeId")
   void givenValidCookieCreateFileShouldAttemptUpload() {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
 
-    // Stub WireMock to accept the upload
+    // Stub WireMock: the Files SDK POSTs to /upload/ with multipart content
     CeStackTestResource.FILES_MOCK.stubFor(
-        post(urlPathEqualTo("/upload/"))
+        post(urlPathMatching("/upload/.*"))
             .willReturn(aResponse()
                 .withStatus(200)
                 .withHeader("Content-Type", "application/json")
@@ -148,10 +148,7 @@ class DocsConnectorCeIT {
         .body("{\"filename\":\"New Doc\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
         .when().post("/services/docs/files/create")
         .then()
-        // Either 200 (upload succeeded) or 500 (WireMock did not match — acceptable in CI)
-        .statusCode(org.hamcrest.Matchers.anyOf(
-            org.hamcrest.Matchers.is(200),
-            org.hamcrest.Matchers.is(500)));
+        .statusCode(200);
   }
 
   // ----- /services/docs/files/open/{nodeId} -----
@@ -348,15 +345,38 @@ class DocsConnectorCeIT {
         .then().statusCode(200);
 
     // Step 4: POST /wopi/{nodeId}/contents?access_token={token} — should return 200
+    // Stub the second graphQL call that saveBlob makes after upload (to get updated timestamp)
+    CeStackTestResource.FILES_MOCK.stubFor(
+        post(urlPathEqualTo("/graphql/"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("""
+                    {
+                      "data": {
+                        "getNode": {
+                          "permissions": { "can_write_file": true },
+                          "owner": { "id": "%s", "full_name": "Owner" },
+                          "parent": { "id": "LOCAL_ROOT" },
+                          "id": "%s",
+                          "name": "test-doc",
+                          "updated_at": 1700000001000,
+                          "extension": "odt",
+                          "mime_type": "application/vnd.oasis.opendocument.text",
+                          "size": %d,
+                          "version": 2
+                        }
+                      }
+                    }
+                    """.formatted(REQUESTER_ID, NODE_ID, fileContent.length))));
+
     given()
         .contentType(ContentType.BINARY)
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
         .body(fileContent)
         .when().post("/services/docs/wopi/" + NODE_ID + "/contents")
-        .then().statusCode(org.hamcrest.Matchers.anyOf(
-            org.hamcrest.Matchers.is(200),
-            org.hamcrest.Matchers.is(424)));
+        .then().statusCode(200);
   }
 
   // ----- Auth edge cases -----
