@@ -44,10 +44,12 @@ public final class DocsConnectorServiceConfig implements CarbonioServiceConfig {
     // (See carbonio-quarkus-extensions CarbonioBootstrapFactory#parseConsulKVResponse and
     // CarbonioDatabaseServiceConfig.ApplicationConfig, which all use dots.)
 
-    /** Optional override for requester domain (legacy: carbonio.docs-connector.requester-domain-override).
-     *  Consul KV path: carbonio-docs-connector/requester-domain-override */
-    @ConfigKey(description = "Override domain used for docs-editor redirects (testing only)")
-    public static final String REQUESTER_DOMAIN_OVERRIDE = "requester-domain-override";
+    // NOTE: the requester-domain override is intentionally NOT declared here. It is a TEST-ONLY
+    // override read directly from the system property
+    // carbonio.docs-connector.requester-domain-override (see
+    // com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter), not a Consul KV /
+    // application-config key, so it does not appear in the generated configs.md nor in the
+    // config-migration surface.
 
     // ifNotPresent is documentation-only (rendered by the build-time config-doc generator); it is
     // NOT a runtime default. The actual defaults (legacy 50/100/10) are declared in

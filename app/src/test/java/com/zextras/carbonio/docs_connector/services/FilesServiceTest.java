@@ -87,9 +87,7 @@ class FilesServiceTest {
     quotaChecker = mock(QuotaChecker.class);
     instanceSelector = mock(DocsEditorInstanceSelector.class);
 
-    // Defaults: no domain override, use defaults for wopi host/port, use default max sizes
-    when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.REQUESTER_DOMAIN_OVERRIDE))
-        .thenReturn(Optional.empty());
+    // Defaults: use defaults for wopi host/port, use default max sizes
     when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT))
         .thenReturn(Optional.of("50"));
     when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_PRESENTATION))

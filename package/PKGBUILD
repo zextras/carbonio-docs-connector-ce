@@ -34,17 +34,17 @@ source=(
   "service-protocol.json"
 )
 sha256sums=(
+  'ece8af20142189524c543e1fca1f42e3abdb544fb0d464b706f37db712d53149'
+  'f909f036d6f30c90aa1235fd516a5cc3190e4c85d88e0826b63a160c832db321'
+  '16ac6b1d1e0e7c76c1f9e64ab8ecc785d84f885fe3f9df3e67d08c0f931bc410'
+  'd1baf97b9c909b05e6dbf351378170de5c622b091e2bbd3ecf5e0143fdba22bd'
+  '37982f123c29a804013223a800c522a0c0b0fe0c89174d89e72303702fb939cf'
+  '8fabb3f2fc99bddcd55f4c0f39322d57d88bb4cb8c36aba9f209d464ca3a60bd'
+  'b2309f262e52dcfc34fe0ed7d40b362811f279a26d8a67e2e069faf36a226134'
   'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP'
+  '87b87b0f351bfb76a9763ee30d6c8f48b2821c6d57e0cc1504027e9839a48833'
+  '297da99892479666a9733d0d2ad4e18b7b75600a3253c1ddd588f6d32fffc6a4'
+  'ae9f03e59beaeff9407193e44a38524c32701fe9d6b3e842ba0f57319ce381bf'
 )
 backup=(
   "etc/zextras/service-discover/carbonio-docs-connector.hcl"

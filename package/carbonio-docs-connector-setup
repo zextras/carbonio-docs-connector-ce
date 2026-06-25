@@ -24,11 +24,22 @@ fi
 # Standard setup via quarkus-extensions (policy, token, KV migration, systemd override)
 /usr/share/carbonio/carbonio-docs-connector-ce-runner \
   --setup http://127.0.0.1:8500
+SETUP_EXIT_CODE="$?"
+
+# Do not mark the pending-setup as done (and do not restart) if --setup failed.
+if [[ "${SETUP_EXIT_CODE}" != "0" ]]; then
+  # Limit secret visibility as much as possible
+  export -n SETUP_CONSUL_TOKEN
+  echo "Setup failed (exit ${SETUP_EXIT_CODE}); leaving pending-setup to be retried."
+  exit "${SETUP_EXIT_CODE}"
+fi
+
+# Reload the consul agent with the bootstrap token (consul CLI reads CONSUL_HTTP_TOKEN,
+# not SETUP_CONSUL_TOKEN) before dropping the token from the environment.
+CONSUL_HTTP_TOKEN="${SETUP_CONSUL_TOKEN}" consul reload
 
 # Limit secret visibility as much as possible
 export -n SETUP_CONSUL_TOKEN
-
-consul reload
 
 systemctl restart carbonio-docs-connector.service
 systemctl restart carbonio-docs-connector-sidecar.service

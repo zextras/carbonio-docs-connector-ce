@@ -11,8 +11,6 @@ import static org.mockito.Mockito.when;
 
 import com.zextras.carbonio.docs_connector.Constants;
 import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
-import com.zextras.carbonio.docs_connector.config.DocsConnectorServiceConfig;
-import com.zextras.carbonio.quarkus.extensions.bootstrap.ApplicationConfigService;
 import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
 import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
 import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
@@ -28,8 +26,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,20 +41,25 @@ class CookieAuthenticationFilterTest {
 
   private UserManagementClient userManagementClient;
   private UserManagementServiceBlockingStub blockingStub;
-  private ApplicationConfigService applicationConfig;
   private CookieAuthenticationFilter filter;
 
   @BeforeEach
   void setUp() {
     userManagementClient = mock(UserManagementClient.class);
     blockingStub = mock(UserManagementServiceBlockingStub.class);
-    applicationConfig = mock(ApplicationConfigService.class);
 
     when(userManagementClient.getBlockingStub()).thenReturn(blockingStub);
-    when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.REQUESTER_DOMAIN_OVERRIDE))
-        .thenReturn(Optional.empty());
 
-    filter = new CookieAuthenticationFilter(userManagementClient, applicationConfig);
+    // Ensure the TEST-ONLY override system property is unset by default.
+    System.clearProperty(CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY);
+
+    filter = new CookieAuthenticationFilter(userManagementClient);
+  }
+
+  @AfterEach
+  void tearDown() {
+    // Clean up the test-only override so it never leaks into other tests.
+    System.clearProperty(CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY);
   }
 
   private ContainerRequestContext buildFilesRequestContext(String cookieValue) {
@@ -241,15 +244,16 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given a domain override in config the filter should use the override domain")
-  void givenADomainOverrideInConfigTheFilterShouldUseOverrideDomain() {
+  @DisplayName("Given the test-only override system property the filter should use the override domain")
+  void givenADomainOverrideSystemPropertyTheFilterShouldUseOverrideDomain() {
     // Given
     String token = "valid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
     String overrideDomain = "override.example.com";
 
-    when(applicationConfig.get(DocsConnectorServiceConfig.ApplicationConfig.REQUESTER_DOMAIN_OVERRIDE))
-        .thenReturn(Optional.of(overrideDomain));
+    // The override is a TEST-ONLY system property, NOT a Consul KV / application-config key.
+    System.setProperty(
+        CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY, overrideDomain);
 
     UserMyselfResponse response = buildUserMyselfResponse(
         "user-uuid-1234", UserTypeProto.INTERNAL, "active", "pt_BR");

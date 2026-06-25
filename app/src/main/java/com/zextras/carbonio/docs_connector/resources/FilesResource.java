@@ -56,10 +56,14 @@ public class FilesResource {
       InsertFile insertFile,
       @jakarta.ws.rs.core.Context ContainerRequestContext requestContext) {
     try {
+      // Parity with devel: an empty Optional (no template available OR a generic, non-quota
+      // upload failure -- FilesService.uploadTemplate folds both into Optional.empty()) maps to
+      // 404 NOT_FOUND, matching the legacy FilesControllerImpl.createFile behavior. Only the
+      // over-quota case is distinguished as 422.
       return filesService
           .uploadTemplate(cookie, insertFile)
           .map(createdFile -> Response.ok().entity(createdFile).build())
-          .orElse(Response.serverError().build());
+          .orElse(Response.status(Status.NOT_FOUND).build());
     } catch (AccountOverQuotaException e) {
       return Response.status(422).build();
     }

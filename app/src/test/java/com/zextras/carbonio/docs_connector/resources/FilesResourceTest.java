@@ -83,8 +83,8 @@ class FilesResourceTest {
   }
 
   @Test
-  @DisplayName("createFile should return 500 when upload returns empty Optional")
-  void givenFailedUploadCreateFileShouldReturn500() throws Exception {
+  @DisplayName("createFile should return 404 when upload returns empty Optional (devel parity)")
+  void givenFailedUploadCreateFileShouldReturn404() throws Exception {
     // Given
     InsertFile insertFile = new InsertFile();
     insertFile.setType(FileType.LIBRE_DOCUMENT);
@@ -99,9 +99,9 @@ class FilesResourceTest {
     // When
     Response response = filesResource.createFile(COOKIE, insertFile, ctx);
 
-    // Then
+    // Then — empty Optional (no template OR generic upload failure) maps to 404, matching devel
     Assertions.assertThat(response.getStatus())
-        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
