@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
   <properties>
     <quarkus.version>3.34.5</quarkus.version>
-    <carbonio-quarkus-extensions.version>1.10.0-1</carbonio-quarkus-extensions.version>
+    <carbonio-quarkus-extensions.version>1.10.1-1</carbonio-quarkus-extensions.version>
     <assertj.version>3.27.7</assertj.version>
     <mockito.version>5.20.0</mockito.version>
   </properties>
