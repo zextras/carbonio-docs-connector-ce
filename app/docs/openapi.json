@@ -29,7 +29,7 @@
     }
   },
   "paths" : {
-    "/services/docs/files/create" : {
+    "/files/create" : {
       "post" : {
         "parameters" : [ {
           "name" : "Cookie",
@@ -65,7 +65,7 @@
         "tags" : [ "Files Resource" ]
       }
     },
-    "/services/docs/files/open/{nodeId}" : {
+    "/files/open/{nodeId}" : {
       "get" : {
         "parameters" : [ {
           "name" : "nodeId",
@@ -115,7 +115,7 @@
         "tags" : [ "Files Resource" ]
       }
     },
-    "/services/docs/wopi/{nodeId}" : {
+    "/wopi/{nodeId}" : {
       "get" : {
         "parameters" : [ {
           "name" : "nodeId",
@@ -159,7 +159,7 @@
         "tags" : [ "Wopi Resource" ]
       }
     },
-    "/services/docs/wopi/{nodeId}/contents" : {
+    "/wopi/{nodeId}/contents" : {
       "post" : {
         "parameters" : [ {
           "name" : "nodeId",

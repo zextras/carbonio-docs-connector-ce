@@ -104,7 +104,7 @@ class DocsConnectorCeIT {
         .thenThrow(new StatusRuntimeException(Status.UNAUTHENTICATED));
   }
 
-  // ----- /services/docs/files/create -----
+  // ----- /files/create -----
 
   @Test
   @DisplayName("POST /files/create without cookie should return 401")
@@ -112,7 +112,7 @@ class DocsConnectorCeIT {
     given()
         .contentType(ContentType.JSON)
         .body("{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/services/docs/files/create")
+        .when().post("/files/create")
         .then().statusCode(401);
   }
 
@@ -125,7 +125,7 @@ class DocsConnectorCeIT {
         .contentType(ContentType.JSON)
         .cookie("ZM_AUTH_TOKEN", "invalid-token")
         .body("{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/services/docs/files/create")
+        .when().post("/files/create")
         .then().statusCode(401);
   }
 
@@ -146,18 +146,18 @@ class DocsConnectorCeIT {
         .contentType(ContentType.JSON)
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
         .body("{\"filename\":\"New Doc\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/services/docs/files/create")
+        .when().post("/files/create")
         .then()
         .statusCode(200);
   }
 
-  // ----- /services/docs/files/open/{nodeId} -----
+  // ----- /files/open/{nodeId} -----
 
   @Test
   @DisplayName("GET /files/open/{nodeId} without cookie should return 401")
   void givenNoCookieOpenFileShouldReturn401() {
     given()
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -168,7 +168,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", "bad-token")
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -187,17 +187,17 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(404);
   }
 
-  // ----- /services/docs/wopi/{nodeId} -----
+  // ----- /wopi/{nodeId} -----
 
   @Test
   @DisplayName("GET /wopi/{nodeId} without access_token query param should return 401")
   void givenNoAccessTokenGetWopiAttributesShouldReturn401() {
     given()
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -207,11 +207,11 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "00000000-0000-0000-0000-000000000000")
         .queryParam("access_token_ttl", String.valueOf(System.currentTimeMillis() + 10000))
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(401);
   }
 
-  // ----- /services/docs/wopi/{nodeId}/contents -----
+  // ----- /wopi/{nodeId}/contents -----
 
   @Test
   @DisplayName("POST /wopi/{nodeId}/contents without access_token should return 401")
@@ -219,7 +219,7 @@ class DocsConnectorCeIT {
     given()
         .contentType(ContentType.BINARY)
         .body("file-content".getBytes(java.nio.charset.StandardCharsets.UTF_8))
-        .when().post("/services/docs/wopi/" + NODE_ID + "/contents")
+        .when().post("/wopi/" + NODE_ID + "/contents")
         .then().statusCode(401);
   }
 
@@ -287,7 +287,7 @@ class DocsConnectorCeIT {
     // Step 1: GET /files/open/{nodeId} — should return 200 with redirect URL containing access_token
     Response openResponse = given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200)
         .extract().response();
 
@@ -334,14 +334,14 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(200);
 
     // Step 3: GET /wopi/{nodeId}/contents?access_token={token} — should return file content
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
-        .when().get("/services/docs/wopi/" + NODE_ID + "/contents")
+        .when().get("/wopi/" + NODE_ID + "/contents")
         .then().statusCode(200);
 
     // Step 4: POST /wopi/{nodeId}/contents?access_token={token} — should return 200
@@ -375,7 +375,7 @@ class DocsConnectorCeIT {
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
         .body(fileContent)
-        .when().post("/services/docs/wopi/" + NODE_ID + "/contents")
+        .when().post("/wopi/" + NODE_ID + "/contents")
         .then().statusCode(200);
   }
 
@@ -388,7 +388,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", "")
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -404,7 +404,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -416,7 +416,7 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "not-a-uuid-at-all")
         .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -426,7 +426,7 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "")
         .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -466,7 +466,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(403);
   }
 
@@ -504,7 +504,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(403);
   }
 
@@ -542,7 +542,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200);
   }
 
@@ -567,7 +567,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -592,7 +592,7 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
@@ -629,7 +629,7 @@ class DocsConnectorCeIT {
 
     Response r = given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200)
         .extract().response();
 
@@ -648,7 +648,7 @@ class DocsConnectorCeIT {
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
         .redirects().follow(false)
         .queryParam("redirect", true)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(307);
   }
 
@@ -661,7 +661,7 @@ class DocsConnectorCeIT {
 
     Response openR = given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200)
         .extract().response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
@@ -685,7 +685,7 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/services/docs/wopi/" + NODE_ID)
+        .when().get("/wopi/" + NODE_ID)
         .then().statusCode(200)
         .body("$", org.hamcrest.Matchers.notNullValue());
   }
@@ -707,7 +707,7 @@ class DocsConnectorCeIT {
 
     Response openR = given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200).extract().response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
     String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
@@ -716,7 +716,7 @@ class DocsConnectorCeIT {
     byte[] returned = given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/services/docs/wopi/" + NODE_ID + "/contents")
+        .when().get("/wopi/" + NODE_ID + "/contents")
         .then().statusCode(200)
         .extract().asByteArray();
 
@@ -731,7 +731,7 @@ class DocsConnectorCeIT {
 
     Response openR = given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/services/docs/files/open/" + NODE_ID)
+        .when().get("/files/open/" + NODE_ID)
         .then().statusCode(200).extract().response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
     String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
@@ -742,7 +742,7 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/services/docs/wopi/" + otherNode)
+        .when().get("/wopi/" + otherNode)
         .then().statusCode(401);
   }
 }
