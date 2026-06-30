@@ -52,7 +52,7 @@ SPDX-FileCopyrightText = "2023 Zextras s.r.l"
 SPDX-License-Identifier = "AGPL-3.0-only"
 
 [[annotations]]
-path = "core/src/main/resources/templates/empty.**"
+path = "app/src/main/resources/templates/empty.**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2022 Zextras s.r.l"
 SPDX-License-Identifier = "AGPL-3.0-only"
@@ -61,4 +61,10 @@ SPDX-License-Identifier = "AGPL-3.0-only"
 path = "COPYING"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2022 Zextras <https://www.zextras.com>"
+SPDX-License-Identifier = "AGPL-3.0-only"
+
+[[annotations]]
+path = "app/docs/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Zextras"
 SPDX-License-Identifier = "AGPL-3.0-only"

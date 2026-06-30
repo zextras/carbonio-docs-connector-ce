@@ -1,19 +1,8 @@
 #!/bin/bash
 
-# SPDX-FileCopyrightText: 2024 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-only
-
-CONSUL_TOKEN_PATH="/etc/carbonio/docs-connector/service-discover/token"
-
-function save_kv_on_consul_if_not_exist() {
-  set +e
-  consul kv get -token-file="${CONSUL_CONSUL_TOKEN_PATH}" "carbonio-docs-connector/$1" &>/dev/null
-
-  if [[ "$?" != "0" ]]; then
-    consul kv put -token-file="${CONSUL_TOKEN_PATH}" "carbonio-docs-connector/$1" "$2" &>/dev/null
-  fi
-}
 
 if [[ $(id -u) -ne 0 ]]; then
   echo "Please run as root"
@@ -21,66 +10,36 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 # Decrypt the bootstrap token, asking the password to the sys admin
-# --setup check for SETUP_CONSUL_TOKEN env. variable and uses it
+# --setup checks for SETUP_CONSUL_TOKEN env variable and uses it
 # to avoid re-asking for the password
 echo -n "Insert the cluster credential password: "
-export CONSUL_HTTP_TOKEN=$(service-discover bootstrap-token --setup)
+export SETUP_CONSUL_TOKEN=$(service-discover bootstrap-token --setup)
 EXIT_CODE="$?"
 echo ""
 if [[ "${EXIT_CODE}" != "0" ]]; then
   echo "Cannot access to bootstrap token"
   exit 1;
 fi
+
+# Standard setup via quarkus-extensions (policy, token, KV migration, systemd override)
+/usr/share/carbonio/carbonio-docs-connector-ce-runner \
+  --setup http://127.0.0.1:8500
+SETUP_EXIT_CODE="$?"
+
+# Do not mark the pending-setup as done (and do not restart) if --setup failed.
+if [[ "${SETUP_EXIT_CODE}" != "0" ]]; then
+  # Limit secret visibility as much as possible
+  export -n SETUP_CONSUL_TOKEN
+  echo "Setup failed (exit ${SETUP_EXIT_CODE}); leaving pending-setup to be retried."
+  exit "${SETUP_EXIT_CODE}"
+fi
+
+# Reload the consul agent with the bootstrap token (consul CLI reads CONSUL_HTTP_TOKEN,
+# not SETUP_CONSUL_TOKEN) before dropping the token from the environment.
+CONSUL_HTTP_TOKEN="${SETUP_CONSUL_TOKEN}" consul reload
+
 # Limit secret visibility as much as possible
 export -n SETUP_CONSUL_TOKEN
-
-POLICY_NAME='carbonio-docs-connector-policy'
-POLICY_DESCRIPTION='Carbonio docs connector service policy for service and sidecar'
-
-# Create or update policy for the specific service (this will be shared across cluster)
-consul acl policy create -name "${POLICY_NAME}" -description "${POLICY_DESCRIPTION}" -rules  @/etc/carbonio/docs-connector/service-discover/policies.json >/dev/null 2>&1
-if [[ "$?" != "0" ]]; then
-    consul acl policy update -no-merge -name "${POLICY_NAME}" -description "${POLICY_DESCRIPTION}" -rules @/etc/carbonio/docs-connector/service-discover/policies.json
-    if [[ "$?" != "0" ]]; then
-      echo "Setup failed: Cannot update policy for ${POLICY_NAME}"
-      exit 1
-    fi
-fi
-
-# Declare the service as http
-consul config write /etc/carbonio/docs-connector/service-discover/service-protocol.json
-
-# Allow other services to contact this service
-consul config write /etc/carbonio/docs-connector/service-discover/intentions.json
-
-if [[ ! -f "/etc/carbonio/docs-connector/service-discover/token" ]]; then
-    # Create the token
-    consul acl token create -format json -policy-name "${POLICY_NAME}" -description "Token for
-    carbonio-docs-connector/$(hostname -A)" |
-      jq -r '.SecretID' > /etc/carbonio/docs-connector/service-discover/token;
-    chown carbonio-docs-connector:carbonio-docs-connector /etc/carbonio/docs-connector/service-discover/token
-    chmod 0600 /etc/carbonio/docs-connector/service-discover/token
-
-    # To pass the token to consul-template we need to inject it to a env. variable
-    # since it doesn't accept a file as an argument
-    mkdir -p /etc/systemd/system/carbonio-docs-connector.service.d/
-    cat >/etc/systemd/system/carbonio-docs-connector.service.d/override.conf <<EOF
-[Service]
-Environment="CONSUL_HTTP_TOKEN=$(cat /etc/carbonio/docs-connector/service-discover/token)"
-EOF
-    chmod 0600 /etc/systemd/system/carbonio-docs-connector.service.d/override.conf
-    systemctl daemon-reload
-fi
-
-consul reload
-
-# Save docs-connector configurations in consul key/value
-save_kv_on_consul_if_not_exist "max-file-size-in-mb/document" 50
-save_kv_on_consul_if_not_exist "max-file-size-in-mb/presentation" 100
-save_kv_on_consul_if_not_exist "max-file-size-in-mb/spreadsheet" 10
-
-# Limit token visibility as much as possible
-export -n CONSUL_HTTP_TOKEN
 
 systemctl restart carbonio-docs-connector.service
 systemctl restart carbonio-docs-connector-sidecar.service

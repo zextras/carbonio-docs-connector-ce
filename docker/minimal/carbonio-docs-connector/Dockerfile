@@ -3,13 +3,14 @@
 FROM --platform=$BUILDPLATFORM docker.io/library/busybox AS prep
 RUN mkdir -p /staging/etc/carbonio/docs-connector
 
-FROM docker.io/library/eclipse-temurin:21-jdk-alpine
+FROM --platform=linux/amd64 docker.io/library/ubuntu:noble
 
 WORKDIR /app
 
 COPY --from=prep /staging/etc /etc
 
-COPY ../../boot/target/carbonio-docs-connector-*-fatjar.jar .
+COPY ../../app/target/*-runner carbonio-docs-connector-ce-runner
+RUN chmod +x carbonio-docs-connector-ce-runner
 
 COPY docker/minimal/carbonio-docs-connector/entrypoint.sh entrypoint.sh
 

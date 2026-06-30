@@ -21,11 +21,15 @@ addEnvToProperties "carbonio.user-management.port" "${CARBONIO_USER_MANAGEMENT_P
 addEnvToProperties "carbonio.wopi.host" "${CARBONIO_WOPI_HOST}"
 addEnvToProperties "carbonio.wopi.port" "${CARBONIO_WOPI_PORT}"
 
-addEnvToProperties "carbonio.docs-connector.requester-domain-override" "${CARBONIO_REQUESTER_DOMAIN_OVERRIDE}"
+# Build optional JVM args for application-config keys (not networking — these
+# cannot go through config.properties because loadConfigFile prefixes them with
+# networking-config., but ApplicationConfigService expects application-config.).
+EXTRA_ARGS=""
+if [ -n "${CARBONIO_REQUESTER_DOMAIN_OVERRIDE}" ]; then
+  EXTRA_ARGS="${EXTRA_ARGS} -Dapplication-config.requester-domain-override=${CARBONIO_REQUESTER_DOMAIN_OVERRIDE}"
+fi
 
-JAR=$(ls carbonio-docs-connector-*-fatjar.jar | head -n 1)
-
-exec java -Djava.net.preferIPv4Stack=true \
-     -Xmx128m \
-     -DLOG_LEVEL=debug \
-     -jar "$JAR"
+exec ./carbonio-docs-connector-ce-runner \
+     -Djava.net.preferIPv4Stack=true \
+     -Dquarkus.log.level=DEBUG \
+     ${EXTRA_ARGS}
