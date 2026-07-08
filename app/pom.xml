@@ -25,8 +25,8 @@ SPDX-License-Identifier: AGPL-3.0-only
   </parent>
 
   <properties>
-    <quarkus.version>3.34.5</quarkus.version>
-    <carbonio-quarkus-extensions.version>1.11.0-1</carbonio-quarkus-extensions.version>
+    <quarkus.version>3.37.1</quarkus.version>
+    <carbonio-quarkus-extensions.version>1.11.2-1</carbonio-quarkus-extensions.version>
     <assertj.version>3.27.7</assertj.version>
     <mockito.version>5.20.0</mockito.version>
   </properties>
@@ -97,12 +97,12 @@ SPDX-License-Identifier: AGPL-3.0-only
     <!-- Test -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
+      <artifactId>quarkus-junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5-mockito</artifactId>
+      <artifactId>quarkus-junit-mockito</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
