@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <skip.unit.tests>true</skip.unit.tests>
     <skip.jacoco.full.report.generation>true</skip.jacoco.full.report.generation>
 
-    <revision>2.1.0</revision>
+    <revision>2.1.1</revision>
     <changelist>-SNAPSHOT</changelist>
   </properties>
 
