@@ -1,3 +1,5 @@
+## [2.1.2](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.1.1...v2.1.2) (2026-07-10)
+
 ## [2.1.1](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.1.0...v2.1.1) (2026-07-08)
 
 ## [2.1.0](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.0.0...v2.1.0) (2026-07-02)
