@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <quarkus.version>3.37.2</quarkus.version>
     <carbonio-quarkus-extensions.version>1.11.2-1</carbonio-quarkus-extensions.version>
     <assertj.version>3.27.7</assertj.version>
-    <mockito.version>5.20.0</mockito.version>
+    <mockito.version>5.23.0</mockito.version>
   </properties>
 
   <dependencyManagement>
@@ -139,7 +139,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
-      <version>3.9.2</version>
+      <version>3.13.2</version>
       <scope>test</scope>
     </dependency>
     <!-- gRPC test transport — TEST SCOPE ONLY (TRAP 24) -->
