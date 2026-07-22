@@ -25,14 +25,6 @@
       "groupName": "all minor updates"
     },
     {
-      "description": "jenkins-lib-common is tracked on the dt3-pipeline branch on purpose; do not propose replacing the branch ref with a tag. The shared Jenkinsfile custom manager uses the github-tags datasource and treats @dt3-pipeline as a version. We will pin a tag manually once dt3-pipeline is merged.",
-      "matchPackageNames": [
-        "zextras/jenkins-lib-common"
-      ],
-      "matchCurrentValue": "/^dt3-pipeline$/",
-      "enabled": false
-    },
-    {
       "description": "Keep ubuntu Docker base images on the 24.04 (noble) LTS line; do not auto-bump the OS major (the runtime image runs the native binary directly against glibc). Bump manually when there is a concrete driver.",
       "matchDatasources": [
         "docker"
