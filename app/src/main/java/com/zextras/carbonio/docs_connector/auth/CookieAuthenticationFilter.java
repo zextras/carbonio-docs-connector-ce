@@ -7,11 +7,9 @@ package com.zextras.carbonio.docs_connector.auth;
 import com.zextras.carbonio.docs_connector.Constants.Config;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserTypeProto;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.MyselfDto;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -21,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,8 @@ import org.slf4j.LoggerFactory;
 public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
   private static final Logger logger = LoggerFactory.getLogger(CookieAuthenticationFilter.class);
+
+  private static final String ZM_AUTH_TOKEN_COOKIE = "ZM_AUTH_TOKEN";
 
   /**
    * TEST-ONLY override for the requester domain used in docs-editor redirects. It is read directly
@@ -42,11 +43,11 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
   static final String REQUESTER_DOMAIN_OVERRIDE_PROPERTY =
       Context.OVERRIDE_REQUESTER_DOMAIN_PROPERTY;
 
-  private final UserManagementClient userManagementClient;
+  private final UserResourceApi userResourceApi;
 
   @Inject
-  public CookieAuthenticationFilter(UserManagementClient userManagementClient) {
-    this.userManagementClient = userManagementClient;
+  public CookieAuthenticationFilter(UserResourceApi userResourceApi) {
+    this.userResourceApi = userResourceApi;
   }
 
   @Override
@@ -73,20 +74,16 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       String token = optZmCookie.get().getValue();
 
       try {
-        GetUserMyselfRequest request =
-            GetUserMyselfRequest.newBuilder()
-                .setToken(token)
-                .setBypassCache(true)
-                .build();
-        UserMyselfProto myself = userManagementClient.getBlockingStub().getUserMyself(request).getUser();
+        Map<String, String> headers = Map.of("Cookie", ZM_AUTH_TOKEN_COOKIE + "=" + token);
+        MyselfDto myself = userResourceApi.internalUsersMyselfGet(headers);
 
-        if (!myself.getInfo().getStatus().equalsIgnoreCase("active")) {
+        if (!"active".equalsIgnoreCase(myself.getInfo().getStatus())) {
           logger.error("The request is unauthorized: the user is not active");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
           return;
         }
 
-        if (myself.getInfo().getType() != UserTypeProto.INTERNAL) {
+        if (!"INTERNAL".equalsIgnoreCase(myself.getInfo().getType())) {
           logger.error("The request is unauthorized: the user type is not internal");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
           return;
@@ -111,11 +108,11 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
                 ? Locale.forLanguageTag(localeStr.replace('_', '-'))
                 : Locale.ENGLISH);
 
-      } catch (StatusRuntimeException e) {
-        if (e.getStatus().getCode() == io.grpc.Status.Code.UNAUTHENTICATED) {
+      } catch (ApiException e) {
+        if (e.getCode() == Status.UNAUTHORIZED.getStatusCode()) {
           logger.error("The request is unauthorized: the cookie is invalid");
         } else {
-          logger.error("The request is unauthorized: gRPC error {}", e.getStatus(), e);
+          logger.error("The request is unauthorized: REST error {}", e.getCode(), e);
         }
         requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
       }

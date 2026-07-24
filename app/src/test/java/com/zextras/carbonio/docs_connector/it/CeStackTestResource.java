@@ -19,11 +19,9 @@ import org.testcontainers.containers.wait.strategy.Wait;
 /**
  * Integration test infrastructure for carbonio-docs-connector-ce.
  *
- * <p><b>Design rationale (TRAP 25):</b> In {@code @QuarkusTest} mode, Quarkus forces all
- * {@code @GrpcClient} channels to connect to an in-process server on port 9001, which conflicts
- * with any real or stub gRPC server we would start here. Therefore, {@link
- * com.zextras.carbonio.docs_connector.clients.UserManagementClient} is mocked via
- * {@code @InjectMock} in the test class itself — this resource does NOT start a gRPC server.
+ * <p>The {@code UserResourceApi} REST SDK bean (carbonio-user-management-rest-sdk, produced by
+ * {@code UserManagementClientProducer}) is mocked via {@code @InjectMock} in the test class
+ * itself — this resource does NOT stub or start a real carbonio-user-management server.
  *
  * <p>What this resource provides:
  * <ul>
@@ -32,7 +30,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
  *   <li>Pre-populated Consul KV entries for {@code max-file-size-in-mb/*} keys.</li>
  * </ul>
  *
- * <p>The {@code gRPC user-management} dependency is handled exclusively by {@code @InjectMock}
+ * <p>The carbonio-user-management dependency is handled exclusively by {@code @InjectMock}
  * in {@link DocsConnectorCeIT}.
  */
 public class CeStackTestResource implements QuarkusTestResourceLifecycleManager {

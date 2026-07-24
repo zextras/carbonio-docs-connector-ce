@@ -8,7 +8,6 @@ import static io.vavr.API.$;
 import static io.vavr.API.Case;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
@@ -20,9 +19,9 @@ import com.zextras.carbonio.files.entities.NodeIdVersion;
 import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
 import com.zextras.carbonio.files.exceptions.InternalServerError;
 import com.zextras.carbonio.files.exceptions.UnAuthorized;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
 import io.vavr.Predicates;
 import io.vavr.control.Try;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,16 +42,16 @@ public class WopiService {
 
   private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
 
-  private final UserManagementClient userManagementClient;
+  private final UserResourceApi userResourceApi;
   private final FilesClient filesClient;
   private final SaveBlobCallback saveBlobCallback;
 
   @Inject
   public WopiService(
-      UserManagementClient userManagementClient,
+      UserResourceApi userResourceApi,
       FilesClient filesClient,
       SaveBlobCallback saveBlobCallback) {
-    this.userManagementClient = userManagementClient;
+    this.userResourceApi = userResourceApi;
     this.filesClient = filesClient;
     this.saveBlobCallback = saveBlobCallback;
   }
@@ -64,12 +63,10 @@ public class WopiService {
       Optional<Integer> optVersion,
       Optional<Integer> optOffsetFromUtc
   ) {
-    UserInfoProto userInfo;
+    UserInfoDto userInfo;
     try {
-      GetUserByIdRequest request =
-          GetUserByIdRequest.newBuilder().setUserId(requesterId).build();
-      userInfo = userManagementClient.getBlockingStub().getUserById(request).getUser();
-    } catch (StatusRuntimeException e) {
+      userInfo = userResourceApi.internalUsersIdUserIdGet(requesterId);
+    } catch (ApiException e) {
       logger.error("Unable to retrieve user info of user id {}", requesterId, e);
       throw new NoSuchElementException();
     }
