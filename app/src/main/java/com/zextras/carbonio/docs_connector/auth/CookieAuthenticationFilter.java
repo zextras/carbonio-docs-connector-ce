@@ -19,7 +19,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +28,6 @@ import org.slf4j.LoggerFactory;
 public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
   private static final Logger logger = LoggerFactory.getLogger(CookieAuthenticationFilter.class);
-
-  private static final String ZM_AUTH_TOKEN_COOKIE = "ZM_AUTH_TOKEN";
 
   /**
    * TEST-ONLY override for the requester domain used in docs-editor redirects. It is read directly
@@ -74,8 +71,7 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       String token = optZmCookie.get().getValue();
 
       try {
-        Map<String, String> headers = Map.of("Cookie", ZM_AUTH_TOKEN_COOKIE + "=" + token);
-        MyselfDto myself = userResourceApi.internalUsersMyselfGet(headers);
+        MyselfDto myself = userResourceApi.internalUsersMyselfGet(token);
 
         if (!"active".equalsIgnoreCase(myself.getInfo().getStatus())) {
           logger.error("The request is unauthorized: the user is not active");

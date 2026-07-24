@@ -23,7 +23,6 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -49,10 +48,6 @@ class DocsConnectorCeIT {
   private static final String NODE_ID = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
   private static final String REQUESTER_ID = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
 
-  private Map<String, String> cookieHeader(String token) {
-    return Map.of("Cookie", "ZM_AUTH_TOKEN=" + token);
-  }
-
   /**
    * Configures the mock {@link UserResourceApi} to accept the given token as a valid active
    * internal user.
@@ -67,14 +62,14 @@ class DocsConnectorCeIT {
         .email("test@example.com");
     MyselfDto response = new MyselfDto().info(info).locale(locale);
 
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token))).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
   }
 
   /**
    * Configures the mock {@link UserResourceApi} to reject the given token with HTTP 401.
    */
   private void mockInvalidUser(String token) throws ApiException {
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token)))
+    when(userResourceApi.internalUsersMyselfGet(token))
         .thenThrow(new ApiException(401, "Unauthorized"));
   }
 
@@ -359,7 +354,7 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("GET /files/open/{nodeId} when user-management REST call fails should return 401")
   void givenUserManagementUnavailableOpenFileShouldReturn401() throws Exception {
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(CeStackTestResource.AUTH_TOKEN)))
+    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
         .thenThrow(new ApiException(503, "Service Unavailable"));
 
     given()
@@ -517,7 +512,7 @@ class DocsConnectorCeIT {
         .fullName("Ext User")
         .email("ext@example.com");
     MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(CeStackTestResource.AUTH_TOKEN)))
+    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
         .thenReturn(response);
 
     given()
@@ -537,7 +532,7 @@ class DocsConnectorCeIT {
         .fullName("Locked User")
         .email("locked@example.com");
     MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(CeStackTestResource.AUTH_TOKEN)))
+    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
         .thenReturn(response);
 
     given()

@@ -84,10 +84,6 @@ class CookieAuthenticationFilterTest {
     return new MyselfDto().info(info).locale(locale);
   }
 
-  private Map<String, String> cookieHeader(String token) {
-    return Map.of("Cookie", "ZM_AUTH_TOKEN=" + token);
-  }
-
   @Test
   @DisplayName("Given a valid cookie for an active internal user the filter should set requester properties")
   void givenAValidCookieForAnActiveInternalUserTheFilterShouldSetRequesterProperties()
@@ -97,7 +93,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "en_US");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token))).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -139,7 +135,7 @@ class CookieAuthenticationFilterTest {
     String token = "invalid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token)))
+    when(userResourceApi.internalUsersMyselfGet(token))
         .thenThrow(new ApiException(401, "Unauthorized"));
 
     // When
@@ -160,7 +156,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("inactive-user", "INTERNAL", "locked", "en");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token))).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -180,7 +176,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("guest-user", "GUEST", "active", "en");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token))).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -225,7 +221,7 @@ class CookieAuthenticationFilterTest {
         CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY, overrideDomain);
 
     MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "pt_BR");
-    when(userResourceApi.internalUsersMyselfGet(cookieHeader(token))).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
