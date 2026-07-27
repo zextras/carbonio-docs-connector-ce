@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import java.net.http.HttpClient;
+import java.time.Duration;
 
 /**
  * CDI producer for the {@link UserResourceApi} REST SDK bean (carbonio-user-management-rest-sdk).
@@ -25,6 +26,15 @@ import java.net.http.HttpClient;
  */
 @ApplicationScoped
 public class UserManagementClientProducer {
+
+  /**
+   * Connect/read timeout for the user-management REST client. Hardcoded rather than exposed as
+   * config (Consul KV / {@code @ConfigKey}) by explicit team decision. 5000ms matches this
+   * codebase's existing convention for a shared client calling another Carbonio service over the
+   * mesh: {@code HttpClientProvider.TIMEOUT_MILLIS} is exactly 5000 in both
+   * carbonio-ws-collaboration and carbonio-notification-push.
+   */
+  private static final Duration USER_MANAGEMENT_TIMEOUT = Duration.ofSeconds(5);
 
   private final NetworkingConfigService networkingConfig;
 
@@ -51,6 +61,8 @@ public class UserManagementClientProducer {
         httpClientBuilder,
         ApiClient.createDefaultObjectMapper(),
         "http://" + host + ":" + port);
+    apiClient.setConnectTimeout(USER_MANAGEMENT_TIMEOUT);
+    apiClient.setReadTimeout(USER_MANAGEMENT_TIMEOUT);
     return new UserResourceApi(apiClient);
   }
 }
