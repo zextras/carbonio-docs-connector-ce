@@ -4,6 +4,7 @@
 package com.zextras.carbonio.docs_connector.auth;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -93,7 +94,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "en_US");
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -112,6 +113,24 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
+  @DisplayName("Given a valid cookie the filter should request user-management with bypassCache=true")
+  void givenAValidCookieTheFilterShouldRequestCacheBypass() throws Exception {
+    // This is the security-relevant behaviour restored by the SDK bump: authentication must
+    // re-validate the token against mailbox on every request rather than relying on
+    // user-management's cached MyselfDto (whose TTL defaults to the whole remaining session
+    // lifetime), otherwise a revoked session would keep authenticating successfully here.
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "en_US");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
+
+    filter.filter(ctx);
+
+    verify(userResourceApi).internalUsersMyselfGet(eq(true), eq(token));
+  }
+
+  @Test
   @DisplayName("Given a missing cookie the filter should return 401")
   void givenMissingCookieTheFilterShouldReturn401() throws Exception {
     // Given
@@ -125,7 +144,7 @@ class CookieAuthenticationFilterTest {
     verify(ctx).abortWith(responseCaptor.capture());
     Assertions.assertThat(responseCaptor.getValue().getStatus())
         .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-    verify(userResourceApi, never()).internalUsersMyselfGet(any());
+    verify(userResourceApi, never()).internalUsersMyselfGet(any(), any());
   }
 
   @Test
@@ -135,7 +154,7 @@ class CookieAuthenticationFilterTest {
     String token = "invalid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    when(userResourceApi.internalUsersMyselfGet(token))
+    when(userResourceApi.internalUsersMyselfGet(true, token))
         .thenThrow(new ApiException(401, "Unauthorized"));
 
     // When
@@ -157,7 +176,7 @@ class CookieAuthenticationFilterTest {
     String token = "any-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    when(userResourceApi.internalUsersMyselfGet(token))
+    when(userResourceApi.internalUsersMyselfGet(true, token))
         .thenThrow(new ApiException(new java.io.IOException("connection refused")));
 
     // When
@@ -177,7 +196,7 @@ class CookieAuthenticationFilterTest {
     String token = "any-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    when(userResourceApi.internalUsersMyselfGet(token))
+    when(userResourceApi.internalUsersMyselfGet(true, token))
         .thenThrow(new ApiException(502, "Bad Gateway"));
 
     // When
@@ -201,7 +220,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = new MyselfDto().info(null).locale("en");
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -220,7 +239,7 @@ class CookieAuthenticationFilterTest {
     String token = "valid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(null);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(null);
 
     // When
     filter.filter(ctx);
@@ -240,7 +259,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("inactive-user", "INTERNAL", "locked", "en");
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -260,7 +279,7 @@ class CookieAuthenticationFilterTest {
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
     MyselfDto response = buildUserMyself("guest-user", "GUEST", "active", "en");
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -289,7 +308,7 @@ class CookieAuthenticationFilterTest {
 
     // Then — no abort, no interaction with user-management
     verify(ctx, never()).abortWith(any());
-    verify(userResourceApi, never()).internalUsersMyselfGet(any());
+    verify(userResourceApi, never()).internalUsersMyselfGet(any(), any());
   }
 
   @Test
@@ -305,7 +324,7 @@ class CookieAuthenticationFilterTest {
         CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY, overrideDomain);
 
     MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "pt_BR");
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);

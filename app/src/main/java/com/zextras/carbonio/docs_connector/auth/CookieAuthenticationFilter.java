@@ -71,7 +71,13 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       String token = optZmCookie.get().getValue();
 
       try {
-        MyselfDto myself = userResourceApi.internalUsersMyselfGet(token);
+        // bypassCache=true: force user-management to re-validate this token against mailbox on
+        // every request instead of serving its cached MyselfDto. UserMyselfCache's TTL defaults to
+        // the entire remaining lifetime of the session token, and nothing invalidates it early, so
+        // without the bypass a revoked session (password change, admin "end all sessions") would
+        // keep authenticating successfully here for as long as the token itself remains valid -
+        // potentially days. The cached value is not safe to use for an authorization decision.
+        MyselfDto myself = userResourceApi.internalUsersMyselfGet(true, token);
 
         // A 2xx response with a blank body deserializes to a null MyselfDto (or a MyselfDto with
         // a null `info`) instead of throwing. Under the old gRPC client this shape was impossible

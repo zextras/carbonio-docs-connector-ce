@@ -62,14 +62,14 @@ class DocsConnectorCeIT {
         .email("test@example.com");
     MyselfDto response = new MyselfDto().info(info).locale(locale);
 
-    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
   }
 
   /**
    * Configures the mock {@link UserResourceApi} to reject the given token with HTTP 401.
    */
   private void mockInvalidUser(String token) throws ApiException {
-    when(userResourceApi.internalUsersMyselfGet(token))
+    when(userResourceApi.internalUsersMyselfGet(true, token))
         .thenThrow(new ApiException(401, "Unauthorized"));
   }
 
@@ -356,7 +356,7 @@ class DocsConnectorCeIT {
   void givenUserManagement5xxOpenFileShouldReturn503() throws Exception {
     // A 5xx from user-management means the dependency itself is broken, not that the cookie is
     // invalid. Reporting it as 401 causes a spurious client-side logout / re-auth loop.
-    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
         .thenThrow(new ApiException(503, "Service Unavailable"));
 
     given()
@@ -370,7 +370,7 @@ class DocsConnectorCeIT {
   void givenUserManagementUnreachableOpenFileShouldReturn503() throws Exception {
     // ApiException(Throwable) never sets a code (connection refused / timeout / a body that
     // failed to deserialize), so getCode() == 0. Same dependency-unavailable outcome as a 5xx.
-    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
         .thenThrow(new ApiException(new java.io.IOException("connection refused")));
 
     given()
@@ -528,7 +528,7 @@ class DocsConnectorCeIT {
         .fullName("Ext User")
         .email("ext@example.com");
     MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
         .thenReturn(response);
 
     given()
@@ -548,7 +548,7 @@ class DocsConnectorCeIT {
         .fullName("Locked User")
         .email("locked@example.com");
     MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
         .thenReturn(response);
 
     given()
