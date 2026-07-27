@@ -107,11 +107,68 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management REST call fails")
-  void givenUserManagementFailureGetDocsEditorAttributesShouldThrow() throws Exception {
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management reports 404 (user not found)")
+  void givenUserManagement404GetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
+        .thenThrow(new ApiException(404, "Not Found"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management reports a 5xx")
+  void givenUserManagement5xxGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
     // Given
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
         .thenThrow(new ApiException(503, "Service Unavailable"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management call fails with getCode()==0 (network failure)")
+  void givenUserManagementNetworkFailureGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
+    // Given — ApiException(Throwable) never sets a code, so getCode() == 0 (connection
+    // refused / timeout / a body that failed to deserialize)
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management returns a null UserInfoDto (blank 2xx body)")
+  void givenNullUserInfoGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given — the generated client returns null outright for a 2xx response with a blank body
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(null);
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when userId is null (nullable field, no gRPC empty-string guarantee)")
+  void givenNullUserIdGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given — under gRPC a missing userId was guaranteed "" (IllegalArgumentException on
+    // UUID.fromString); the REST DTO field is @Nullable, so it can be null instead.
+    UserInfoDto userInfo = new UserInfoDto().fullName("Test User").email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     // When / Then
     Assertions.assertThatThrownBy(() ->

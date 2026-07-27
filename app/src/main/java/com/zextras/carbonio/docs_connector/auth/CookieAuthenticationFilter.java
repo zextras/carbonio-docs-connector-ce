@@ -73,6 +73,17 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       try {
         MyselfDto myself = userResourceApi.internalUsersMyselfGet(token);
 
+        // A 2xx response with a blank body deserializes to a null MyselfDto (or a MyselfDto with
+        // a null `info`) instead of throwing. Under the old gRPC client this shape was impossible
+        // (proto3 defaults a missing sub-message to an empty, non-null instance whose status/type
+        // fields are "" and fail the checks below anyway), so treat it the same way here: a
+        // degenerate response is just another way of not having a valid active internal user.
+        if (myself == null || myself.getInfo() == null) {
+          logger.error("The request is unauthorized: user-management returned no user info");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          return;
+        }
+
         if (!"active".equalsIgnoreCase(myself.getInfo().getStatus())) {
           logger.error("The request is unauthorized: the user is not active");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
@@ -105,12 +116,23 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
                 : Locale.ENGLISH);
 
       } catch (ApiException e) {
+        // getCode() == 0 means no HTTP response was ever received (connection refused, timeout,
+        // a body that failed to deserialize, ...) -- see ApiException(Throwable) in the generated
+        // client. That, and any 5xx, means user-management itself is unavailable/broken, not that
+        // the cookie is invalid: reporting it as a 401 causes a spurious client-side logout /
+        // re-auth loop. Only a genuine 401 from user-management means the cookie is invalid.
         if (e.getCode() == Status.UNAUTHORIZED.getStatusCode()) {
           logger.error("The request is unauthorized: the cookie is invalid");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+        } else if (e.getCode() == 0 || e.getCode() >= 500) {
+          logger.error(
+              "The request could not be authenticated: user-management is unavailable (code {})",
+              e.getCode(), e);
+          requestContext.abortWith(Response.status(Status.SERVICE_UNAVAILABLE).build());
         } else {
           logger.error("The request is unauthorized: REST error {}", e.getCode(), e);
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
         }
-        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
       }
     }
   }

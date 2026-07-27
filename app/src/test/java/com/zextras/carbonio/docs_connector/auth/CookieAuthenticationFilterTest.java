@@ -149,6 +149,90 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
+  @DisplayName("Given user-management is unreachable (ApiException getCode()==0) the filter should return 503")
+  void givenUserManagementUnreachableTheFilterShouldReturn503() throws Exception {
+    // Given — ApiException(Throwable) never sets a code (connection refused / timeout / a body
+    // that failed to deserialize), so getCode() == 0. This must NOT be reported as an invalid
+    // cookie (401): it would cause a spurious client-side logout / re-auth loop.
+    String token = "any-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(token))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a 5xx the filter should return 503")
+  void givenUserManagement5xxTheFilterShouldReturn503() throws Exception {
+    // Given
+    String token = "any-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(token))
+        .thenThrow(new ApiException(502, "Bad Gateway"));
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a null info (blank 2xx body) the filter should return 401, not 500")
+  void givenNullInfoTheFilterShouldReturn401() throws Exception {
+    // Given — the generated client returns null outright for a 2xx response with a blank body;
+    // under gRPC this shape was impossible (proto3 defaults a missing sub-message to a non-null,
+    // empty instance), so a degenerate response here must yield the same clean 401 outcome, not
+    // an NPE surfacing as a 500.
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    MyselfDto response = new MyselfDto().info(null).locale("en");
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(response);
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a null MyselfDto (blank 2xx body) the filter should return 401, not 500")
+  void givenNullMyselfTheFilterShouldReturn401() throws Exception {
+    // Given
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(token)).thenReturn(null);
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
   @DisplayName("Given an inactive user the filter should return 401")
   void givenAnInactiveUserTheFilterShouldReturn401() throws Exception {
     // Given

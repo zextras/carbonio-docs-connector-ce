@@ -62,12 +62,37 @@ public class WopiService {
       UUID nodeId,
       Optional<Integer> optVersion,
       Optional<Integer> optOffsetFromUtc
-  ) {
+  ) throws ServiceDependencyException {
     UserInfoDto userInfo;
     try {
       userInfo = userResourceApi.internalUsersIdUserIdGet(requesterId);
     } catch (ApiException e) {
-      logger.error("Unable to retrieve user info of user id {}", requesterId, e);
+      if (e.getCode() == 404) {
+        logger.error("Unable to retrieve user info of user id {}: not found", requesterId, e);
+        throw new NoSuchElementException();
+      } else if (e.getCode() == 0 || e.getCode() >= 500) {
+        // getCode() == 0 means no HTTP response was ever received (connection refused, timeout,
+        // a body that failed to deserialize, ...); that and any 5xx mean user-management itself
+        // is unavailable, which is a dependency failure, not "this user doesn't exist".
+        logger.error(
+            "Unable to retrieve user info of user id {}: user-management is unavailable (code {})",
+            requesterId, e.getCode(), e);
+        throw new ServiceDependencyException(e);
+      } else {
+        // This endpoint is documented to only ever return 200 or 404; any other code is
+        // unexpected, so fall back to the conservative "not found" outcome.
+        logger.error("Unable to retrieve user info of user id {}", requesterId, e);
+        throw new NoSuchElementException();
+      }
+    }
+
+    // A 2xx response with a blank body deserializes to a null UserInfoDto (or one with a null
+    // userId) instead of throwing. Under the old gRPC client this was impossible (proto3 defaults
+    // a missing field to "", never null); a degenerate response here is functionally the same as
+    // not having found the user, so it gets the same clean outcome instead of an NPE surfacing
+    // as a 500 further down.
+    if (userInfo == null || userInfo.getUserId() == null) {
+      logger.error("Unable to retrieve user info of user id {}: empty response", requesterId);
       throw new NoSuchElementException();
     }
 

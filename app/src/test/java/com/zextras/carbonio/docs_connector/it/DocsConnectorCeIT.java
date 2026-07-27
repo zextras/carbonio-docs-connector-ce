@@ -352,15 +352,31 @@ class DocsConnectorCeIT {
   }
 
   @Test
-  @DisplayName("GET /files/open/{nodeId} when user-management REST call fails should return 401")
-  void givenUserManagementUnavailableOpenFileShouldReturn401() throws Exception {
+  @DisplayName("GET /files/open/{nodeId} when user-management returns a 5xx should return 503, not 401")
+  void givenUserManagement5xxOpenFileShouldReturn503() throws Exception {
+    // A 5xx from user-management means the dependency itself is broken, not that the cookie is
+    // invalid. Reporting it as 401 causes a spurious client-side logout / re-auth loop.
     when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
         .thenThrow(new ApiException(503, "Service Unavailable"));
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
         .when().get("/files/open/" + NODE_ID)
-        .then().statusCode(401);
+        .then().statusCode(503);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} when user-management is unreachable (getCode()==0) should return 503, not 401")
+  void givenUserManagementUnreachableOpenFileShouldReturn503() throws Exception {
+    // ApiException(Throwable) never sets a code (connection refused / timeout / a body that
+    // failed to deserialize), so getCode() == 0. Same dependency-unavailable outcome as a 5xx.
+    when(userResourceApi.internalUsersMyselfGet(CeStackTestResource.AUTH_TOKEN))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/files/open/" + NODE_ID)
+        .then().statusCode(503);
   }
 
   // ----- AccessTokenValidationFilter edge cases (IT) -----
