@@ -13,10 +13,10 @@ public final class DocsConnectorServiceConfig implements CarbonioServiceConfig {
   public static final class NetworkingConfig {
     private NetworkingConfig() {}
 
-    @ConfigKey(description = "Host of the carbonio-user-management gRPC service")
+    @ConfigKey(description = "Host of the carbonio-user-management REST service")
     public static final String USER_MANAGEMENT_HOST = "carbonio.user-management.host";
 
-    @ConfigKey(description = "Port of the carbonio-user-management gRPC service")
+    @ConfigKey(description = "Port of the carbonio-user-management REST service")
     public static final String USER_MANAGEMENT_PORT = "carbonio.user-management.port";
 
     @ConfigKey(description = "Host of the carbonio-files REST service")

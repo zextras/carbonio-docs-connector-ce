@@ -56,15 +56,11 @@ SPDX-License-Identifier: AGPL-3.0-only
       <version>${carbonio-quarkus-extensions.version}</version>
     </dependency>
 
-    <!-- gRPC client: @GrpcClient for carbonio-user-management -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-grpc</artifactId>
-    </dependency>
+    <!-- REST SDK client: UserResourceApi for carbonio-user-management (/internal/users/*) -->
     <dependency>
       <groupId>com.zextras.carbonio.user-management</groupId>
-      <artifactId>carbonio-user-management-grpc-sdk</artifactId>
-      <version>${carbonio-user-management-grpc-sdk.version}</version>
+      <artifactId>carbonio-user-management-rest-sdk</artifactId>
+      <version>1.3.0-1</version>
     </dependency>
 
     <!-- carbonio-files SDK: HTTP client wrapper (kept as-is for now) -->
@@ -140,12 +136,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
       <version>3.13.2</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- gRPC test transport — TEST SCOPE ONLY (TRAP 24) -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

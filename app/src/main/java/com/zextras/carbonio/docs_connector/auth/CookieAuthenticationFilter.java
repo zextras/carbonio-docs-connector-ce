@@ -7,11 +7,9 @@ package com.zextras.carbonio.docs_connector.auth;
 import com.zextras.carbonio.docs_connector.Constants.Config;
 import com.zextras.carbonio.docs_connector.Constants.Context;
 import com.zextras.carbonio.docs_connector.Constants.DocsConnector.API.Endpoints;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserTypeProto;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.MyselfDto;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -42,11 +40,11 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
   static final String REQUESTER_DOMAIN_OVERRIDE_PROPERTY =
       Context.OVERRIDE_REQUESTER_DOMAIN_PROPERTY;
 
-  private final UserManagementClient userManagementClient;
+  private final UserResourceApi userResourceApi;
 
   @Inject
-  public CookieAuthenticationFilter(UserManagementClient userManagementClient) {
-    this.userManagementClient = userManagementClient;
+  public CookieAuthenticationFilter(UserResourceApi userResourceApi) {
+    this.userResourceApi = userResourceApi;
   }
 
   @Override
@@ -73,20 +71,32 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
       String token = optZmCookie.get().getValue();
 
       try {
-        GetUserMyselfRequest request =
-            GetUserMyselfRequest.newBuilder()
-                .setToken(token)
-                .setBypassCache(true)
-                .build();
-        UserMyselfProto myself = userManagementClient.getBlockingStub().getUserMyself(request).getUser();
+        // bypassCache=true: force user-management to re-validate this token against mailbox on
+        // every request instead of serving its cached MyselfDto. UserMyselfCache's TTL defaults to
+        // the entire remaining lifetime of the session token, and nothing invalidates it early, so
+        // without the bypass a revoked session (password change, admin "end all sessions") would
+        // keep authenticating successfully here for as long as the token itself remains valid -
+        // potentially days. The cached value is not safe to use for an authorization decision.
+        MyselfDto myself = userResourceApi.internalUsersMyselfGet(true, token);
 
-        if (!myself.getInfo().getStatus().equalsIgnoreCase("active")) {
+        // A 2xx response with a blank body deserializes to a null MyselfDto (or a MyselfDto with
+        // a null `info`) instead of throwing. Under the old gRPC client this shape was impossible
+        // (proto3 defaults a missing sub-message to an empty, non-null instance whose status/type
+        // fields are "" and fail the checks below anyway), so treat it the same way here: a
+        // degenerate response is just another way of not having a valid active internal user.
+        if (myself == null || myself.getInfo() == null) {
+          logger.error("The request is unauthorized: user-management returned no user info");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+          return;
+        }
+
+        if (!"active".equalsIgnoreCase(myself.getInfo().getStatus())) {
           logger.error("The request is unauthorized: the user is not active");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
           return;
         }
 
-        if (myself.getInfo().getType() != UserTypeProto.INTERNAL) {
+        if (!"INTERNAL".equalsIgnoreCase(myself.getInfo().getType())) {
           logger.error("The request is unauthorized: the user type is not internal");
           requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
           return;
@@ -111,13 +121,24 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
                 ? Locale.forLanguageTag(localeStr.replace('_', '-'))
                 : Locale.ENGLISH);
 
-      } catch (StatusRuntimeException e) {
-        if (e.getStatus().getCode() == io.grpc.Status.Code.UNAUTHENTICATED) {
+      } catch (ApiException e) {
+        // getCode() == 0 means no HTTP response was ever received (connection refused, timeout,
+        // a body that failed to deserialize, ...) -- see ApiException(Throwable) in the generated
+        // client. That, and any 5xx, means user-management itself is unavailable/broken, not that
+        // the cookie is invalid: reporting it as a 401 causes a spurious client-side logout /
+        // re-auth loop. Only a genuine 401 from user-management means the cookie is invalid.
+        if (e.getCode() == Status.UNAUTHORIZED.getStatusCode()) {
           logger.error("The request is unauthorized: the cookie is invalid");
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
+        } else if (e.getCode() == 0 || e.getCode() >= 500) {
+          logger.error(
+              "The request could not be authenticated: user-management is unavailable (code {})",
+              e.getCode(), e);
+          requestContext.abortWith(Response.status(Status.SERVICE_UNAVAILABLE).build());
         } else {
-          logger.error("The request is unauthorized: gRPC error {}", e.getStatus(), e);
+          logger.error("The request is unauthorized: REST error {}", e.getCode(), e);
+          requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
         }
-        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
       }
     }
   }

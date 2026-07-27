@@ -8,7 +8,6 @@ import static io.vavr.API.$;
 import static io.vavr.API.Case;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
@@ -20,9 +19,9 @@ import com.zextras.carbonio.files.entities.NodeIdVersion;
 import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
 import com.zextras.carbonio.files.exceptions.InternalServerError;
 import com.zextras.carbonio.files.exceptions.UnAuthorized;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
 import io.vavr.Predicates;
 import io.vavr.control.Try;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,16 +42,16 @@ public class WopiService {
 
   private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
 
-  private final UserManagementClient userManagementClient;
+  private final UserResourceApi userResourceApi;
   private final FilesClient filesClient;
   private final SaveBlobCallback saveBlobCallback;
 
   @Inject
   public WopiService(
-      UserManagementClient userManagementClient,
+      UserResourceApi userResourceApi,
       FilesClient filesClient,
       SaveBlobCallback saveBlobCallback) {
-    this.userManagementClient = userManagementClient;
+    this.userResourceApi = userResourceApi;
     this.filesClient = filesClient;
     this.saveBlobCallback = saveBlobCallback;
   }
@@ -63,14 +62,37 @@ public class WopiService {
       UUID nodeId,
       Optional<Integer> optVersion,
       Optional<Integer> optOffsetFromUtc
-  ) {
-    UserInfoProto userInfo;
+  ) throws ServiceDependencyException {
+    UserInfoDto userInfo;
     try {
-      GetUserByIdRequest request =
-          GetUserByIdRequest.newBuilder().setUserId(requesterId).build();
-      userInfo = userManagementClient.getBlockingStub().getUserById(request).getUser();
-    } catch (StatusRuntimeException e) {
-      logger.error("Unable to retrieve user info of user id {}", requesterId, e);
+      userInfo = userResourceApi.internalUsersIdUserIdGet(requesterId);
+    } catch (ApiException e) {
+      if (e.getCode() == 404) {
+        logger.error("Unable to retrieve user info of user id {}: not found", requesterId, e);
+        throw new NoSuchElementException();
+      } else if (e.getCode() == 0 || e.getCode() >= 500) {
+        // getCode() == 0 means no HTTP response was ever received (connection refused, timeout,
+        // a body that failed to deserialize, ...); that and any 5xx mean user-management itself
+        // is unavailable, which is a dependency failure, not "this user doesn't exist".
+        logger.error(
+            "Unable to retrieve user info of user id {}: user-management is unavailable (code {})",
+            requesterId, e.getCode(), e);
+        throw new ServiceDependencyException(e);
+      } else {
+        // This endpoint is documented to only ever return 200 or 404; any other code is
+        // unexpected, so fall back to the conservative "not found" outcome.
+        logger.error("Unable to retrieve user info of user id {}", requesterId, e);
+        throw new NoSuchElementException();
+      }
+    }
+
+    // A 2xx response with a blank body deserializes to a null UserInfoDto (or one with a null
+    // userId) instead of throwing. Under the old gRPC client this was impossible (proto3 defaults
+    // a missing field to "", never null); a degenerate response here is functionally the same as
+    // not having found the user, so it gets the same clean outcome instead of an NPE surfacing
+    // as a 500 further down.
+    if (userInfo == null || userInfo.getUserId() == null) {
+      logger.error("Unable to retrieve user info of user id {}: empty response", requesterId);
       throw new NoSuchElementException();
     }
 

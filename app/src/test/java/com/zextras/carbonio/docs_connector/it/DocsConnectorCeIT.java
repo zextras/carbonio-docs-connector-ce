@@ -10,41 +10,30 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfResponse;
-import com.zextras.carbonio.user_management.sdk.grpc.UserTypeProto;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.MyselfDto;
+import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 /**
  * Layer 2 integration tests for carbonio-docs-connector-ce.
  *
  * <p>Uses {@code @QuarkusTest} (not {@code @QuarkusIntegrationTest}) so that the full CDI
- * container is started but we can still use {@code @InjectMock} to replace the gRPC
- * {@link UserManagementClient}.
- *
- * <p>TRAP 25: In {@code @QuarkusTest}, {@code @GrpcClient} channels are forced to port 9001
- * (in-process), so we cannot reach a real or stub gRPC server. The only correct workaround
- * is to mock the entire {@code UserManagementClient} CDI bean via {@code @InjectMock}.
- * The mock returns controlled responses to simulate successful and failed authentication.
+ * container is started but we can still use {@code @InjectMock} to replace the
+ * {@link UserResourceApi} REST SDK bean (produced by {@code UserManagementClientProducer}) with a
+ * Mockito mock. The mock returns controlled responses to simulate successful and failed
+ * authentication — no real or stubbed carbonio-user-management server is needed.
  *
  * <p>The files SDK is stubbed via WireMock (provided by {@link CeStackTestResource}).
  * Consul is a real container (also from {@link CeStackTestResource}).
@@ -54,54 +43,34 @@ import org.mockito.Mockito;
 class DocsConnectorCeIT {
 
   @InjectMock
-  UserManagementClient userManagementClient;
-
-  private UserManagementServiceBlockingStub mockStub;
+  UserResourceApi userResourceApi;
 
   private static final String NODE_ID = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
   private static final String REQUESTER_ID = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
 
-  @BeforeEach
-  void setUp() {
-    mockStub = Mockito.mock(UserManagementServiceBlockingStub.class);
-    when(userManagementClient.getBlockingStub()).thenReturn(mockStub);
+  /**
+   * Configures the mock {@link UserResourceApi} to accept the given token as a valid active
+   * internal user.
+   */
+  private void mockValidUser(String token, String userId, String locale) throws ApiException {
+    UserInfoDto info = new UserInfoDto()
+        .userId(userId)
+        .type("INTERNAL")
+        .status("active")
+        .domain("example.com")
+        .fullName("Test User")
+        .email("test@example.com");
+    MyselfDto response = new MyselfDto().info(info).locale(locale);
+
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
   }
 
   /**
-   * Configures the mock gRPC stub to accept the given token as a valid active internal user.
+   * Configures the mock {@link UserResourceApi} to reject the given token with HTTP 401.
    */
-  private void mockValidUser(String token, String userId, String locale) {
-    UserInfoProto info = UserInfoProto.newBuilder()
-        .setUserId(userId)
-        .setType(UserTypeProto.INTERNAL)
-        .setStatus("active")
-        .setDomain("example.com")
-        .setFullName("Test User")
-        .setEmail("test@example.com")
-        .build();
-    UserMyselfProto myself = UserMyselfProto.newBuilder()
-        .setInfo(info)
-        .setLocale(locale)
-        .build();
-    UserMyselfResponse response = UserMyselfResponse.newBuilder().setUser(myself).build();
-
-    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(mockStub.getUserMyself(request)).thenReturn(response);
-  }
-
-  /**
-   * Configures the mock gRPC stub to reject the given token with UNAUTHENTICATED.
-   */
-  private void mockInvalidUser(String token) {
-    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(mockStub.getUserMyself(request))
-        .thenThrow(new StatusRuntimeException(Status.UNAUTHENTICATED));
+  private void mockInvalidUser(String token) throws ApiException {
+    when(userResourceApi.internalUsersMyselfGet(true, token))
+        .thenThrow(new ApiException(401, "Unauthorized"));
   }
 
   // ----- /files/create -----
@@ -118,7 +87,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("POST /files/create with invalid cookie should return 401")
-  void givenInvalidCookieCreateFileShouldReturn401() {
+  void givenInvalidCookieCreateFileShouldReturn401() throws Exception {
     mockInvalidUser("invalid-token");
 
     given()
@@ -131,7 +100,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("POST /files/create with valid cookie should upload template and return 200 with nodeId")
-  void givenValidCookieCreateFileShouldAttemptUpload() {
+  void givenValidCookieCreateFileShouldAttemptUpload() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
 
     // Stub WireMock: the Files SDK POSTs to /upload/ with multipart content
@@ -163,7 +132,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with invalid cookie should return 401")
-  void givenInvalidCookieOpenFileShouldReturn401() {
+  void givenInvalidCookieOpenFileShouldReturn401() throws Exception {
     mockInvalidUser("bad-token");
 
     given()
@@ -174,7 +143,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with valid cookie but Files returns 404 should return 404")
-  void givenValidCookieButFilesReturns404OpenFileShouldReturn404() {
+  void givenValidCookieButFilesReturns404OpenFileShouldReturn404() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
 
     // Stub WireMock: graphQL returns null data (node not found)
@@ -314,22 +283,12 @@ class DocsConnectorCeIT {
     long futureTtl = System.currentTimeMillis() + 43_200_000L;
 
     // Step 2: GET /wopi/{nodeId}?access_token={token} — should return 200 with DocsEditorAttributes
-    // Mock the getUserById call that WopiService makes internally
-    com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest byIdRequest =
-        com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest.newBuilder()
-            .setUserId(REQUESTER_ID)
-            .build();
-    com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto userInfo =
-        com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto.newBuilder()
-            .setUserId(REQUESTER_ID)
-            .setFullName("Test User")
-            .setEmail("test@example.com")
-            .build();
-    com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse userInfoResponse =
-        com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse.newBuilder()
-            .setUser(userInfo)
-            .build();
-    when(mockStub.getUserById(byIdRequest)).thenReturn(userInfoResponse);
+    // Mock the getUserById REST call that WopiService makes internally
+    UserInfoDto userInfo = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .fullName("Test User")
+        .email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     given()
         .queryParam("access_token", accessToken)
@@ -383,7 +342,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with empty-string cookie value should return 401")
-  void givenEmptyCookieValueOpenFileShouldReturn401() {
+  void givenEmptyCookieValueOpenFileShouldReturn401() throws Exception {
     mockInvalidUser("");
 
     given()
@@ -393,19 +352,31 @@ class DocsConnectorCeIT {
   }
 
   @Test
-  @DisplayName("GET /files/open/{nodeId} when gRPC throws UNAVAILABLE should return 401")
-  void givenGrpcUnavailableOpenFileShouldReturn401() {
-    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
-        .setToken(CeStackTestResource.AUTH_TOKEN)
-        .setBypassCache(true)
-        .build();
-    when(mockStub.getUserMyself(request))
-        .thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
+  @DisplayName("GET /files/open/{nodeId} when user-management returns a 5xx should return 503, not 401")
+  void givenUserManagement5xxOpenFileShouldReturn503() throws Exception {
+    // A 5xx from user-management means the dependency itself is broken, not that the cookie is
+    // invalid. Reporting it as 401 causes a spurious client-side logout / re-auth loop.
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
+        .thenThrow(new ApiException(503, "Service Unavailable"));
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
         .when().get("/files/open/" + NODE_ID)
-        .then().statusCode(401);
+        .then().statusCode(503);
+  }
+
+  @Test
+  @DisplayName("GET /files/open/{nodeId} when user-management is unreachable (getCode()==0) should return 503, not 401")
+  void givenUserManagementUnreachableOpenFileShouldReturn503() throws Exception {
+    // ApiException(Throwable) never sets a code (connection refused / timeout / a body that
+    // failed to deserialize), so getCode() == 0. Same dependency-unavailable outcome as a 5xx.
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    given()
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .when().get("/files/open/" + NODE_ID)
+        .then().statusCode(503);
   }
 
   // ----- AccessTokenValidationFilter edge cases (IT) -----
@@ -434,7 +405,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for spreadsheet exceeding 10 MB limit should return 403")
-  void givenSpreadsheetExceedingSizeLimitOpenFileShouldReturn403() {
+  void givenSpreadsheetExceedingSizeLimitOpenFileShouldReturn403() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
 
     long oversizedBytes = 11L * 1024 * 1024; // 11 MB — exceeds 10 MB spreadsheet limit
@@ -472,7 +443,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for presentation exceeding 100 MB limit should return 403")
-  void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() {
+  void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
 
     long oversizedBytes = 101L * 1024 * 1024; // 101 MB — exceeds 100 MB presentation limit
@@ -512,7 +483,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for .docx (OOXML) returns 200")
-  void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() {
+  void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     long sizeBytes = 2L * 1024 * 1024;
     String body = """
@@ -548,22 +519,17 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with GUEST user type should return 401")
-  void givenValidCookieAndExternalUser_whenOpenFile_thenReturn401() {
-    UserInfoProto info = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID)
-        .setType(UserTypeProto.GUEST)
-        .setStatus("active")
-        .setDomain("example.com")
-        .setFullName("Ext User")
-        .setEmail("ext@example.com")
-        .build();
-    UserMyselfProto myself = UserMyselfProto.newBuilder().setInfo(info).setLocale("en_US").build();
-    UserMyselfResponse response = UserMyselfResponse.newBuilder().setUser(myself).build();
-    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
-        .setToken(CeStackTestResource.AUTH_TOKEN)
-        .setBypassCache(true)
-        .build();
-    when(mockStub.getUserMyself(request)).thenReturn(response);
+  void givenValidCookieAndExternalUser_whenOpenFile_thenReturn401() throws Exception {
+    UserInfoDto info = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .type("GUEST")
+        .status("active")
+        .domain("example.com")
+        .fullName("Ext User")
+        .email("ext@example.com");
+    MyselfDto response = new MyselfDto().info(info).locale("en_US");
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
+        .thenReturn(response);
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
@@ -573,22 +539,17 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with non-active user should return 401")
-  void givenValidCookieAndInactiveUser_whenOpenFile_thenReturn401() {
-    UserInfoProto info = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID)
-        .setType(UserTypeProto.INTERNAL)
-        .setStatus("locked")
-        .setDomain("example.com")
-        .setFullName("Locked User")
-        .setEmail("locked@example.com")
-        .build();
-    UserMyselfProto myself = UserMyselfProto.newBuilder().setInfo(info).setLocale("en_US").build();
-    UserMyselfResponse response = UserMyselfResponse.newBuilder().setUser(myself).build();
-    GetUserMyselfRequest request = GetUserMyselfRequest.newBuilder()
-        .setToken(CeStackTestResource.AUTH_TOKEN)
-        .setBypassCache(true)
-        .build();
-    when(mockStub.getUserMyself(request)).thenReturn(response);
+  void givenValidCookieAndInactiveUser_whenOpenFile_thenReturn401() throws Exception {
+    UserInfoDto info = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .type("INTERNAL")
+        .status("locked")
+        .domain("example.com")
+        .fullName("Locked User")
+        .email("locked@example.com");
+    MyselfDto response = new MyselfDto().info(info).locale("en_US");
+    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
+        .thenReturn(response);
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
@@ -640,7 +601,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId}?redirect=true returns 307")
-  void givenValidCookie_whenOpenFileWithRedirectTrue_thenReturn307() {
+  void givenValidCookie_whenOpenFileWithRedirectTrue_thenReturn307() throws Exception {
     mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
 
@@ -668,19 +629,11 @@ class DocsConnectorCeIT {
     String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
     if (accessToken.contains("&")) accessToken = accessToken.substring(0, accessToken.indexOf("&"));
 
-    com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest byIdRequest =
-        com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest.newBuilder()
-            .setUserId(REQUESTER_ID).build();
-    com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto info =
-        com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto.newBuilder()
-            .setUserId(REQUESTER_ID)
-            .setFullName("Test User")
-            .setEmail("test@example.com")
-            .build();
-    com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse infoResp =
-        com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse.newBuilder()
-            .setUser(info).build();
-    when(mockStub.getUserById(byIdRequest)).thenReturn(infoResp);
+    UserInfoDto info = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .fullName("Test User")
+        .email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(info);
 
     given()
         .queryParam("access_token", accessToken)

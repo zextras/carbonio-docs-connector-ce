@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import java.io.InputStream;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -64,15 +65,23 @@ public class WopiResource {
         (OpenDocumentToken) requestContext.getProperty(Constants.Context.OPEN_DOCUMENT_TOKEN);
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
-      return wopiService
-          .getDocsEditorAttributes(
-              openDocumentToken.getRequesterId(),
-              openDocumentToken.getRequesterCookie(),
-              nodeId,
-              Optional.ofNullable(version),
-              Optional.ofNullable(offsetFromUtc))
-          .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
-          .orElse(Response.serverError().build());
+      try {
+        return wopiService
+            .getDocsEditorAttributes(
+                openDocumentToken.getRequesterId(),
+                openDocumentToken.getRequesterCookie(),
+                nodeId,
+                Optional.ofNullable(version),
+                Optional.ofNullable(offsetFromUtc))
+            .map(docsEditorAttributes -> Response.ok().entity(docsEditorAttributes).build())
+            .orElse(Response.serverError().build());
+      } catch (NoSuchElementException exception) {
+        logger.error("Requester {} not found", openDocumentToken.getRequesterId(), exception);
+        return Response.status(Status.NOT_FOUND).build();
+      } catch (ServiceDependencyException exception) {
+        logger.error(exception.getMessage(), exception);
+        return Response.status(Status.SERVICE_UNAVAILABLE).build();
+      }
     }
 
     logger.error("Invalid token: " + accessToken + ", nodeId: " + nodeId);

@@ -71,7 +71,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("docsEditorAttributes should return 200 when token matches node and attributes are found")
-  void givenMatchingTokenDocsEditorAttributesShouldReturn200() {
+  void givenMatchingTokenDocsEditorAttributesShouldReturn200() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
@@ -114,7 +114,7 @@ class WopiResourceTest {
 
   @Test
   @DisplayName("docsEditorAttributes should return 500 when service returns empty Optional")
-  void givenServiceReturnsEmptyDocsEditorAttributesShouldReturn500() {
+  void givenServiceReturnsEmptyDocsEditorAttributesShouldReturn500() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
@@ -129,6 +129,44 @@ class WopiResourceTest {
     // Then
     Assertions.assertThat(response.getStatus())
         .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("docsEditorAttributes should return 404 when service throws NoSuchElementException (requester not found)")
+  void givenNoSuchElementExceptionDocsEditorAttributesShouldReturn404() throws Exception {
+    // Given
+    UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
+    OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
+    ContainerRequestContext ctx = buildContextWithToken(token);
+
+    when(wopiService.getDocsEditorAttributes(any(), anyString(), any(), any(), any()))
+        .thenThrow(new java.util.NoSuchElementException());
+
+    // When
+    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+
+    // Then
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("docsEditorAttributes should return 503 when service throws ServiceDependencyException (user-management unavailable)")
+  void givenServiceDependencyExceptionDocsEditorAttributesShouldReturn503() throws Exception {
+    // Given
+    UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
+    OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
+    ContainerRequestContext ctx = buildContextWithToken(token);
+
+    when(wopiService.getDocsEditorAttributes(any(), anyString(), any(), any(), any()))
+        .thenThrow(new ServiceDependencyException("user-management unavailable"));
+
+    // When
+    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+
+    // Then
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
   }
 
   // ----- getBlob (GET /wopi/{nodeId}/contents) -----

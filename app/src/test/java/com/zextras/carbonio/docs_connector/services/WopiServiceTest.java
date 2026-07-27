@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
 import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
@@ -20,12 +19,9 @@ import com.zextras.carbonio.files.entities.FilesBlob;
 import com.zextras.carbonio.files.entities.NodeIdVersion;
 import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
 import com.zextras.carbonio.files.exceptions.UnAuthorized;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserByIdRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoResponse;
-import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
 import io.vavr.control.Try;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -43,8 +39,7 @@ import org.junit.jupiter.api.Test;
  */
 class WopiServiceTest {
 
-  private UserManagementClient userManagementClient;
-  private UserManagementServiceBlockingStub blockingStub;
+  private UserResourceApi userResourceApi;
   private FilesClient filesClient;
   private WopiService wopiService;
 
@@ -76,30 +71,22 @@ class WopiServiceTest {
 
   @BeforeEach
   void setUp() {
-    userManagementClient = mock(UserManagementClient.class);
-    blockingStub = mock(UserManagementServiceBlockingStub.class);
+    userResourceApi = mock(UserResourceApi.class);
     filesClient = mock(FilesClient.class);
 
-    when(userManagementClient.getBlockingStub()).thenReturn(blockingStub);
-
     SaveBlobCallback saveBlobCallback = mock(SaveBlobCallback.class);
-    wopiService = new WopiService(userManagementClient, filesClient, saveBlobCallback);
+    wopiService = new WopiService(userResourceApi, filesClient, saveBlobCallback);
   }
 
   @Test
   @DisplayName("getDocsEditorAttributes should return attributes when user and node are found")
-  void givenValidRequesterAndNodeGetDocsEditorAttributesShouldReturnAttributes() {
+  void givenValidRequesterAndNodeGetDocsEditorAttributesShouldReturnAttributes() throws Exception {
     // Given
-    UserInfoProto userInfo = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID)
-        .setFullName("Test User")
-        .setEmail("test@example.com")
-        .build();
-    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
-
-    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
-        .setUserId(REQUESTER_ID).build();
-    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+    UserInfoDto userInfo = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .fullName("Test User")
+        .email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "test-doc", "odt",
         "application/vnd.oasis.opendocument.text", 100000L, 1024L * 1024, 1, true);
@@ -120,13 +107,68 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management gRPC fails")
-  void givenUserManagementFailureGetDocsEditorAttributesShouldThrow() {
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management reports 404 (user not found)")
+  void givenUserManagement404GetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
     // Given
-    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
-        .setUserId(REQUESTER_ID).build();
-    when(blockingStub.getUserById(userByIdRequest))
-        .thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
+        .thenThrow(new ApiException(404, "Not Found"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management reports a 5xx")
+  void givenUserManagement5xxGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
+    // Given
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
+        .thenThrow(new ApiException(503, "Service Unavailable"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management call fails with getCode()==0 (network failure)")
+  void givenUserManagementNetworkFailureGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
+    // Given — ApiException(Throwable) never sets a code, so getCode() == 0 (connection
+    // refused / timeout / a body that failed to deserialize)
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management returns a null UserInfoDto (blank 2xx body)")
+  void givenNullUserInfoGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given — the generated client returns null outright for a 2xx response with a blank body
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(null);
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when userId is null (nullable field, no gRPC empty-string guarantee)")
+  void givenNullUserIdGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given — under gRPC a missing userId was guaranteed "" (IllegalArgumentException on
+    // UUID.fromString); the REST DTO field is @Nullable, so it can be null instead.
+    UserInfoDto userInfo = new UserInfoDto().fullName("Test User").email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     // When / Then
     Assertions.assertThatThrownBy(() ->
@@ -137,15 +179,10 @@ class WopiServiceTest {
 
   @Test
   @DisplayName("getDocsEditorAttributes should return empty Optional when files graphQL fails")
-  void givenFilesGraphQLFailureGetDocsEditorAttributesShouldReturnEmpty() {
+  void givenFilesGraphQLFailureGetDocsEditorAttributesShouldReturnEmpty() throws Exception {
     // Given
-    UserInfoProto userInfo = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID).setFullName("Test User").build();
-    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
-
-    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
-        .setUserId(REQUESTER_ID).build();
-    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+    UserInfoDto userInfo = new UserInfoDto().userId(REQUESTER_ID).fullName("Test User");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.failure(new RuntimeException("Files unavailable")));
@@ -285,19 +322,14 @@ class WopiServiceTest {
 
   @Test
   @DisplayName("getDocsEditorAttributes when filename exceeds 64 chars should abbreviate to 50 chars of name + extension")
-  void givenFilenameExceeding64CharsGetDocsEditorAttributesShouldAbbreviate() {
+  void givenFilenameExceeding64CharsGetDocsEditorAttributesShouldAbbreviate() throws Exception {
     // Given
     String longName = "a".repeat(60); // 60-char name + ".odt" = 64 chars → abbreviate to 50 + ".odt" = 54
-    UserInfoProto userInfo = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID)
-        .setFullName("Test User")
-        .setEmail("test@example.com")
-        .build();
-    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
-
-    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
-        .setUserId(REQUESTER_ID).build();
-    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+    UserInfoDto userInfo = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .fullName("Test User")
+        .email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, longName, "odt",
         "application/vnd.oasis.opendocument.text", 100000L, 1024L * 1024, 1, true);
@@ -318,7 +350,7 @@ class WopiServiceTest {
 
   @Test
   @DisplayName("getDocsEditorAttributes with null extension should not throw and return filename without extension")
-  void givenNullExtensionGetDocsEditorAttributesShouldHandleGracefully() {
+  void givenNullExtensionGetDocsEditorAttributesShouldHandleGracefully() throws Exception {
     // Given — null extension in JSON
     String graphQLResponseNullExt = """
         {
@@ -339,16 +371,11 @@ class WopiServiceTest {
         }
         """.formatted(REQUESTER_ID, NODE_ID);
 
-    UserInfoProto userInfo = UserInfoProto.newBuilder()
-        .setUserId(REQUESTER_ID)
-        .setFullName("Test User")
-        .setEmail("test@example.com")
-        .build();
-    UserInfoResponse userInfoResponse = UserInfoResponse.newBuilder().setUser(userInfo).build();
-
-    GetUserByIdRequest userByIdRequest = GetUserByIdRequest.newBuilder()
-        .setUserId(REQUESTER_ID).build();
-    when(blockingStub.getUserById(userByIdRequest)).thenReturn(userInfoResponse);
+    UserInfoDto userInfo = new UserInfoDto()
+        .userId(REQUESTER_ID)
+        .fullName("Test User")
+        .email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponseNullExt));

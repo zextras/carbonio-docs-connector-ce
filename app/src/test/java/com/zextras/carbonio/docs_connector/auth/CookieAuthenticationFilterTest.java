@@ -4,24 +4,19 @@
 package com.zextras.carbonio.docs_connector.auth;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.zextras.carbonio.docs_connector.Constants;
-import com.zextras.carbonio.docs_connector.clients.UserManagementClient;
-import com.zextras.carbonio.user_management.sdk.grpc.GetUserMyselfRequest;
-import com.zextras.carbonio.user_management.sdk.grpc.UserInfoProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserManagementServiceGrpc.UserManagementServiceBlockingStub;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfProto;
-import com.zextras.carbonio.user_management.sdk.grpc.UserMyselfResponse;
-import com.zextras.carbonio.user_management.sdk.grpc.UserTypeProto;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import com.zextras.carbonio.user_management.sdk.rest.ApiException;
+import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
+import com.zextras.carbonio.user_management.sdk.rest.model.MyselfDto;
+import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Cookie;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
@@ -39,21 +34,17 @@ import org.mockito.ArgumentCaptor;
  */
 class CookieAuthenticationFilterTest {
 
-  private UserManagementClient userManagementClient;
-  private UserManagementServiceBlockingStub blockingStub;
+  private UserResourceApi userResourceApi;
   private CookieAuthenticationFilter filter;
 
   @BeforeEach
   void setUp() {
-    userManagementClient = mock(UserManagementClient.class);
-    blockingStub = mock(UserManagementServiceBlockingStub.class);
-
-    when(userManagementClient.getBlockingStub()).thenReturn(blockingStub);
+    userResourceApi = mock(UserResourceApi.class);
 
     // Ensure the TEST-ONLY override system property is unset by default.
     System.clearProperty(CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY);
 
-    filter = new CookieAuthenticationFilter(userManagementClient);
+    filter = new CookieAuthenticationFilter(userResourceApi);
   }
 
   @AfterEach
@@ -83,38 +74,27 @@ class CookieAuthenticationFilterTest {
     return ctx;
   }
 
-  private UserMyselfResponse buildUserMyselfResponse(
-      String userId, UserTypeProto type, String status, String locale) {
-    UserInfoProto info = UserInfoProto.newBuilder()
-        .setUserId(userId)
-        .setType(type)
-        .setStatus(status)
-        .setDomain("example.com")
-        .setFullName("Test User")
-        .setEmail("test@example.com")
-        .build();
-    UserMyselfProto myself = UserMyselfProto.newBuilder()
-        .setInfo(info)
-        .setLocale(locale)
-        .build();
-    return UserMyselfResponse.newBuilder().setUser(myself).build();
+  private MyselfDto buildUserMyself(String userId, String type, String status, String locale) {
+    UserInfoDto info = new UserInfoDto()
+        .userId(userId)
+        .type(type)
+        .status(status)
+        .domain("example.com")
+        .fullName("Test User")
+        .email("test@example.com");
+    return new MyselfDto().info(info).locale(locale);
   }
 
   @Test
   @DisplayName("Given a valid cookie for an active internal user the filter should set requester properties")
-  void givenAValidCookieForAnActiveInternalUserTheFilterShouldSetRequesterProperties() {
+  void givenAValidCookieForAnActiveInternalUserTheFilterShouldSetRequesterProperties()
+      throws Exception {
     // Given
     String token = "valid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    UserMyselfResponse response = buildUserMyselfResponse(
-        "user-uuid-1234", UserTypeProto.INTERNAL, "active", "en_US");
-
-    GetUserMyselfRequest expectedRequest = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(blockingStub.getUserMyself(expectedRequest)).thenReturn(response);
+    MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "en_US");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -133,8 +113,26 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
+  @DisplayName("Given a valid cookie the filter should request user-management with bypassCache=true")
+  void givenAValidCookieTheFilterShouldRequestCacheBypass() throws Exception {
+    // This is the security-relevant behaviour restored by the SDK bump: authentication must
+    // re-validate the token against mailbox on every request rather than relying on
+    // user-management's cached MyselfDto (whose TTL defaults to the whole remaining session
+    // lifetime), otherwise a revoked session would keep authenticating successfully here.
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "en_US");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
+
+    filter.filter(ctx);
+
+    verify(userResourceApi).internalUsersMyselfGet(eq(true), eq(token));
+  }
+
+  @Test
   @DisplayName("Given a missing cookie the filter should return 401")
-  void givenMissingCookieTheFilterShouldReturn401() {
+  void givenMissingCookieTheFilterShouldReturn401() throws Exception {
     // Given
     ContainerRequestContext ctx = buildFilesRequestContext(null);
 
@@ -146,22 +144,102 @@ class CookieAuthenticationFilterTest {
     verify(ctx).abortWith(responseCaptor.capture());
     Assertions.assertThat(responseCaptor.getValue().getStatus())
         .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-    verify(blockingStub, never()).getUserMyself(any());
+    verify(userResourceApi, never()).internalUsersMyselfGet(any(), any());
   }
 
   @Test
   @DisplayName("Given an invalid token the filter should return 401")
-  void givenAnInvalidTokenTheFilterShouldReturn401() {
+  void givenAnInvalidTokenTheFilterShouldReturn401() throws Exception {
     // Given
     String token = "invalid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    GetUserMyselfRequest expectedRequest = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(blockingStub.getUserMyself(expectedRequest))
-        .thenThrow(new StatusRuntimeException(Status.UNAUTHENTICATED));
+    when(userResourceApi.internalUsersMyselfGet(true, token))
+        .thenThrow(new ApiException(401, "Unauthorized"));
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management is unreachable (ApiException getCode()==0) the filter should return 503")
+  void givenUserManagementUnreachableTheFilterShouldReturn503() throws Exception {
+    // Given — ApiException(Throwable) never sets a code (connection refused / timeout / a body
+    // that failed to deserialize), so getCode() == 0. This must NOT be reported as an invalid
+    // cookie (401): it would cause a spurious client-side logout / re-auth loop.
+    String token = "any-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(true, token))
+        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a 5xx the filter should return 503")
+  void givenUserManagement5xxTheFilterShouldReturn503() throws Exception {
+    // Given
+    String token = "any-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(true, token))
+        .thenThrow(new ApiException(502, "Bad Gateway"));
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a null info (blank 2xx body) the filter should return 401, not 500")
+  void givenNullInfoTheFilterShouldReturn401() throws Exception {
+    // Given — the generated client returns null outright for a 2xx response with a blank body;
+    // under gRPC this shape was impossible (proto3 defaults a missing sub-message to a non-null,
+    // empty instance), so a degenerate response here must yield the same clean 401 outcome, not
+    // an NPE surfacing as a 500.
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    MyselfDto response = new MyselfDto().info(null).locale("en");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
+
+    // When
+    filter.filter(ctx);
+
+    // Then
+    ArgumentCaptor<Response> responseCaptor = ArgumentCaptor.forClass(Response.class);
+    verify(ctx).abortWith(responseCaptor.capture());
+    Assertions.assertThat(responseCaptor.getValue().getStatus())
+        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("Given user-management returns a null MyselfDto (blank 2xx body) the filter should return 401, not 500")
+  void givenNullMyselfTheFilterShouldReturn401() throws Exception {
+    // Given
+    String token = "valid-token";
+    ContainerRequestContext ctx = buildFilesRequestContext(token);
+
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(null);
 
     // When
     filter.filter(ctx);
@@ -175,18 +253,13 @@ class CookieAuthenticationFilterTest {
 
   @Test
   @DisplayName("Given an inactive user the filter should return 401")
-  void givenAnInactiveUserTheFilterShouldReturn401() {
+  void givenAnInactiveUserTheFilterShouldReturn401() throws Exception {
     // Given
     String token = "inactive-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    UserMyselfResponse response = buildUserMyselfResponse(
-        "inactive-user", UserTypeProto.INTERNAL, "locked", "en");
-    GetUserMyselfRequest expectedRequest = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(blockingStub.getUserMyself(expectedRequest)).thenReturn(response);
+    MyselfDto response = buildUserMyself("inactive-user", "INTERNAL", "locked", "en");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -200,18 +273,13 @@ class CookieAuthenticationFilterTest {
 
   @Test
   @DisplayName("Given a guest (external) user the filter should return 401")
-  void givenAGuestUserTheFilterShouldReturn401() {
+  void givenAGuestUserTheFilterShouldReturn401() throws Exception {
     // Given
     String token = "guest-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
 
-    UserMyselfResponse response = buildUserMyselfResponse(
-        "guest-user", UserTypeProto.GUEST, "active", "en");
-    GetUserMyselfRequest expectedRequest = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(blockingStub.getUserMyself(expectedRequest)).thenReturn(response);
+    MyselfDto response = buildUserMyself("guest-user", "GUEST", "active", "en");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
@@ -225,7 +293,7 @@ class CookieAuthenticationFilterTest {
 
   @Test
   @DisplayName("Given a non-files endpoint the filter should skip authentication entirely")
-  void givenANonFilesEndpointTheFilterShouldSkipAuthentication() {
+  void givenANonFilesEndpointTheFilterShouldSkipAuthentication() throws Exception {
     // Given
     ContainerRequestContext ctx = mock(ContainerRequestContext.class);
     UriInfo uriInfo = mock(UriInfo.class);
@@ -240,12 +308,12 @@ class CookieAuthenticationFilterTest {
 
     // Then — no abort, no interaction with user-management
     verify(ctx, never()).abortWith(any());
-    verify(blockingStub, never()).getUserMyself(any());
+    verify(userResourceApi, never()).internalUsersMyselfGet(any(), any());
   }
 
   @Test
   @DisplayName("Given the test-only override system property the filter should use the override domain")
-  void givenADomainOverrideSystemPropertyTheFilterShouldUseOverrideDomain() {
+  void givenADomainOverrideSystemPropertyTheFilterShouldUseOverrideDomain() throws Exception {
     // Given
     String token = "valid-token";
     ContainerRequestContext ctx = buildFilesRequestContext(token);
@@ -255,13 +323,8 @@ class CookieAuthenticationFilterTest {
     System.setProperty(
         CookieAuthenticationFilter.REQUESTER_DOMAIN_OVERRIDE_PROPERTY, overrideDomain);
 
-    UserMyselfResponse response = buildUserMyselfResponse(
-        "user-uuid-1234", UserTypeProto.INTERNAL, "active", "pt_BR");
-    GetUserMyselfRequest expectedRequest = GetUserMyselfRequest.newBuilder()
-        .setToken(token)
-        .setBypassCache(true)
-        .build();
-    when(blockingStub.getUserMyself(expectedRequest)).thenReturn(response);
+    MyselfDto response = buildUserMyself("user-uuid-1234", "INTERNAL", "active", "pt_BR");
+    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
 
     // When
     filter.filter(ctx);
