@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -77,6 +78,16 @@ public class FilesService {
         .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
         .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
         .getOrElseThrow(ServiceDependencyException::new);
+
+    if (nodeAttributes == null) {
+      // files' getNode GraphQL resolver answers a nullable field with a JSON null for a genuinely
+      // nonexistent (or inaccessible) node -- a normal, successful GraphQL response (HTTP 200,
+      // {"data":{"getNode":null}}), not a dependency failure. NodeAttributes#mapFromJSON happily
+      // deserializes that into a null NodeAttributes without throwing, so it is NOT caught by the
+      // getOrElseThrow above: only a genuinely failed/unreachable files call reaches
+      // ServiceDependencyException. This is the actual "node not found" signal.
+      throw new NoSuchElementException("Node " + nodeId + " not found");
+    }
 
     GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
     long maxFileSizeInMb = getMaxSizeLimitForFileType(fileType);

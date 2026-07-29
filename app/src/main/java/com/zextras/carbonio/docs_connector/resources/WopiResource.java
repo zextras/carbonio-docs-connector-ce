@@ -153,6 +153,11 @@ public class WopiResource {
       } catch (AccountOverQuotaException exception) {
         logger.error(exception.getMessage());
         return Response.status(413).build();
+      } catch (NoSuchElementException exception) {
+        // Genuine "node does not exist" (see WopiService#saveBlob) -- same distinction
+        // docsEditorAttributes above already makes for the identical failure mode.
+        logger.error(exception.getMessage());
+        return Response.status(Status.NOT_FOUND).build();
       } catch (ServiceDependencyException exception) {
         logger.error(exception.getMessage());
         return Response.status(424).build();

@@ -27,6 +27,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import java.net.URI;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -101,8 +102,14 @@ public class FilesResource {
 
     } catch (FileSizeTooLargeException exception) {
       return Response.status(Status.FORBIDDEN).entity(exception).build();
-    } catch (ServiceDependencyException exception) {
+    } catch (NoSuchElementException exception) {
+      // Genuine "node does not exist" (see FilesService#openFile): files answered a normal,
+      // successful GraphQL response with no matching node.
       return Response.status(Status.NOT_FOUND).build();
+    } catch (ServiceDependencyException exception) {
+      // files itself failed/is unreachable -- a dependency failure, not a "not found" -- same
+      // mapping WopiResource already uses for the identical distinction.
+      return Response.status(Status.SERVICE_UNAVAILABLE).build();
     }
   }
 }
