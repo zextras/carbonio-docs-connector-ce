@@ -257,6 +257,28 @@ class WopiResourceTest {
   }
 
   @Test
+  @DisplayName("saveBlob should return 404 when service throws NoSuchElementException (node not found)")
+  void givenNoSuchElementExceptionSaveBlobShouldReturn404() throws Exception {
+    // Given
+    UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
+    OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
+    ContainerRequestContext ctx = buildContextWithToken(token);
+
+    when(wopiService.saveBlob(anyString(), any(), any(), any(), anyLong(), anyBoolean()))
+        .thenThrow(new java.util.NoSuchElementException("Node not found"));
+
+    InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
+
+    // When
+    Response response = wopiResource.saveBlob(
+        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+
+    // Then
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
   @DisplayName("saveBlob should return 424 when service throws ServiceDependencyException")
   void givenServiceDependencyExceptionSaveBlobShouldReturn424() throws Exception {
     // Given

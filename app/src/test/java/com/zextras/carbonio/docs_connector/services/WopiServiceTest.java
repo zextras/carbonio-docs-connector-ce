@@ -178,21 +178,43 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should return empty Optional when files graphQL fails")
-  void givenFilesGraphQLFailureGetDocsEditorAttributesShouldReturnEmpty() throws Exception {
-    // Given
+  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when files graphQL fails")
+  void givenFilesGraphQLFailureGetDocsEditorAttributesShouldThrowServiceDependencyException()
+      throws Exception {
+    // Given -- a genuinely failed/unreachable files call is a dependency failure, distinct from a
+    // successful GraphQL response reporting a nonexistent node (see
+    // givenNodeNotFoundGetDocsEditorAttributesShouldThrowNoSuchElement below). Same idiom as
+    // FilesService#openFile / WopiService#saveBlob: getOrElseThrow(ServiceDependencyException::new).
     UserInfoDto userInfo = new UserInfoDto().userId(REQUESTER_ID).fullName("Test User");
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.failure(new RuntimeException("Files unavailable")));
 
-    // When
-    Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
-        REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(ServiceDependencyException.class);
+  }
 
-    // Then
-    Assertions.assertThat(result).isEmpty();
+  @Test
+  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when files reports the node does not exist")
+  void givenNodeNotFoundGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
+    // Given -- files' getNode GraphQL resolver answers a nullable field with a JSON null for a
+    // genuinely nonexistent (or inaccessible) node: a normal, successful GraphQL response
+    // ({"data":{"getNode":null}}), not a dependency failure.
+    UserInfoDto userInfo = new UserInfoDto().userId(REQUESTER_ID).fullName("Test User");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
+
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success("{\"data\":{\"getNode\":null}}"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
@@ -271,6 +293,22 @@ class WopiServiceTest {
     Assertions.assertThatThrownBy(() ->
             wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(ServiceDependencyException.class);
+  }
+
+  @Test
+  @DisplayName("saveBlob should throw NoSuchElementException when files reports the node does not exist")
+  void givenNodeNotFoundSaveBlobShouldThrowNoSuchElement() {
+    // Given -- same "successful GraphQL response, no matching node" distinction as
+    // getDocsEditorAttributes / FilesService#openFile above.
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success("{\"data\":{\"getNode\":null}}"));
+
+    InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+        .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test

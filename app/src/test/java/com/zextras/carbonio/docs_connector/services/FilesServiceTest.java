@@ -170,6 +170,23 @@ class FilesServiceTest {
   }
 
   @Test
+  @DisplayName("openFile should throw NoSuchElementException when files reports the node does not exist")
+  void givenNodeNotFoundOpenFileShouldThrowNoSuchElement() {
+    // Given -- files' getNode GraphQL resolver answers a nullable field with a JSON null for a
+    // genuinely nonexistent (or inaccessible) node: a normal, successful GraphQL response
+    // ({"data":{"getNode":null}}), not a dependency failure (see
+    // givenFilesClientFailureOpenFileShouldThrowServiceDependencyException above for that case).
+    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
+        .thenReturn(Try.success("{\"data\":{\"getNode\":null}}"));
+
+    // When / Then
+    Assertions.assertThatThrownBy(() ->
+            filesService.openFile(REQUESTER_ID, Locale.ENGLISH, COOKIE, NODE_ID,
+                Optional.empty(), Optional.empty()))
+        .isInstanceOf(java.util.NoSuchElementException.class);
+  }
+
+  @Test
   @DisplayName("openFile with redirect=true should include public_url with redirect=true parameter")
   void givenOpenFileRequestTheUrlShouldIncludePublicUrlWithRedirectParam()
       throws ServiceDependencyException, FileSizeTooLargeException {
