@@ -10,17 +10,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zextras.carbonio.user_management.sdk.rest.ApiException;
-import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
-import com.zextras.carbonio.user_management.sdk.rest.model.MyselfDto;
-import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.WithTestResource;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
@@ -29,49 +23,46 @@ import org.junit.jupiter.api.Test;
 /**
  * Layer 2 integration tests for carbonio-docs-connector-ce.
  *
- * <p>Uses {@code @QuarkusTest} (not {@code @QuarkusIntegrationTest}) so that the full CDI
- * container is started but we can still use {@code @InjectMock} to replace the
- * {@link UserResourceApi} REST SDK bean (produced by {@code UserManagementClientProducer}) with a
- * Mockito mock. The mock returns controlled responses to simulate successful and failed
- * authentication — no real or stubbed carbonio-user-management server is needed.
+ * <p>Uses {@code @QuarkusIntegrationTest}: the app runs out-of-process, as a packaged artifact
+ * (the same {@code carbonio-docs-connector-ce-runner} the Jenkinsfile builds natively), not in
+ * Quarkus' in-JVM test mode. {@code @Inject}/{@code @InjectMock} are therefore NOT available; all
+ * dependencies are either real containers or WireMock, wired purely through externalized config
+ * (see {@link CeStackTestResource}).
  *
- * <p>The files SDK is stubbed via WireMock (provided by {@link CeStackTestResource}).
- * Consul is a real container (also from {@link CeStackTestResource}).
+ * <p>Dependency handling, per the "direct dependencies are real, indirect ones are mocked" policy:
+ *
+ * <ul>
+ *   <li><b>carbonio-user-management</b> (direct dependency) — a real {@code
+ *       registry.dev.zextras.com/dev/carbonio-user-management:devel} container. Auth scenarios
+ *       (valid/invalid/empty cookie, GUEST user, inactive user) are produced by real
+ *       user-management state, itself backed by a WireMock mailbox mock (mailbox is
+ *       user-management's dependency, not ours — see {@link CeStackTestResource}).
+ *   <li><b>carbonio-files</b> (direct dependency, kept mocked per task scope) — an in-JVM
+ *       WireMock server.
+ * </ul>
+ *
+ * <p><b>Coverage note:</b> the previous {@code @QuarkusTest} version of this class also asserted
+ * two scenarios that a real, correctly-functioning user-management container can never produce:
+ * user-management responding with a 5xx, and user-management being unreachable
+ * (connection-refused). Reading {@code UserResource}/{@code UserService} in
+ * carbonio-user-management confirms {@code GET /internal/users/myself} only ever answers 200 or
+ * 401 — any mailbox-side failure (timeout, 5xx, malformed response) is normalized internally to a
+ * plain 401, by design. There is no way to make a live instance of that service return a 5xx or
+ * drop the connection without literally killing/misconfiguring it for the whole test class, which
+ * would break every other scenario in this suite. Those two scenarios are NOT dropped: they remain
+ * covered, unchanged, as plain-Mockito unit tests in {@code CookieAuthenticationFilterTest}
+ * ({@code givenUserManagement5xxTheFilterShouldReturn503} and {@code
+ * givenUserManagementUnreachableTheFilterShouldReturn503}), which exercise
+ * {@link com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter}'s error-mapping
+ * logic directly against a mocked {@code UserResourceApi} that throws the exact {@code
+ * ApiException} shapes a broken/unreachable dependency would produce.
  */
-@QuarkusTest
+@QuarkusIntegrationTest
 @WithTestResource(CeStackTestResource.class)
 class DocsConnectorCeIT {
 
-  @InjectMock
-  UserResourceApi userResourceApi;
-
   private static final String NODE_ID = "58032253-ed56-4eca-9017-3ae26cc2d9f1";
-  private static final String REQUESTER_ID = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
-
-  /**
-   * Configures the mock {@link UserResourceApi} to accept the given token as a valid active
-   * internal user.
-   */
-  private void mockValidUser(String token, String userId, String locale) throws ApiException {
-    UserInfoDto info = new UserInfoDto()
-        .userId(userId)
-        .type("INTERNAL")
-        .status("active")
-        .domain("example.com")
-        .fullName("Test User")
-        .email("test@example.com");
-    MyselfDto response = new MyselfDto().info(info).locale(locale);
-
-    when(userResourceApi.internalUsersMyselfGet(true, token)).thenReturn(response);
-  }
-
-  /**
-   * Configures the mock {@link UserResourceApi} to reject the given token with HTTP 401.
-   */
-  private void mockInvalidUser(String token) throws ApiException {
-    when(userResourceApi.internalUsersMyselfGet(true, token))
-        .thenThrow(new ApiException(401, "Unauthorized"));
-  }
+  private static final String REQUESTER_ID = CeStackTestResource.TEST_USER_ID;
 
   // ----- /files/create -----
 
@@ -87,9 +78,9 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("POST /files/create with invalid cookie should return 401")
-  void givenInvalidCookieCreateFileShouldReturn401() throws Exception {
-    mockInvalidUser("invalid-token");
-
+  void givenInvalidCookieCreateFileShouldReturn401() {
+    // "invalid-token" matches no mailbox-mock stub, so real user-management falls through to its
+    // catch-all 401, exactly as it would for a genuinely unrecognized session.
     given()
         .contentType(ContentType.JSON)
         .cookie("ZM_AUTH_TOKEN", "invalid-token")
@@ -100,9 +91,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("POST /files/create with valid cookie should upload template and return 200 with nodeId")
-  void givenValidCookieCreateFileShouldAttemptUpload() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
-
+  void givenValidCookieCreateFileShouldAttemptUpload() {
     // Stub WireMock: the Files SDK POSTs to /upload/ with multipart content
     CeStackTestResource.FILES_MOCK.stubFor(
         post(urlPathMatching("/upload/.*"))
@@ -132,9 +121,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with invalid cookie should return 401")
-  void givenInvalidCookieOpenFileShouldReturn401() throws Exception {
-    mockInvalidUser("bad-token");
-
+  void givenInvalidCookieOpenFileShouldReturn401() {
     given()
         .cookie("ZM_AUTH_TOKEN", "bad-token")
         .when().get("/files/open/" + NODE_ID)
@@ -143,9 +130,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with valid cookie but Files returns 404 should return 404")
-  void givenValidCookieButFilesReturns404OpenFileShouldReturn404() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
-
+  void givenValidCookieButFilesReturns404OpenFileShouldReturn404() {
     // Stub WireMock: graphQL returns null data (node not found)
     CeStackTestResource.FILES_MOCK.stubFor(
         post(urlPathEqualTo("/graphql/"))
@@ -229,8 +214,6 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("Full WOPI flow: openFile → getDocsEditorAttributes → getBlob → saveBlob")
   void givenValidCookieFullWopiFlowShouldSucceed() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
-
     // 1. Stub Files graphQL for all three calls (openFile + getDocsEditorAttributes + saveBlob pre/post)
     long sizeBytes = 5L * 1024 * 1024; // 5 MB — within all limits
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", sizeBytes);
@@ -283,13 +266,8 @@ class DocsConnectorCeIT {
     long futureTtl = System.currentTimeMillis() + 43_200_000L;
 
     // Step 2: GET /wopi/{nodeId}?access_token={token} — should return 200 with DocsEditorAttributes
-    // Mock the getUserById REST call that WopiService makes internally
-    UserInfoDto userInfo = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .fullName("Test User")
-        .email("test@example.com");
-    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
-
+    // (WopiService's userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID) call is answered by
+    // real user-management, backed by the mailbox mock's /internal/accounts/{id}/info stub.)
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
@@ -342,42 +320,20 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with empty-string cookie value should return 401")
-  void givenEmptyCookieValueOpenFileShouldReturn401() throws Exception {
-    mockInvalidUser("");
-
+  void givenEmptyCookieValueOpenFileShouldReturn401() {
+    // An empty ZM_AUTH_TOKEN never even reaches the mailbox mock: user-management's own REST
+    // layer rejects a blank token with 401 before calling mailbox (see UserResource#getMyself).
     given()
         .cookie("ZM_AUTH_TOKEN", "")
         .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
-  @Test
-  @DisplayName("GET /files/open/{nodeId} when user-management returns a 5xx should return 503, not 401")
-  void givenUserManagement5xxOpenFileShouldReturn503() throws Exception {
-    // A 5xx from user-management means the dependency itself is broken, not that the cookie is
-    // invalid. Reporting it as 401 causes a spurious client-side logout / re-auth loop.
-    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
-        .thenThrow(new ApiException(503, "Service Unavailable"));
-
-    given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + NODE_ID)
-        .then().statusCode(503);
-  }
-
-  @Test
-  @DisplayName("GET /files/open/{nodeId} when user-management is unreachable (getCode()==0) should return 503, not 401")
-  void givenUserManagementUnreachableOpenFileShouldReturn503() throws Exception {
-    // ApiException(Throwable) never sets a code (connection refused / timeout / a body that
-    // failed to deserialize), so getCode() == 0. Same dependency-unavailable outcome as a 5xx.
-    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
-        .thenThrow(new ApiException(new java.io.IOException("connection refused")));
-
-    given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + NODE_ID)
-        .then().statusCode(503);
-  }
+  // NOTE: "user-management returns a 5xx" and "user-management is unreachable" are intentionally
+  // NOT reproduced here. See the class-level javadoc: a real, correctly-functioning
+  // user-management instance can only ever answer 200 or 401 on this endpoint, by design. Both
+  // scenarios remain covered as plain-Mockito unit tests in CookieAuthenticationFilterTest
+  // (givenUserManagement5xxTheFilterShouldReturn503, givenUserManagementUnreachableTheFilterShouldReturn503).
 
   // ----- AccessTokenValidationFilter edge cases (IT) -----
 
@@ -405,9 +361,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for spreadsheet exceeding 10 MB limit should return 403")
-  void givenSpreadsheetExceedingSizeLimitOpenFileShouldReturn403() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
-
+  void givenSpreadsheetExceedingSizeLimitOpenFileShouldReturn403() {
     long oversizedBytes = 11L * 1024 * 1024; // 11 MB — exceeds 10 MB spreadsheet limit
     String graphQLBody = """
         {
@@ -443,9 +397,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for presentation exceeding 100 MB limit should return 403")
-  void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
-
+  void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() {
     long oversizedBytes = 101L * 1024 * 1024; // 101 MB — exceeds 100 MB presentation limit
     String graphQLBody = """
         {
@@ -483,8 +435,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for .docx (OOXML) returns 200")
-  void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+  void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() {
     long sizeBytes = 2L * 1024 * 1024;
     String body = """
         {
@@ -519,40 +470,21 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with GUEST user type should return 401")
-  void givenValidCookieAndExternalUser_whenOpenFile_thenReturn401() throws Exception {
-    UserInfoDto info = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .type("GUEST")
-        .status("active")
-        .domain("example.com")
-        .fullName("Ext User")
-        .email("ext@example.com");
-    MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
-        .thenReturn(response);
-
+  void givenValidCookieAndExternalUser_whenOpenFile_thenReturn401() {
+    // GUEST_AUTH_TOKEN is mapped, by the mailbox mock, to an isExternal=true account -- real
+    // user-management reports it as type=GUEST, which CookieAuthenticationFilter rejects.
     given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.GUEST_AUTH_TOKEN)
         .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
 
   @Test
   @DisplayName("GET /files/open/{nodeId} with non-active user should return 401")
-  void givenValidCookieAndInactiveUser_whenOpenFile_thenReturn401() throws Exception {
-    UserInfoDto info = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .type("INTERNAL")
-        .status("locked")
-        .domain("example.com")
-        .fullName("Locked User")
-        .email("locked@example.com");
-    MyselfDto response = new MyselfDto().info(info).locale("en_US");
-    when(userResourceApi.internalUsersMyselfGet(true, CeStackTestResource.AUTH_TOKEN))
-        .thenReturn(response);
-
+  void givenValidCookieAndInactiveUser_whenOpenFile_thenReturn401() {
+    // INACTIVE_AUTH_TOKEN is mapped, by the mailbox mock, to a status=locked account.
     given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.INACTIVE_AUTH_TOKEN)
         .when().get("/files/open/" + NODE_ID)
         .then().statusCode(401);
   }
@@ -561,7 +493,6 @@ class DocsConnectorCeIT {
   @DisplayName("GET /files/open/{nodeId} for read-only file injects permission=readonly")
   void givenValidCookieAndReadOnlyFile_whenOpenFile_thenRedirectUrlContainsPermissionReadonly()
       throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     long sizeBytes = 1L * 1024 * 1024;
     String body = """
         {
@@ -601,8 +532,7 @@ class DocsConnectorCeIT {
 
   @Test
   @DisplayName("GET /files/open/{nodeId}?redirect=true returns 307")
-  void givenValidCookie_whenOpenFileWithRedirectTrue_thenReturn307() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
+  void givenValidCookie_whenOpenFileWithRedirectTrue_thenReturn307() {
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
 
     given()
@@ -617,7 +547,6 @@ class DocsConnectorCeIT {
   @DisplayName("Open then GET /wopi/{nodeId} returns DocsEditorAttributes with user info")
   void givenValidCookieAndOpenedFile_whenGetWopiAttributes_thenReturn200WithCorrectFields()
       throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
 
     Response openR = given()
@@ -629,12 +558,8 @@ class DocsConnectorCeIT {
     String accessToken = url.substring(url.indexOf("access_token=") + "access_token=".length());
     if (accessToken.contains("&")) accessToken = accessToken.substring(0, accessToken.indexOf("&"));
 
-    UserInfoDto info = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .fullName("Test User")
-        .email("test@example.com");
-    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(info);
-
+    // WopiService's internalUsersIdUserIdGet(REQUESTER_ID) call is answered by real
+    // user-management, backed by the mailbox mock's /internal/accounts/{id}/info stub.
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
@@ -646,7 +571,6 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("Open then GET /wopi/{nodeId}/contents returns file bytes")
   void givenValidCookieAndOpenedFile_whenGetFileContents_thenReturnFileBytes() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
 
     byte[] fileContent = "hello-docs-connector".getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -679,7 +603,6 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("WOPI token bound to nodeId A returns 401 when used against nodeId B")
   void givenWopiAccessToken_whenAccessedAcrossDifferentNodeId_thenReturn401() throws Exception {
-    mockValidUser(CeStackTestResource.AUTH_TOKEN, REQUESTER_ID, "en_US");
     stubFilesGraphQL(NODE_ID, "application/vnd.oasis.opendocument.text", 1024L);
 
     Response openR = given()
