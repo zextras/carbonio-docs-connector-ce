@@ -345,7 +345,7 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
       String token,
       String userId,
       String status,
-      boolean isExternal) throws Exception {
+      boolean isExternalVirtualAccount) throws Exception {
     String stubJson =
         "{\"priority\":1,"
         + "\"request\":{"
@@ -362,11 +362,21 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
         + "\"displayName\":\"Test User\","
         + "\"status\":\"" + status + "\","
         + "\"isGlobalAdmin\":false,"
-        + "\"isExternal\":" + isExternal + ","
+        // The two booleans are NOT synonyms and for a guest they are OPPOSITE, so the mock must
+        // emit what mailbox really emits or user-management is fed impossible input:
+        //   isExternal               -- derived, mailbox's Account#isAccountExternal(): true only
+        //                               when zimbraMailTransport does not match the server named by
+        //                               zimbraMailHost (foreign/relayed MTA routing). A guest is
+        //                               provisioned with zimbraMailHost = the local server, so a
+        //                               real guest is FALSE here.
+        //   isExternalVirtualAccount -- the LDAP zimbraIsExternalVirtualAccount boolean: TRUE for a
+        //                               guest / external-share virtual account.
         // UserService#mapAccountInfoToUserMyself classifies GUEST-vs-INTERNAL off
-        // isExternalVirtualAccount(), NOT isExternal() -- both fields exist on the mailbox-sdk
-        // AccountInfo record and only the former drives the type the docs-connector filter sees.
-        + "\"isExternalVirtualAccount\":" + isExternal + ","
+        // isExternalVirtualAccount() only. Emitting the same value into both (as an earlier version
+        // of this stub did) would still pass even if that mapping regressed back to isExternal(),
+        // which is exactly the defect CO-3822 fixed -- so keep them decoupled.
+        + "\"isExternal\":false,"
+        + "\"isExternalVirtualAccount\":" + isExternalVirtualAccount + ","
         + "\"locale\":\"en_US\","
         // carbonioFeatureFilesEnabled=true: carbonio-files' AuthenticationHandler refuses
         // access ("Files feature is not enabled for user") unless the requester's
