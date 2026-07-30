@@ -96,66 +96,66 @@ public class WopiService {
       throw new NoSuchElementException();
     }
 
-    return Optional.ofNullable(
-        filesClient
-            .genericGraphQLRequest(
-                requesterCookie,
-                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
-            ).map(graphQLResponse -> {
+    // Eager fetch (same idiom as FilesService#openFile / #saveBlob below): a genuinely
+    // failed/unreachable files call surfaces here as a thrown ServiceDependencyException
+    // (including a malformed/unparseable GraphQL response -- Try.of catches the checked
+    // JsonProcessingException from mapFromJSON too), while a successful call is guaranteed to
+    // have produced either a real NodeAttributes or a null one.
+    NodeAttributes nodeAttributes = filesClient
+        .genericGraphQLRequest(
+            requesterCookie,
+            NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
+        )
+        .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
+        .getOrElseThrow(ServiceDependencyException::new);
 
-              try {
-                NodeAttributes nodeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+    if (nodeAttributes == null) {
+      // files' getNode GraphQL resolver answers a nullable field with a JSON null for a
+      // genuinely nonexistent (or inaccessible) node -- a normal, successful GraphQL response,
+      // not a dependency failure. See FilesService#openFile for the identical distinction.
+      logger.error("Unable to retrieve node {}: not found", nodeId);
+      throw new NoSuchElementException("Node " + nodeId + " not found");
+    }
 
-                String lastModifiedTimeFormatted = formatDateToIso8601WithOffset(
-                    new Date(nodeAttributes.getUpdated_at()),
-                    optOffsetFromUtc
-                );
-
-                logger.info("Getting blob with instant: {}", formatDateToIso8601WithOffset(
-                    new Date(nodeAttributes.getUpdated_at()),
-                    optOffsetFromUtc));
-
-                String abbreviateFilename = abbreviateFilename(
-                    nodeAttributes.getName(),
-                    nodeAttributes.getExtension()
-                );
-
-                UUID nodeOwnerId = UUID.fromString(nodeAttributes.getOwner().getId());
-
-                DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
-                docsEditorAttributes.setOwnerId(nodeOwnerId);
-                docsEditorAttributes.setUserId(UUID.fromString(userInfo.getUserId()));
-                docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
-                docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
-                docsEditorAttributes.setBaseFileName(abbreviateFilename);
-                docsEditorAttributes.setVersion(nodeAttributes.getVersion());
-                docsEditorAttributes.setSize(nodeAttributes.getSize());
-                docsEditorAttributes.setLastModifiedTime(lastModifiedTimeFormatted);
-                docsEditorAttributes.setEnableOwnerTermination(false);
-                docsEditorAttributes.setDisableCopy(false);
-                docsEditorAttributes.setDisableExport(false);
-                docsEditorAttributes.setDisablePrint(false);
-                docsEditorAttributes.setDisableInactiveMessages(true);
-                docsEditorAttributes.setHideExportOption(false);
-                docsEditorAttributes.setHideSaveOption(
-                    !nodeAttributes.getPermissions().getCan_write_file()
-                );
-                docsEditorAttributes.setHidePrintOption(false);
-                docsEditorAttributes.setHideChangeTrackingControls(false);
-                docsEditorAttributes.setUserCanNotWriteRelative(true);
-                docsEditorAttributes.setUserCanRename(false);
-                docsEditorAttributes.setSupportsLocks(false);
-
-                return docsEditorAttributes;
-
-              } catch (JsonProcessingException exception) {
-                logger.error(exception.getMessage(), exception);
-                return null;
-              }
-            })
-            .onFailure(failure -> logger.error(failure.getMessage(), failure))
-            .getOrNull()
+    String lastModifiedTimeFormatted = formatDateToIso8601WithOffset(
+        new Date(nodeAttributes.getUpdated_at()),
+        optOffsetFromUtc
     );
+
+    logger.info("Getting blob with instant: {}", lastModifiedTimeFormatted);
+
+    String abbreviateFilename = abbreviateFilename(
+        nodeAttributes.getName(),
+        nodeAttributes.getExtension()
+    );
+
+    UUID nodeOwnerId = UUID.fromString(nodeAttributes.getOwner().getId());
+
+    DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
+    docsEditorAttributes.setOwnerId(nodeOwnerId);
+    docsEditorAttributes.setUserId(UUID.fromString(userInfo.getUserId()));
+    docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
+    docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
+    docsEditorAttributes.setBaseFileName(abbreviateFilename);
+    docsEditorAttributes.setVersion(nodeAttributes.getVersion());
+    docsEditorAttributes.setSize(nodeAttributes.getSize());
+    docsEditorAttributes.setLastModifiedTime(lastModifiedTimeFormatted);
+    docsEditorAttributes.setEnableOwnerTermination(false);
+    docsEditorAttributes.setDisableCopy(false);
+    docsEditorAttributes.setDisableExport(false);
+    docsEditorAttributes.setDisablePrint(false);
+    docsEditorAttributes.setDisableInactiveMessages(true);
+    docsEditorAttributes.setHideExportOption(false);
+    docsEditorAttributes.setHideSaveOption(
+        !nodeAttributes.getPermissions().getCan_write_file()
+    );
+    docsEditorAttributes.setHidePrintOption(false);
+    docsEditorAttributes.setHideChangeTrackingControls(false);
+    docsEditorAttributes.setUserCanNotWriteRelative(true);
+    docsEditorAttributes.setUserCanRename(false);
+    docsEditorAttributes.setSupportsLocks(false);
+
+    return Optional.of(docsEditorAttributes);
   }
 
   public Optional<FilesBlob> getBlob(
@@ -186,6 +186,12 @@ public class WopiService {
         )
         .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
         .getOrElseThrow(ServiceDependencyException::new);
+
+    if (nodeAttributes == null) {
+      // Same "successful GraphQL response, no matching node" case as FilesService#openFile /
+      // #getDocsEditorAttributes above -- a genuine not-found, not a dependency failure.
+      throw new NoSuchElementException("Node " + nodeId + " not found");
+    }
 
     NodeIdVersion uploadedNodeIdVersion = filesClient
         .uploadFileVersion(

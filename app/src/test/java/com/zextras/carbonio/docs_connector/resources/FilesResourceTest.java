@@ -20,6 +20,7 @@ import com.zextras.carbonio.docs_connector.types.InsertFile;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -175,12 +176,32 @@ class FilesResourceTest {
   }
 
   @Test
-  @DisplayName("openFile should return 404 when files service dependency fails")
-  void givenServiceDependencyExceptionOpenFileShouldReturn404()
+  @DisplayName("openFile should return 503 when files service dependency fails")
+  void givenServiceDependencyExceptionOpenFileShouldReturn503()
       throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given
+    // Given -- files itself failed/is unreachable: a dependency failure, distinct from a genuine
+    // "node not found" (see givenNodeNotFoundOpenFileShouldReturn404 below).
     when(filesService.openFile(any(), any(), anyString(), anyString(), any(), any()))
         .thenThrow(new ServiceDependencyException("Files unavailable"));
+
+    ContainerRequestContext ctx = buildRequestContext();
+
+    // When
+    Response response = filesResource.openFile(COOKIE, NODE_ID, null, null, null, ctx);
+
+    // Then
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+  }
+
+  @Test
+  @DisplayName("openFile should return 404 when files reports the node does not exist")
+  void givenNodeNotFoundOpenFileShouldReturn404()
+      throws ServiceDependencyException, FileSizeTooLargeException {
+    // Given -- FilesService#openFile throws NoSuchElementException for a real, successful GraphQL
+    // response where the node genuinely doesn't exist (files' getNode resolved to null).
+    when(filesService.openFile(any(), any(), anyString(), anyString(), any(), any()))
+        .thenThrow(new NoSuchElementException("Node " + NODE_ID_STR + " not found"));
 
     ContainerRequestContext ctx = buildRequestContext();
 
