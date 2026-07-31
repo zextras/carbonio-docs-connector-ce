@@ -16,11 +16,11 @@ import java.time.Duration;
 /**
  * CDI producer for the {@link UserResourceApi} REST SDK bean (carbonio-user-management-rest-sdk).
  * Replaces the old {@code @GrpcClient("user-management")} stub: host/port come from {@link
- * NetworkingConfigService} ({@code networking-config.carbonio.user-management.*}), the same
- * values the gRPC client used.
+ * NetworkingConfigService} ({@code networking-config.carbonio.user-management.*}), the same values
+ * the gRPC client used.
  *
- * <p>The {@link HttpClient} is explicitly pinned to HTTP/1.1: the JDK client's default (HTTP/2
- * with an HTTP/1.1 upgrade attempt) trips plaintext servers that only speak HTTP/1.1 (e.g.
+ * <p>The {@link HttpClient} is explicitly pinned to HTTP/1.1: the JDK client's default (HTTP/2 with
+ * an HTTP/1.1 upgrade attempt) trips plaintext servers that only speak HTTP/1.1 (e.g.
  * WireMock/Jetty in the ITs) into a protocol error/hang. carbonio-user-management is plain
  * HTTP/1.1, same as the carbonio-files SDK client wired via {@link FilesClientProducer}.
  */
@@ -46,21 +46,23 @@ public class UserManagementClientProducer {
   @Produces
   @ApplicationScoped
   public UserResourceApi userResourceApi() {
-    String host = networkingConfig
-        .get(DocsConnectorServiceConfig.NetworkingConfig.USER_MANAGEMENT_HOST)
-        .orElseThrow();
-    int port = Integer.parseInt(
+    String host =
         networkingConfig
-            .get(DocsConnectorServiceConfig.NetworkingConfig.USER_MANAGEMENT_PORT)
-            .orElseThrow()
-    );
+            .get(DocsConnectorServiceConfig.NetworkingConfig.USER_MANAGEMENT_HOST)
+            .orElseThrow();
+    int port =
+        Integer.parseInt(
+            networkingConfig
+                .get(DocsConnectorServiceConfig.NetworkingConfig.USER_MANAGEMENT_PORT)
+                .orElseThrow());
 
     HttpClient.Builder httpClientBuilder =
         HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1);
-    ApiClient apiClient = new ApiClient(
-        httpClientBuilder,
-        ApiClient.createDefaultObjectMapper(),
-        "http://" + host + ":" + port);
+    ApiClient apiClient =
+        new ApiClient(
+            httpClientBuilder,
+            ApiClient.createDefaultObjectMapper(),
+            "http://" + host + ":" + port);
     apiClient.setConnectTimeout(USER_MANAGEMENT_TIMEOUT);
     apiClient.setReadTimeout(USER_MANAGEMENT_TIMEOUT);
     return new UserResourceApi(apiClient);

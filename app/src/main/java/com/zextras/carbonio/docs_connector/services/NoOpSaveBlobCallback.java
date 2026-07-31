@@ -7,9 +7,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
 /**
- * Default CE no-op implementation of {@link SaveBlobCallback}.
- * CE has no {@code open_document} table, so nothing to update after save.
- * Advanced overrides this via {@code @Alternative @Priority(1)}.
+ * Default CE no-op implementation of {@link SaveBlobCallback}. CE has no {@code open_document}
+ * table, so nothing to update after save. Advanced overrides this via
+ * {@code @Alternative @Priority(1)}.
  */
 @ApplicationScoped
 public class NoOpSaveBlobCallback implements SaveBlobCallback {

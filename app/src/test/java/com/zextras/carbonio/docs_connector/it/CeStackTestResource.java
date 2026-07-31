@@ -25,20 +25,20 @@ import org.testcontainers.lifecycle.Startables;
  * <p><b>Testing philosophy (narrow integration tests):</b>
  *
  * <ul>
- *   <li>{@code carbonio-user-management} is a direct dependency of docs-connector-ce, so it runs
- *       as a real {@code registry.dev.zextras.com/dev/carbonio-user-management:devel} Docker
- *       container — not a stub. The {@code UserResourceApi} REST SDK bean therefore talks to a
- *       genuine, running service over HTTP, exactly as it does in production.
+ *   <li>{@code carbonio-user-management} is a direct dependency of docs-connector-ce, so it runs as
+ *       a real {@code registry.dev.zextras.com/dev/carbonio-user-management:devel} Docker container
+ *       — not a stub. The {@code UserResourceApi} REST SDK bean therefore talks to a genuine,
+ *       running service over HTTP, exactly as it does in production.
  *   <li>{@code carbonio-files} is ALSO a direct dependency (docs-connector-ce declares {@code
  *       carbonio-files-sdk} and calls it directly from {@code FilesService}/{@code WopiService}),
  *       so per the same policy it runs as a real {@code
- *       registry.dev.zextras.com/dev/carbonio-files-ce:devel} container (NOT the sibling
- *       {@code carbonio-files:devel} Advanced image -- separate repo, separate registry tag,
- *       separate storage backend), with its own real {@code postgres:16} database. Since
- *       carbonio-files-ce commit {@code 491f99f2} (PR #302) that image validates auth via the
- *       REST user-management SDK, so it is pointed at the SAME real
- *       user-management container docs-connector uses — a stubbed/unreachable user-management here
- *       makes files answer a bare, misleading 401 with no message.
+ *       registry.dev.zextras.com/dev/carbonio-files-ce:devel} container (NOT the sibling {@code
+ *       carbonio-files:devel} Advanced image -- separate repo, separate registry tag, separate
+ *       storage backend), with its own real {@code postgres:16} database. Since carbonio-files-ce
+ *       commit {@code 491f99f2} (PR #302) that image validates auth via the REST user-management
+ *       SDK, so it is pointed at the SAME real user-management container docs-connector uses — a
+ *       stubbed/unreachable user-management here makes files answer a bare, misleading 401 with no
+ *       message.
  *   <li>{@code carbonio-mailbox} is a dependency of user-management, not of docs-connector-ce
  *       directly, so it is replaced by a lightweight WireMock container acting as the mailbox
  *       internal REST API (matching the pattern already used by carbonio-tasks-ce's {@code
@@ -51,8 +51,8 @@ import org.testcontainers.lifecycle.Startables;
  *       whole KV prefix is stubbed recursively (see {@code setupConsulStubs}), not per-key.
  *   <li>{@code carbonio-storages} (the blob backend files-ce uploads/downloads through, via the
  *       {@code storages-ce-sdk} client -- NOT PowerStore, which is Advanced's storage backend) is
- *       one of files' own hard dependencies (an object store), so — per the same WireMock
- *       container growing one more alias — it is kept mocked with a permissive stub, mirroring
+ *       one of files' own hard dependencies (an object store), so — per the same WireMock container
+ *       growing one more alias — it is kept mocked with a permissive stub, mirroring
  *       carbonio-videorecorder's {@code FilesContainerSupport}. The upload stub uses WireMock
  *       response templating to echo back the real {@code Content-Length} of whatever was uploaded
  *       as the reported blob size, so files' own DB genuinely reflects the byte count callers send
@@ -95,9 +95,9 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
   private static final String FILES_DB_PASSWORD = "postgres";
 
   /**
-   * Host of the real carbonio-files container, reachable from the JVM test process (host
-   * network), exposed so ITs can talk to files DIRECTLY (bypassing docs-connector) when a scenario
-   * needs control docs-connector's own REST surface cannot give them (uploading a specific byte
+   * Host of the real carbonio-files container, reachable from the JVM test process (host network),
+   * exposed so ITs can talk to files DIRECTLY (bypassing docs-connector) when a scenario needs
+   * control docs-connector's own REST surface cannot give them (uploading a specific byte
    * size/extension as a specific owner, or creating a share) — see {@link #rawUploadToFiles} /
    * {@link #rawCreateShare}.
    */
@@ -243,26 +243,26 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
     FILES_HOST = files.getHost();
     FILES_PORT = files.getMappedPort(10000);
 
-    cachedConfig = Map.ofEntries(
-        // Point Consul service-discover at the WireMock stub
-        Map.entry("networking-config.carbonio.service-discover.host", wireMock.getHost()),
-        Map.entry(
-            "networking-config.carbonio.service-discover.port",
-            String.valueOf(wireMock.getMappedPort(8080))),
-        // Point the user-management REST client (UserResourceApi) at the real container
-        Map.entry("networking-config.carbonio.user-management.host", "localhost"),
-        Map.entry(
-            "networking-config.carbonio.user-management.port",
-            String.valueOf(userManagement.getMappedPort(10000))),
-        // Point the files SDK at the real files container
-        Map.entry("networking-config.carbonio.files.host", "localhost"),
-        Map.entry("networking-config.carbonio.files.port", String.valueOf(FILES_PORT)),
-        // Point WOPI at localhost (no real server needed for CE unit-level ITs)
-        Map.entry("networking-config.carbonio.wopi.host", "localhost"),
-        Map.entry("networking-config.carbonio.wopi.port", "20000"),
-        // Service host (for health endpoints)
-        Map.entry("networking-config.carbonio.service.host", "localhost")
-    );
+    cachedConfig =
+        Map.ofEntries(
+            // Point Consul service-discover at the WireMock stub
+            Map.entry("networking-config.carbonio.service-discover.host", wireMock.getHost()),
+            Map.entry(
+                "networking-config.carbonio.service-discover.port",
+                String.valueOf(wireMock.getMappedPort(8080))),
+            // Point the user-management REST client (UserResourceApi) at the real container
+            Map.entry("networking-config.carbonio.user-management.host", "localhost"),
+            Map.entry(
+                "networking-config.carbonio.user-management.port",
+                String.valueOf(userManagement.getMappedPort(10000))),
+            // Point the files SDK at the real files container
+            Map.entry("networking-config.carbonio.files.host", "localhost"),
+            Map.entry("networking-config.carbonio.files.port", String.valueOf(FILES_PORT)),
+            // Point WOPI at localhost (no real server needed for CE unit-level ITs)
+            Map.entry("networking-config.carbonio.wopi.host", "localhost"),
+            Map.entry("networking-config.carbonio.wopi.port", "20000"),
+            // Service host (for health endpoints)
+            Map.entry("networking-config.carbonio.service.host", "localhost"));
 
     started = true;
     return cachedConfig;
@@ -280,19 +280,19 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
    * <p>Two endpoints matter here:
    *
    * <ul>
-   *   <li>{@code GET /internal/accounts/myself} — user-management's {@code UserService} calls
-   *       this (via {@code internalClient.getMyAccountInfo(token)}) with a {@code Cookie} header
-   *       whose value contains {@code ZM_AUTH_TOKEN=<token>}. One high-priority stub per fixed
-   *       test token returns a distinct {@code AccountInfo}; any other/missing token falls
-   *       through to a low-priority catch-all returning 401 — identical contract to the real
-   *       mailbox for an unrecognized session. An empty-string {@code ZM_AUTH_TOKEN} never
-   *       reaches this endpoint at all: user-management's own REST layer rejects a blank token
-   *       with 401 before ever calling mailbox.
+   *   <li>{@code GET /internal/accounts/myself} — user-management's {@code UserService} calls this
+   *       (via {@code internalClient.getMyAccountInfo(token)}) with a {@code Cookie} header whose
+   *       value contains {@code ZM_AUTH_TOKEN=<token>}. One high-priority stub per fixed test token
+   *       returns a distinct {@code AccountInfo}; any other/missing token falls through to a
+   *       low-priority catch-all returning 401 — identical contract to the real mailbox for an
+   *       unrecognized session. An empty-string {@code ZM_AUTH_TOKEN} never reaches this endpoint
+   *       at all: user-management's own REST layer rejects a blank token with 401 before ever
+   *       calling mailbox.
    *   <li>{@code GET /internal/accounts/{accountId}/info} — user-management's {@code UserService}
    *       calls this (via {@code internalClient.getAccountInfo(userId)}) for {@code
-   *       WopiService.getDocsEditorAttributes}. Every IT in this module derives {@code
-   *       requesterId} as {@link #TEST_USER_ID}, so a wildcard match answering with the fixed
-   *       test-user record is sufficient.
+   *       WopiService.getDocsEditorAttributes}. Every IT in this module derives {@code requesterId}
+   *       as {@link #TEST_USER_ID}, so a wildcard match answering with the fixed test-user record
+   *       is sufficient.
    * </ul>
    */
   private static void setupMailboxWireMockStubs(String wireMockAdminUrl) throws Exception {
@@ -306,38 +306,42 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
         client, wireMockAdminUrl, SECOND_AUTH_TOKEN, SECOND_USER_ID, "active", false);
 
     // Catch-all: any other/missing/invalid token -> 401 (priority 10 = lowest).
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":10,"
-        + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/internal/accounts/myself\"},"
-        + "\"response\":{\"status\":401}}");
+            + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/internal/accounts/myself\"},"
+            + "\"response\":{\"status\":401}}");
 
     // GET /internal/accounts/{accountId}/info -- always answers with the fixed test-user record
     // (see javadoc above for why a wildcard match is sufficient for this suite).
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":1,"
-        + "\"request\":{\"method\":\"GET\",\"urlPathPattern\":\"/internal/accounts/[^/]+/info\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"jsonBody\":{"
-        + "\"id\":\"" + TEST_USER_ID + "\","
-        + "\"name\":\"test@example.com\","
-        + "\"displayName\":\"Test User\","
-        + "\"domain\":\"example.com\","
-        + "\"status\":\"active\","
-        + "\"isGlobalAdmin\":false,"
-        + "\"isExternal\":false,"
-        + "\"isExternalVirtualAccount\":false,"
-        + "\"locale\":\"en_US\","
-        + "\"features\":{\"carbonioFeatureFilesEnabled\":true},"
-        + "\"capabilities\":{},"
-        + "\"sessionLifetimeMs\":86400000"
-        + "}}}");
+            + "\"request\":{\"method\":\"GET\",\"urlPathPattern\":\"/internal/accounts/[^/]+/info\"},"
+            + "\"response\":{\"status\":200,\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"jsonBody\":{\"id\":\""
+            + TEST_USER_ID
+            + "\","
+            + "\"name\":\"test@example.com\","
+            + "\"displayName\":\"Test User\","
+            + "\"domain\":\"example.com\","
+            + "\"status\":\"active\","
+            + "\"isGlobalAdmin\":false,"
+            + "\"isExternal\":false,"
+            + "\"isExternalVirtualAccount\":false,"
+            + "\"locale\":\"en_US\","
+            + "\"features\":{\"carbonioFeatureFilesEnabled\":true},"
+            + "\"capabilities\":{},"
+            + "\"sessionLifetimeMs\":86400000"
+            + "}}}");
   }
 
   /**
-   * Registers a single WireMock stub matching {@code GET /internal/accounts/myself} for the
-   * given {@code ZM_AUTH_TOKEN} (carried inside the {@code Cookie} header), returning a mailbox
-   * {@code AccountInfo} JSON body for the given user id / status / external flag.
+   * Registers a single WireMock stub matching {@code GET /internal/accounts/myself} for the given
+   * {@code ZM_AUTH_TOKEN} (carried inside the {@code Cookie} header), returning a mailbox {@code
+   * AccountInfo} JSON body for the given user id / status / external flag.
    */
   private static void postAccountInfoStub(
       HttpClient client,
@@ -345,65 +349,83 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
       String token,
       String userId,
       String status,
-      boolean isExternalVirtualAccount) throws Exception {
+      boolean isExternalVirtualAccount)
+      throws Exception {
     String stubJson =
         "{\"priority\":1,"
-        + "\"request\":{"
-        + "\"method\":\"GET\","
-        + "\"urlPath\":\"/internal/accounts/myself\","
-        + "\"headers\":{\"Cookie\":{\"contains\":\"ZM_AUTH_TOKEN=" + token + "\"}}"
-        + "},"
-        + "\"response\":{"
-        + "\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json; charset=utf-8\"},"
-        + "\"jsonBody\":{"
-        + "\"id\":\"" + userId + "\","
-        + "\"name\":\"test-" + userId + "@carbonio.test\","
-        + "\"displayName\":\"Test User\","
-        + "\"status\":\"" + status + "\","
-        + "\"isGlobalAdmin\":false,"
-        // The two booleans are NOT synonyms and for a guest they are OPPOSITE, so the mock must
-        // emit what mailbox really emits or user-management is fed impossible input:
-        //   isExternal               -- derived, mailbox's Account#isAccountExternal(): true only
-        //                               when zimbraMailTransport does not match the server named by
-        //                               zimbraMailHost (foreign/relayed MTA routing). A guest is
-        //                               provisioned with zimbraMailHost = the local server, so a
-        //                               real guest is FALSE here.
-        //   isExternalVirtualAccount -- the LDAP zimbraIsExternalVirtualAccount boolean: TRUE for a
-        //                               guest / external-share virtual account.
-        // UserService#mapAccountInfoToUserMyself classifies GUEST-vs-INTERNAL off
-        // isExternalVirtualAccount() only. Emitting the same value into both (as an earlier version
-        // of this stub did) would still pass even if that mapping regressed back to isExternal(),
-        // which is exactly the defect CO-3822 fixed -- so keep them decoupled.
-        + "\"isExternal\":false,"
-        + "\"isExternalVirtualAccount\":" + isExternalVirtualAccount + ","
-        + "\"locale\":\"en_US\","
-        // carbonioFeatureFilesEnabled=true: carbonio-files' AuthenticationHandler refuses
-        // access ("Files feature is not enabled for user") unless the requester's
-        // UserMyself#getCarbonioAttributes() map has this key set to "TRUE". That map is
-        // built by UserMyself's List<String> constructor from user-management's MyselfDto
-        // features list, which UserService#mapAccountInfoToUserMyself derives from exactly
-        // this mailbox AccountInfo#features() map (Map<String,Boolean>) -- only true-valued
-        // keys survive into the list. Real accounts have this COS/feature flag enabled by
-        // default; the mock must say so explicitly or every real-files call gets a 403.
-        + "\"features\":{\"carbonioFeatureFilesEnabled\":true},"
-        + "\"capabilities\":{},"
-        + "\"sessionLifetimeMs\":86400000"
-        + "}"
-        + "}"
-        + "}";
+            + "\"request\":{"
+            + "\"method\":\"GET\","
+            + "\"urlPath\":\"/internal/accounts/myself\","
+            + "\"headers\":{\"Cookie\":{\"contains\":\"ZM_AUTH_TOKEN="
+            + token
+            + "\"}}"
+            + "},"
+            + "\"response\":{"
+            + "\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json; charset=utf-8\"},"
+            + "\"jsonBody\":{"
+            + "\"id\":\""
+            + userId
+            + "\","
+            + "\"name\":\"test-"
+            + userId
+            + "@carbonio.test\","
+            + "\"displayName\":\"Test User\","
+            + "\"status\":\""
+            + status
+            + "\","
+            + "\"isGlobalAdmin\":false,"
+            // The two booleans are NOT synonyms and for a guest they are OPPOSITE, so the mock must
+            // emit what mailbox really emits or user-management is fed impossible input:
+            //   isExternal               -- derived, mailbox's Account#isAccountExternal(): true
+            // only
+            //                               when zimbraMailTransport does not match the server
+            // named by
+            //                               zimbraMailHost (foreign/relayed MTA routing). A guest
+            // is
+            //                               provisioned with zimbraMailHost = the local server, so
+            // a
+            //                               real guest is FALSE here.
+            //   isExternalVirtualAccount -- the LDAP zimbraIsExternalVirtualAccount boolean: TRUE
+            // for a
+            //                               guest / external-share virtual account.
+            // UserService#mapAccountInfoToUserMyself classifies GUEST-vs-INTERNAL off
+            // isExternalVirtualAccount() only. Emitting the same value into both (as an earlier
+            // version
+            // of this stub did) would still pass even if that mapping regressed back to
+            // isExternal(),
+            // which is exactly the defect CO-3822 fixed -- so keep them decoupled.
+            + "\"isExternal\":false,"
+            + "\"isExternalVirtualAccount\":"
+            + isExternalVirtualAccount
+            + ","
+            + "\"locale\":\"en_US\","
+            // carbonioFeatureFilesEnabled=true: carbonio-files' AuthenticationHandler refuses
+            // access ("Files feature is not enabled for user") unless the requester's
+            // UserMyself#getCarbonioAttributes() map has this key set to "TRUE". That map is
+            // built by UserMyself's List<String> constructor from user-management's MyselfDto
+            // features list, which UserService#mapAccountInfoToUserMyself derives from exactly
+            // this mailbox AccountInfo#features() map (Map<String,Boolean>) -- only true-valued
+            // keys survive into the list. Real accounts have this COS/feature flag enabled by
+            // default; the mock must say so explicitly or every real-files call gets a 403.
+            + "\"features\":{\"carbonioFeatureFilesEnabled\":true},"
+            + "\"capabilities\":{},"
+            + "\"sessionLifetimeMs\":86400000"
+            + "}"
+            + "}"
+            + "}";
 
     postStub(client, wireMockAdminUrl, stubJson);
   }
 
   /**
-   * Registers WireMock stubs that impersonate the Consul HTTP API for BOTH docs-connector-ce's
-   * own KV namespace and carbonio-files' KV namespace.
+   * Registers WireMock stubs that impersonate the Consul HTTP API for BOTH docs-connector-ce's own
+   * KV namespace and carbonio-files' KV namespace.
    *
    * <p>{@code carbonio-quarkus-extensions}' {@code CarbonioBootstrapFactory} (used by
-   * docs-connector-ce and user-management) issues a SINGLE ROOT recursive GET at boot:
-   * {@code GET /v1/kv/?recurse} — so the root recurse stub below carries docs-connector's own
-   * {@code carbonio-docs-connector/*} keys.
+   * docs-connector-ce and user-management) issues a SINGLE ROOT recursive GET at boot: {@code GET
+   * /v1/kv/?recurse} — so the root recurse stub below carries docs-connector's own {@code
+   * carbonio-docs-connector/*} keys.
    *
    * <p>carbonio-files is the OLD pre-Quarkus Guice/Ebean service (its own Quarkus rewrite is still
    * in progress on a separate branch): its {@code FilesConfig} reads DB credentials via {@code
@@ -417,76 +439,99 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
     HttpClient client = HttpClient.newHttpClient();
 
     // docs-connector-ce's own config (root recurse; prefix == "").
-    postConsulKvRecursiveStub(client, wireMockAdminUrl, "",
-        new String[][]{
-            {"carbonio-docs-connector/max-file-size-in-mb/document", "50"},
-            {"carbonio-docs-connector/max-file-size-in-mb/presentation", "100"},
-            {"carbonio-docs-connector/max-file-size-in-mb/spreadsheet", "10"},
+    postConsulKvRecursiveStub(
+        client,
+        wireMockAdminUrl,
+        "",
+        new String[][] {
+          {"carbonio-docs-connector/max-file-size-in-mb/document", "50"},
+          {"carbonio-docs-connector/max-file-size-in-mb/presentation", "100"},
+          {"carbonio-docs-connector/max-file-size-in-mb/spreadsheet", "10"},
         });
 
     // carbonio-files DB credentials -- individual-key GETs (see javadoc above).
-    postConsulKvIndividualStub(
-        client, wireMockAdminUrl, "carbonio-files/db-name", FILES_DB_NAME);
+    postConsulKvIndividualStub(client, wireMockAdminUrl, "carbonio-files/db-name", FILES_DB_NAME);
     postConsulKvIndividualStub(
         client, wireMockAdminUrl, "carbonio-files/db-username", FILES_DB_USER);
     postConsulKvIndividualStub(
         client, wireMockAdminUrl, "carbonio-files/db-password", FILES_DB_PASSWORD);
     // Recursive stub too (defensive: covers a future Quarkus migration of the files image, which
     // would issue a root/prefix recurse instead of individual-key GETs).
-    postConsulKvRecursiveStub(client, wireMockAdminUrl, "carbonio-files/",
-        new String[][]{
-            {"carbonio-files/db-name", FILES_DB_NAME},
-            {"carbonio-files/db-username", FILES_DB_USER},
-            {"carbonio-files/db-password", FILES_DB_PASSWORD},
+    postConsulKvRecursiveStub(
+        client,
+        wireMockAdminUrl,
+        "carbonio-files/",
+        new String[][] {
+          {"carbonio-files/db-name", FILES_DB_NAME},
+          {"carbonio-files/db-username", FILES_DB_USER},
+          {"carbonio-files/db-password", FILES_DB_PASSWORD},
         });
 
     // Catch-all for unknown KV keys -> 404 (priority 10 = lowest; urlPathPattern ignores query).
     // Harmless for files' own page-token-secret-key lookup/creation dance (FilesConfig#
     // initializeSecretKey swallows any failure and falls back to a default signing key).
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":10,"
-        + "\"request\":{\"method\":\"GET\",\"urlPathPattern\":\"/v1/kv/.*\"},"
-        + "\"response\":{\"status\":404}}");
-    postStub(client, wireMockAdminUrl,
+            + "\"request\":{\"method\":\"GET\",\"urlPathPattern\":\"/v1/kv/.*\"},"
+            + "\"response\":{\"status\":404}}");
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":10,"
-        + "\"request\":{\"method\":\"PUT\",\"urlPathPattern\":\"/v1/kv/.*\"},"
-        + "\"response\":{\"status\":200,\"body\":\"true\"}}");
+            + "\"request\":{\"method\":\"PUT\",\"urlPathPattern\":\"/v1/kv/.*\"},"
+            + "\"response\":{\"status\":200,\"body\":\"true\"}}");
 
     // Service registration / deregistration -> 200
-    for (String pattern : new String[]{
-        "/v1/agent/service/register.*",
-        "/v1/agent/service/deregister/.*",
-        "/v1/agent/check/register.*",
-        "/v1/agent/check/deregister/.*"}) {
-      postStub(client, wireMockAdminUrl,
-          "{\"request\":{\"method\":\"PUT\",\"urlPathPattern\":\"" + pattern + "\"},"
-          + "\"response\":{\"status\":200}}");
+    for (String pattern :
+        new String[] {
+          "/v1/agent/service/register.*",
+          "/v1/agent/service/deregister/.*",
+          "/v1/agent/check/register.*",
+          "/v1/agent/check/deregister/.*"
+        }) {
+      postStub(
+          client,
+          wireMockAdminUrl,
+          "{\"request\":{\"method\":\"PUT\",\"urlPathPattern\":\""
+              + pattern
+              + "\"},"
+              + "\"response\":{\"status\":200}}");
     }
 
     // Service discovery -> empty array
-    for (String pattern : new String[]{"/v1/health/service/.*", "/v1/catalog/service/.*"}) {
-      postStub(client, wireMockAdminUrl,
-          "{\"request\":{\"method\":\"GET\",\"urlPathPattern\":\"" + pattern + "\"},"
-          + "\"response\":{\"status\":200,"
-          + "\"headers\":{\"Content-Type\":\"application/json\"},\"body\":\"[]\"}}");
+    for (String pattern : new String[] {"/v1/health/service/.*", "/v1/catalog/service/.*"}) {
+      postStub(
+          client,
+          wireMockAdminUrl,
+          "{\"request\":{\"method\":\"GET\",\"urlPathPattern\":\""
+              + pattern
+              + "\"},"
+              + "\"response\":{\"status\":200,"
+              + "\"headers\":{\"Content-Type\":\"application/json\"},\"body\":\"[]\"}}");
     }
 
     // Agent self / status (urlPath = path-only exact match, ignores query string)
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/agent/self\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"jsonBody\":{\"Config\":{\"Datacenter\":\"dc1\",\"NodeName\":\"mock-consul\"}}}}");
-    postStub(client, wireMockAdminUrl,
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"jsonBody\":{\"Config\":{\"Datacenter\":\"dc1\",\"NodeName\":\"mock-consul\"}}}}");
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/status/leader\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"body\":\"\\\"127.0.0.1:8300\\\"\"}}");
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"body\":\"\\\"127.0.0.1:8300\\\"\"}}");
   }
 
   /**
-   * Registers a single WireMock stub that matches the Consul recursive KV fetch:
-   * {@code GET /v1/kv/{prefix}?recurse} (urlPath ignores the query string).
+   * Registers a single WireMock stub that matches the Consul recursive KV fetch: {@code GET
+   * /v1/kv/{prefix}?recurse} (urlPath ignores the query string).
    *
    * <p>The response is a JSON array with one object per key-value pair, values base64-encoded,
    * exactly what the real Consul API returns for {@code ?recurse}.
@@ -499,19 +544,30 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
       String value = kvEntries[i][1];
       String b64 = Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
       if (i > 0) arrayBody.append(",");
-      arrayBody.append("{\"LockIndex\":0,\"Key\":\"").append(key).append("\",\"Flags\":0,")
-               .append("\"Value\":\"").append(b64).append("\",\"CreateIndex\":1,\"ModifyIndex\":1}");
+      arrayBody
+          .append("{\"LockIndex\":0,\"Key\":\"")
+          .append(key)
+          .append("\",\"Flags\":0,")
+          .append("\"Value\":\"")
+          .append(b64)
+          .append("\",\"CreateIndex\":1,\"ModifyIndex\":1}");
     }
     arrayBody.append("]");
 
     String escapedBody = arrayBody.toString().replace("\\", "\\\\").replace("\"", "\\\"");
 
-    postStub(client, baseUrl,
+    postStub(
+        client,
+        baseUrl,
         "{\"priority\":1,"
-        + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/kv/" + prefix + "\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"body\":\"" + escapedBody + "\"}}");
+            + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/kv/"
+            + prefix
+            + "\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"body\":\""
+            + escapedBody
+            + "\"}}");
   }
 
   /**
@@ -524,71 +580,82 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
   private static void postConsulKvIndividualStub(
       HttpClient client, String baseUrl, String key, String value) throws Exception {
     String b64 = Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
-    String body = "[{\"LockIndex\":0,\"Key\":\"" + key + "\",\"Flags\":0,"
-        + "\"Value\":\"" + b64 + "\",\"CreateIndex\":1,\"ModifyIndex\":1}]";
+    String body =
+        "[{\"LockIndex\":0,\"Key\":\""
+            + key
+            + "\",\"Flags\":0,"
+            + "\"Value\":\""
+            + b64
+            + "\",\"CreateIndex\":1,\"ModifyIndex\":1}]";
     String escapedBody = body.replace("\\", "\\\\").replace("\"", "\\\"");
-    postStub(client, baseUrl,
+    postStub(
+        client,
+        baseUrl,
         "{\"priority\":1,"
-        + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/kv/" + key + "\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"body\":\"" + escapedBody + "\"}}");
+            + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/v1/kv/"
+            + key
+            + "\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"body\":\""
+            + escapedBody
+            + "\"}}");
   }
 
   /**
    * Registers WireMock stubs impersonating carbonio-storages (the blob backend files-ce uploads/
-   * downloads through via the {@code storages-ce-sdk} client). Kept mocked per task scope — it is one of files' own hard
-   * dependencies, not something worth standing up for real here.
+   * downloads through via the {@code storages-ce-sdk} client). Kept mocked per task scope — it is
+   * one of files' own hard dependencies, not something worth standing up for real here.
    *
    * <p><b>Upload: two-tier "size" echo, split by request size.</b> Files' download response sets
    * its {@code Content-Length} header from the node's RECORDED size (the "size" the upload stub
-   * answered at upload time, persisted via {@code BlobService#uploadFileOrFileVersion},
-   * {@code node.setSize(uploadResponse.getSize())}) — completely independent of how many bytes
-   * the download stub below will actually stream. Since the download stub always streams the same
-   * fixed {@value #MOCKED_STORAGE_FILE_CONTENT} fixture (storages is mocked, so it never really
-   * persists what was uploaded), any node whose recorded size differs from that fixture's byte
-   * length makes files promise a {@code Content-Length} it then doesn't deliver on — a genuine
-   * "declared 204 bytes, sent 27" truncated-response bug that leaves strict HTTP clients (Apache
-   * HttpClient, used by both docs-connector's own {@code FilesClient} and this IT's RestAssured
-   * client) blocked on a read that will never complete, until their own socket-read timeout fires
-   * (confirmed directly: a raw {@code GET /download/{nodeId}} against real files-ce, bypassing
-   * docs-connector entirely, reproduces {@code IOException: fixed content-length: 204, bytes
-   * received: 27} in under 50ms once the WireMock request journal is inspected). This is exactly
-   * what happened here: the old in-JVM WireMock stub for files ALSO stubbed downloads, so its
-   * "size" and its download body were always trivially consistent by construction; now that files
-   * is a real container computing this independently, they can silently diverge.
+   * answered at upload time, persisted via {@code BlobService#uploadFileOrFileVersion}, {@code
+   * node.setSize(uploadResponse.getSize())}) — completely independent of how many bytes the
+   * download stub below will actually stream. Since the download stub always streams the same fixed
+   * {@value #MOCKED_STORAGE_FILE_CONTENT} fixture (storages is mocked, so it never really persists
+   * what was uploaded), any node whose recorded size differs from that fixture's byte length makes
+   * files promise a {@code Content-Length} it then doesn't deliver on — a genuine "declared 204
+   * bytes, sent 27" truncated-response bug that leaves strict HTTP clients (Apache HttpClient, used
+   * by both docs-connector's own {@code FilesClient} and this IT's RestAssured client) blocked on a
+   * read that will never complete, until their own socket-read timeout fires (confirmed directly: a
+   * raw {@code GET /download/{nodeId}} against real files-ce, bypassing docs-connector entirely,
+   * reproduces {@code IOException: fixed content-length: 204, bytes received: 27} in under 50ms
+   * once the WireMock request journal is inspected). This is exactly what happened here: the old
+   * in-JVM WireMock stub for files ALSO stubbed downloads, so its "size" and its download body were
+   * always trivially consistent by construction; now that files is a real container computing this
+   * independently, they can silently diverge.
    *
    * <p>So: uploads with a genuinely large multipart {@code Content-Length} (>= 7 digits, i.e. >=
-   * 1,000,000 bytes — comfortably below the smallest real oversized fixture this suite uploads,
-   * 11 MB, and comfortably above the multipart-wrapped size of every other, tiny, test fixture
-   * upload in this suite, ~200-400 bytes) keep the REAL echoed Content-Length, which is what the
+   * 1,000,000 bytes — comfortably below the smallest real oversized fixture this suite uploads, 11
+   * MB, and comfortably above the multipart-wrapped size of every other, tiny, test fixture upload
+   * in this suite, ~200-400 bytes) keep the REAL echoed Content-Length, which is what the
    * file-size-limit ITs need (they assert on files exceeding the real 10 MB / 100 MB config
-   * limits). Every other (small) upload gets the FIXED size of the download fixture itself, so
-   * that any later download of that same node has a correct, honest Content-Length.
+   * limits). Every other (small) upload gets the FIXED size of the download fixture itself, so that
+   * any later download of that same node has a correct, honest Content-Length.
    *
    * <p><b>Path matching MUST be exact (`urlPath`), never a `.*upload.*`/`.*download.*` substring
    * pattern.</b> Files itself also reads Consul KV keys named {@code
-   * carbonio-files/max-uploadable-size-in-mb} and {@code carbonio-files/max-downloadable-size-in-mb}
-   * (see {@code FilesConfig#getMaxUploadableFileSizeInMb}/{@code getMaxDownloadableFileSizeInMb})
-   * — both paths legitimately CONTAIN the substrings "upload"/"download", so a loose {@code
-   * urlPathPattern} here silently steals those Consul KV lookups too (confirmed via {@code
-   * GET /__admin/requests}: {@code GET /v1/kv/carbonio-files/max-uploadable-size-in-mb} was being
-   * answered by the storages upload stub instead of falling through to the Consul 404 catch-all).
-   * With the OLD single templated stub this was accidentally harmless: {@code
-   * {{request.headers.[Content-Length]}}} has nothing to substitute on a body-less GET (no
-   * Content-Length header), so WireMock emits malformed JSON, {@code ServiceDiscoverHttpClient
-   * #getConfig} fails to parse it (a checked {@code IOException}, caught, treated as "config
-   * absent") and files quietly falls back to "no limit". Switching the small-upload stub to a
-   * static, validly-parsing JSON body (needed for the fix above) turns that accident into a real
-   * bug: valid-but-wrong-shaped JSON parses fine, then {@code
-   * readTree(body).get(0).get("Value")} NPEs on the object node's absent index 0 — an UNCHECKED
-   * exception that is NOT caught, surfacing as a real upload-time 500 (confirmed directly: {@code
-   * java.lang.NullPointerException: ... ServiceDiscoverHttpClient.getConfig} in the real files-ce
-   * container's own logs). The actual storages endpoints are exactly {@code /upload} and {@code
-   * /download} (see the {@code storages-ce-sdk} retrofit interface: {@code @PUT/@POST("upload")},
-   * {@code @GET("download")}) — Consul KV lookups always live under {@code /v1/kv/...} — so an
-   * exact {@code urlPath} match (which compares the path only, ignoring the query string) is both
-   * simpler and closes this whole class of accidental collision for good.
+   * carbonio-files/max-uploadable-size-in-mb} and {@code
+   * carbonio-files/max-downloadable-size-in-mb} (see {@code
+   * FilesConfig#getMaxUploadableFileSizeInMb}/{@code getMaxDownloadableFileSizeInMb}) — both paths
+   * legitimately CONTAIN the substrings "upload"/"download", so a loose {@code urlPathPattern} here
+   * silently steals those Consul KV lookups too (confirmed via {@code GET /__admin/requests}:
+   * {@code GET /v1/kv/carbonio-files/max-uploadable-size-in-mb} was being answered by the storages
+   * upload stub instead of falling through to the Consul 404 catch-all). With the OLD single
+   * templated stub this was accidentally harmless: {@code {{request.headers.[Content-Length]}}} has
+   * nothing to substitute on a body-less GET (no Content-Length header), so WireMock emits
+   * malformed JSON, {@code ServiceDiscoverHttpClient #getConfig} fails to parse it (a checked
+   * {@code IOException}, caught, treated as "config absent") and files quietly falls back to "no
+   * limit". Switching the small-upload stub to a static, validly-parsing JSON body (needed for the
+   * fix above) turns that accident into a real bug: valid-but-wrong-shaped JSON parses fine, then
+   * {@code readTree(body).get(0).get("Value")} NPEs on the object node's absent index 0 — an
+   * UNCHECKED exception that is NOT caught, surfacing as a real upload-time 500 (confirmed
+   * directly: {@code java.lang.NullPointerException: ... ServiceDiscoverHttpClient.getConfig} in
+   * the real files-ce container's own logs). The actual storages endpoints are exactly {@code
+   * /upload} and {@code /download} (see the {@code storages-ce-sdk} retrofit interface:
+   * {@code @PUT/@POST("upload")}, {@code @GET("download")}) — Consul KV lookups always live under
+   * {@code /v1/kv/...} — so an exact {@code urlPath} match (which compares the path only, ignoring
+   * the query string) is both simpler and closes this whole class of accidental collision for good.
    */
   private static void setupStoragesStubs(String wireMockAdminUrl) throws Exception {
     HttpClient client = HttpClient.newHttpClient();
@@ -596,58 +663,73 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
 
     // Large uploads (file-size-limit ITs, 11 MB / 101 MB oversized fixtures): keep the real,
     // genuinely-echoed Content-Length -- HIGHER priority (1) so it is matched first.
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":1,"
-        + "\"request\":{\"method\":\"ANY\",\"urlPath\":\"/upload\","
-        + "\"headers\":{\"Content-Length\":{\"matches\":\"^[0-9]{7,}$\"}}},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"transformers\":[\"response-template\"],"
-        + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
-        + "\\\"size\\\":{{request.headers.[Content-Length]}},"
-        + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
+            + "\"request\":{\"method\":\"ANY\",\"urlPath\":\"/upload\","
+            + "\"headers\":{\"Content-Length\":{\"matches\":\"^[0-9]{7,}$\"}}},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"transformers\":[\"response-template\"],"
+            + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
+            + "\\\"size\\\":{{request.headers.[Content-Length]}},"
+            + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
 
     // Every other (small) upload: FIXED size matching the download fixture's real byte length --
     // see class/method javadoc above for why this must NOT be a real Content-Length echo.
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":2,"
-        + "\"request\":{\"method\":\"ANY\",\"urlPath\":\"/upload\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
-        + "\\\"size\\\":" + fixedDownloadSize + ","
-        + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
+            + "\"request\":{\"method\":\"ANY\",\"urlPath\":\"/upload\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
+            + "\\\"size\\\":"
+            + fixedDownloadSize
+            + ","
+            + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
 
     // Download: fixed canned bytes (see javadoc above for why this can't be a genuine echo).
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":1,"
-        + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/download\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/octet-stream\"},"
-        + "\"base64Body\":\"" + Base64.getEncoder().encodeToString(
-            MOCKED_STORAGE_FILE_CONTENT.getBytes(StandardCharsets.UTF_8)) + "\"}}");
+            + "\"request\":{\"method\":\"GET\",\"urlPath\":\"/download\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/octet-stream\"},"
+            + "\"base64Body\":\""
+            + Base64.getEncoder()
+                .encodeToString(MOCKED_STORAGE_FILE_CONTENT.getBytes(StandardCharsets.UTF_8))
+            + "\"}}");
 
     // Health checks
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/health\"},"
-        + "\"response\":{\"status\":200}}");
+            + "\"response\":{\"status\":200}}");
 
     // bulk-delete: full success, empty failed-ids list.
-    postStub(client, wireMockAdminUrl,
-        "{\"priority\":1,"
-        + "\"request\":{\"method\":\"POST\",\"urlPath\":\"/bulk-delete\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},\"body\":\"{\\\"ids\\\":[]}\"}}");
+    postStub(
+        client,
+        wireMockAdminUrl,
+        "{\"priority\":1,\"request\":{\"method\":\"POST\",\"urlPath\":\"/bulk-delete\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},\"body\":\"{\\\"ids\\\":[]}\"}}");
 
     // Catch-all: accept ANY other storage op, return a minimal upload-shaped response.
-    postStub(client, wireMockAdminUrl,
+    postStub(
+        client,
+        wireMockAdminUrl,
         "{\"priority\":100,"
-        + "\"request\":{\"method\":\"ANY\",\"urlPattern\":\"/.*\"},"
-        + "\"response\":{\"status\":200,"
-        + "\"headers\":{\"Content-Type\":\"application/json\"},"
-        + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
-        + "\\\"size\\\":1024,"
-        + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
+            + "\"request\":{\"method\":\"ANY\",\"urlPattern\":\"/.*\"},"
+            + "\"response\":{\"status\":200,"
+            + "\"headers\":{\"Content-Type\":\"application/json\"},"
+            + "\"body\":\"{\\\"digest\\\":\\\"00000000-0000-0000-0000-000000000001\\\","
+            + "\\\"size\\\":1024,"
+            + "\\\"digest_algorithm\\\":\\\"MD5\\\"}\"}}");
   }
 
   /**
@@ -660,11 +742,12 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
   /** Posts a single WireMock stub JSON to the admin mappings endpoint. */
   private static void postStub(HttpClient client, String baseUrl, String stubJson)
       throws Exception {
-    HttpRequest req = HttpRequest.newBuilder()
-        .uri(URI.create(baseUrl + "/__admin/mappings"))
-        .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(stubJson))
-        .build();
+    HttpRequest req =
+        HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + "/__admin/mappings"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(stubJson))
+            .build();
     HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
     if (resp.statusCode() != 201) {
       throw new RuntimeException(
@@ -678,9 +761,9 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
    * exactly the HTTP contract {@code carbonio-files-sdk}'s {@code FilesClient#uploadFile} uses
    * against files' {@code POST /upload/}: a {@code Cookie} header carrying {@code
    * ZM_AUTH_TOKEN=<token>}, a base64-encoded {@code Filename} header, and a raw {@code ParentId}
-   * header — needed here so ITs can control the exact byte size / extension / owner of a real
-   * files node (file-size-limit tests, the read-only-share test), which docs-connector's template
-   * upload cannot do.
+   * header — needed here so ITs can control the exact byte size / extension / owner of a real files
+   * node (file-size-limit tests, the read-only-share test), which docs-connector's template upload
+   * cannot do.
    *
    * @return the real node id created by files
    */
@@ -688,16 +771,18 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
       String authToken, String parentId, String filename, String mimeType, byte[] content)
       throws Exception {
     HttpClient client = HttpClient.newHttpClient();
-    String filenameB64 = Base64.getEncoder().encodeToString(filename.getBytes(StandardCharsets.UTF_8));
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("http://" + FILES_HOST + ":" + FILES_PORT + "/upload/"))
-        .header("Cookie", "ZM_AUTH_TOKEN=" + authToken)
-        .header("Filename", filenameB64)
-        .header("ParentId", parentId)
-        .header("Content-Type", mimeType)
-        .timeout(Duration.ofSeconds(120))
-        .POST(BodyPublishers.ofByteArray(content))
-        .build();
+    String filenameB64 =
+        Base64.getEncoder().encodeToString(filename.getBytes(StandardCharsets.UTF_8));
+    HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create("http://" + FILES_HOST + ":" + FILES_PORT + "/upload/"))
+            .header("Cookie", "ZM_AUTH_TOKEN=" + authToken)
+            .header("Filename", filenameB64)
+            .header("ParentId", parentId)
+            .header("Content-Type", mimeType)
+            .timeout(Duration.ofSeconds(120))
+            .POST(BodyPublishers.ofByteArray(content))
+            .build();
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() != 200 && response.statusCode() != 201) {
       throw new RuntimeException(
@@ -715,8 +800,8 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
   /**
    * Creates a share on a real files node DIRECTLY against the real files container's GraphQL
    * endpoint, as the node's owner. Used to drive genuine read-only-permission scenarios: files'
-   * permission model is real DB state now that files is a real container, so a share must
-   * actually be created via its own API rather than stubbed.
+   * permission model is real DB state now that files is a real container, so a share must actually
+   * be created via its own API rather than stubbed.
    */
   public static void rawCreateShare(
       String ownerAuthToken, String nodeId, String shareTargetId, String permission)
@@ -726,15 +811,23 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
     // field (fields are created_at / node / share_target / permission / expires_at -- see
     // carbonio-files-ce core/src/main/resources/api/schema.graphql). Selecting `id` works against
     // the Advanced image but fails CE validation with "Field 'id' in type 'Share' is undefined".
-    String query = "{\"query\":\"mutation { createShare(node_id: \\\"" + nodeId + "\\\", "
-        + "share_target_id: \\\"" + shareTargetId + "\\\", permission: " + permission + ") "
-        + "{ permission node { id } } }\"}";
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("http://" + FILES_HOST + ":" + FILES_PORT + "/graphql/"))
-        .header("Cookie", "ZM_AUTH_TOKEN=" + ownerAuthToken)
-        .header("Content-Type", "application/json")
-        .POST(BodyPublishers.ofString(query))
-        .build();
+    String query =
+        "{\"query\":\"mutation { createShare(node_id: \\\""
+            + nodeId
+            + "\\\", "
+            + "share_target_id: \\\""
+            + shareTargetId
+            + "\\\", permission: "
+            + permission
+            + ") "
+            + "{ permission node { id } } }\"}";
+    HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create("http://" + FILES_HOST + ":" + FILES_PORT + "/graphql/"))
+            .header("Cookie", "ZM_AUTH_TOKEN=" + ownerAuthToken)
+            .header("Content-Type", "application/json")
+            .POST(BodyPublishers.ofString(query))
+            .build();
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() != 200) {
       throw new RuntimeException(

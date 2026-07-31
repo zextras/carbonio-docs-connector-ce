@@ -6,9 +6,8 @@ package com.zextras.carbonio.docs_connector.services;
 import java.util.UUID;
 
 /**
- * Callback invoked after a blob is successfully saved via WOPI.
- * CE provides a no-op default. Advanced overrides to update the {@code savedAt}
- * timestamp on the {@code open_document} record.
+ * Callback invoked after a blob is successfully saved via WOPI. CE provides a no-op default.
+ * Advanced overrides to update the {@code savedAt} timestamp on the {@code open_document} record.
  */
 public interface SaveBlobCallback {
 

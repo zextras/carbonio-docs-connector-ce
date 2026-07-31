@@ -13,5 +13,4 @@ public class Permissions {
   public boolean getCan_write_file() {
     return can_write_file;
   }
-
 }

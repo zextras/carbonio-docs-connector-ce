@@ -30,16 +30,12 @@ public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRep
 
   @Override
   public OpenDocumentToken createToken(
-      UUID documentId,
-      String requesterId,
-      String requesterCookie
-  ) {
+      UUID documentId, String requesterId, String requesterCookie) {
     // Extract only the relevant token we need
     String zmAuthTokenCookie = null;
     if (requesterCookie != null) {
-      Matcher matcher = Pattern
-          .compile("ZM_AUTH_TOKEN=([a-zA-Z0-9_]+)(;|$)")
-          .matcher(requesterCookie);
+      Matcher matcher =
+          Pattern.compile("ZM_AUTH_TOKEN=([a-zA-Z0-9_]+)(;|$)").matcher(requesterCookie);
 
       if (matcher.find()) {
         zmAuthTokenCookie = matcher.group();
@@ -48,13 +44,13 @@ public class OpenDocumentTokenRepositoryInMemory implements OpenDocumentTokenRep
       }
     }
 
-    OpenDocumentToken token = new OpenDocumentToken(
-        UUID.randomUUID(),
-        documentId,
-        requesterId,
-        zmAuthTokenCookie,
-        Instant.ofEpochMilli(clock.millis() + cacheManager.getTokenDurationInMs())
-    );
+    OpenDocumentToken token =
+        new OpenDocumentToken(
+            UUID.randomUUID(),
+            documentId,
+            requesterId,
+            zmAuthTokenCookie,
+            Instant.ofEpochMilli(clock.millis() + cacheManager.getTokenDurationInMs()));
 
     cacheManager.getTokenCache().put(token.getTokenId().toString(), token);
 

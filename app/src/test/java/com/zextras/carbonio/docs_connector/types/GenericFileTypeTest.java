@@ -13,15 +13,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class GenericFileTypeTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {
-    "text/rtf",
-    "text/plain",
-    "application/msword",
-    "application/vnd.oasis.opendocument.text",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.oasis.opendocument.text",
-  })
-  void givenAValidDocumentMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnDocumentType(String mimeType) {
+  @ValueSource(
+      strings = {
+        "text/rtf",
+        "text/plain",
+        "application/msword",
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.oasis.opendocument.text",
+      })
+  void givenAValidDocumentMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnDocumentType(
+      String mimeType) {
     // Given & When
     GenericFileType genericFIleType = GenericFileType.fromMimeType(mimeType);
 
@@ -30,13 +32,15 @@ public class GenericFileTypeTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-    "application/vnd.ms-powerpoint",
-    "application/vnd.oasis.opendocument.presentation",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "application/vnd.sun.xml.impress",
-  })
-  void givenAValidPresentationMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnPresentationType(String mimeType) {
+  @ValueSource(
+      strings = {
+        "application/vnd.ms-powerpoint",
+        "application/vnd.oasis.opendocument.presentation",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.sun.xml.impress",
+      })
+  void givenAValidPresentationMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnPresentationType(
+      String mimeType) {
     // Given & When
     GenericFileType genericFIleType = GenericFileType.fromMimeType(mimeType);
 
@@ -44,15 +48,16 @@ public class GenericFileTypeTest {
     Assertions.assertThat(genericFIleType).isEqualTo(GenericFileType.PRESENTATION);
   }
 
-
   @ParameterizedTest
-  @ValueSource(strings = {
-    "application/vnd.ms-excel",
-    "application/vnd.oasis.opendocument.spreadsheet",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.sun.xml.calc",
-  })
-  void givenAValidSpreadsheetMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnSpreadsheetType(String mimeType) {
+  @ValueSource(
+      strings = {
+        "application/vnd.ms-excel",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.sun.xml.calc",
+      })
+  void givenAValidSpreadsheetMimeTypeTheGenericFileTypeFromMimeTypeShouldReturnSpreadsheetType(
+      String mimeType) {
     // Given & When
     GenericFileType genericFIleType = GenericFileType.fromMimeType(mimeType);
 

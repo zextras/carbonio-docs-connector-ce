@@ -53,7 +53,8 @@ public final class DocsConnectorServiceConfig implements CarbonioServiceConfig {
 
     // ifNotPresent is documentation-only (rendered by the build-time config-doc generator); it is
     // NOT a runtime default. The actual defaults (legacy 50/100/10) are declared in
-    // application.properties under the application-config. prefix and applied when Consul KV is absent.
+    // application.properties under the application-config. prefix and applied when Consul KV is
+    // absent.
     /** Consul KV path: carbonio-docs-connector/max-file-size-in-mb/document */
     @ConfigKey(description = "Max file size in MB for documents", ifNotPresent = "50")
     public static final String MAX_FILE_SIZE_MB_DOCUMENT = "max-file-size-in-mb.document";

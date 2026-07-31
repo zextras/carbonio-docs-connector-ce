@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Unit tests for {@link CookieAuthenticationFilter}. No CDI container is started — all
- * dependencies are provided via constructor injection.
+ * Unit tests for {@link CookieAuthenticationFilter}. No CDI container is started — all dependencies
+ * are provided via constructor injection.
  */
 class CookieAuthenticationFilterTest {
 
@@ -63,9 +63,8 @@ class CookieAuthenticationFilterTest {
     when(uriInfo.getPathSegments()).thenReturn(List.of(segment));
 
     if (cookieValue != null) {
-      Cookie cookie = new Cookie.Builder(Constants.Config.ACCEPTED_COOKIE_TYPE)
-          .value(cookieValue)
-          .build();
+      Cookie cookie =
+          new Cookie.Builder(Constants.Config.ACCEPTED_COOKIE_TYPE).value(cookieValue).build();
       when(ctx.getCookies()).thenReturn(Map.of(Constants.Config.ACCEPTED_COOKIE_TYPE, cookie));
     } else {
       when(ctx.getCookies()).thenReturn(Map.of());
@@ -75,18 +74,20 @@ class CookieAuthenticationFilterTest {
   }
 
   private MyselfDto buildUserMyself(String userId, String type, String status, String locale) {
-    UserInfoDto info = new UserInfoDto()
-        .userId(userId)
-        .type(type)
-        .status(status)
-        .domain("example.com")
-        .fullName("Test User")
-        .email("test@example.com");
+    UserInfoDto info =
+        new UserInfoDto()
+            .userId(userId)
+            .type(type)
+            .status(status)
+            .domain("example.com")
+            .fullName("Test User")
+            .email("test@example.com");
     return new MyselfDto().info(info).locale(locale);
   }
 
   @Test
-  @DisplayName("Given a valid cookie for an active internal user the filter should set requester properties")
+  @DisplayName(
+      "Given a valid cookie for an active internal user the filter should set requester properties")
   void givenAValidCookieForAnActiveInternalUserTheFilterShouldSetRequesterProperties()
       throws Exception {
     // Given
@@ -102,7 +103,8 @@ class CookieAuthenticationFilterTest {
     // Then — filter sets REQUESTER_COOKIE, REQUESTER_ID, REQUESTER_DOMAIN, REQUESTER_LOCALE
     ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
-    verify(ctx, org.mockito.Mockito.atLeastOnce()).setProperty(keyCaptor.capture(), valueCaptor.capture());
+    verify(ctx, org.mockito.Mockito.atLeastOnce())
+        .setProperty(keyCaptor.capture(), valueCaptor.capture());
     verify(ctx, never()).abortWith(any());
 
     // Verify all required properties are set
@@ -113,7 +115,8 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given a valid cookie the filter should request user-management with bypassCache=true")
+  @DisplayName(
+      "Given a valid cookie the filter should request user-management with bypassCache=true")
   void givenAValidCookieTheFilterShouldRequestCacheBypass() throws Exception {
     // This is the security-relevant behaviour restored by the SDK bump: authentication must
     // re-validate the token against mailbox on every request rather than relying on
@@ -168,7 +171,9 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given user-management is unreachable (ApiException getCode()==0) the filter should return 503")
+  @DisplayName(
+      "Given user-management is unreachable (ApiException getCode()==0) the filter should return"
+          + " 503")
   void givenUserManagementUnreachableTheFilterShouldReturn503() throws Exception {
     // Given — ApiException(Throwable) never sets a code (connection refused / timeout / a body
     // that failed to deserialize), so getCode() == 0. This must NOT be reported as an invalid
@@ -210,7 +215,9 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given user-management returns a null info (blank 2xx body) the filter should return 401, not 500")
+  @DisplayName(
+      "Given user-management returns a null info (blank 2xx body) the filter should return 401, not"
+          + " 500")
   void givenNullInfoTheFilterShouldReturn401() throws Exception {
     // Given — the generated client returns null outright for a 2xx response with a blank body;
     // under gRPC this shape was impossible (proto3 defaults a missing sub-message to a non-null,
@@ -233,7 +240,9 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given user-management returns a null MyselfDto (blank 2xx body) the filter should return 401, not 500")
+  @DisplayName(
+      "Given user-management returns a null MyselfDto (blank 2xx body) the filter should return"
+          + " 401, not 500")
   void givenNullMyselfTheFilterShouldReturn401() throws Exception {
     // Given
     String token = "valid-token";
@@ -312,7 +321,8 @@ class CookieAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("Given the test-only override system property the filter should use the override domain")
+  @DisplayName(
+      "Given the test-only override system property the filter should use the override domain")
   void givenADomainOverrideSystemPropertyTheFilterShouldUseOverrideDomain() throws Exception {
     // Given
     String token = "valid-token";
@@ -335,7 +345,8 @@ class CookieAuthenticationFilterTest {
     // Capture all setProperty calls and verify domain override is used
     ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
-    verify(ctx, org.mockito.Mockito.atLeastOnce()).setProperty(keyCaptor.capture(), valueCaptor.capture());
+    verify(ctx, org.mockito.Mockito.atLeastOnce())
+        .setProperty(keyCaptor.capture(), valueCaptor.capture());
 
     int domainIdx = keyCaptor.getAllValues().indexOf(Constants.Context.REQUESTER_DOMAIN);
     Assertions.assertThat(domainIdx).isGreaterThanOrEqualTo(0);

@@ -48,9 +48,7 @@ public class WopiService {
 
   @Inject
   public WopiService(
-      UserResourceApi userResourceApi,
-      FilesClient filesClient,
-      SaveBlobCallback saveBlobCallback) {
+      UserResourceApi userResourceApi, FilesClient filesClient, SaveBlobCallback saveBlobCallback) {
     this.userResourceApi = userResourceApi;
     this.filesClient = filesClient;
     this.saveBlobCallback = saveBlobCallback;
@@ -61,8 +59,8 @@ public class WopiService {
       String requesterCookie,
       UUID nodeId,
       Optional<Integer> optVersion,
-      Optional<Integer> optOffsetFromUtc
-  ) throws ServiceDependencyException {
+      Optional<Integer> optOffsetFromUtc)
+      throws ServiceDependencyException {
     UserInfoDto userInfo;
     try {
       userInfo = userResourceApi.internalUsersIdUserIdGet(requesterId);
@@ -76,7 +74,9 @@ public class WopiService {
         // is unavailable, which is a dependency failure, not "this user doesn't exist".
         logger.error(
             "Unable to retrieve user info of user id {}: user-management is unavailable (code {})",
-            requesterId, e.getCode(), e);
+            requesterId,
+            e.getCode(),
+            e);
         throw new ServiceDependencyException(e);
       } else {
         // This endpoint is documented to only ever return 200 or 404; any other code is
@@ -101,13 +101,13 @@ public class WopiService {
     // (including a malformed/unparseable GraphQL response -- Try.of catches the checked
     // JsonProcessingException from mapFromJSON too), while a successful call is guaranteed to
     // have produced either a real NodeAttributes or a null one.
-    NodeAttributes nodeAttributes = filesClient
-        .genericGraphQLRequest(
-            requesterCookie,
-            NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion)
-        )
-        .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-        .getOrElseThrow(ServiceDependencyException::new);
+    NodeAttributes nodeAttributes =
+        filesClient
+            .genericGraphQLRequest(
+                requesterCookie,
+                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion))
+            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
+            .getOrElseThrow(ServiceDependencyException::new);
 
     if (nodeAttributes == null) {
       // files' getNode GraphQL resolver answers a nullable field with a JSON null for a
@@ -117,17 +117,13 @@ public class WopiService {
       throw new NoSuchElementException("Node " + nodeId + " not found");
     }
 
-    String lastModifiedTimeFormatted = formatDateToIso8601WithOffset(
-        new Date(nodeAttributes.getUpdated_at()),
-        optOffsetFromUtc
-    );
+    String lastModifiedTimeFormatted =
+        formatDateToIso8601WithOffset(new Date(nodeAttributes.getUpdated_at()), optOffsetFromUtc);
 
     logger.info("Getting blob with instant: {}", lastModifiedTimeFormatted);
 
-    String abbreviateFilename = abbreviateFilename(
-        nodeAttributes.getName(),
-        nodeAttributes.getExtension()
-    );
+    String abbreviateFilename =
+        abbreviateFilename(nodeAttributes.getName(), nodeAttributes.getExtension());
 
     UUID nodeOwnerId = UUID.fromString(nodeAttributes.getOwner().getId());
 
@@ -146,9 +142,7 @@ public class WopiService {
     docsEditorAttributes.setDisablePrint(false);
     docsEditorAttributes.setDisableInactiveMessages(true);
     docsEditorAttributes.setHideExportOption(false);
-    docsEditorAttributes.setHideSaveOption(
-        !nodeAttributes.getPermissions().getCan_write_file()
-    );
+    docsEditorAttributes.setHideSaveOption(!nodeAttributes.getPermissions().getCan_write_file());
     docsEditorAttributes.setHidePrintOption(false);
     docsEditorAttributes.setHideChangeTrackingControls(false);
     docsEditorAttributes.setUserCanNotWriteRelative(true);
@@ -158,17 +152,12 @@ public class WopiService {
     return Optional.of(docsEditorAttributes);
   }
 
-  public Optional<FilesBlob> getBlob(
-      String cookie,
-      UUID nodeId,
-      Optional<Integer> optVersion
-  ) {
+  public Optional<FilesBlob> getBlob(String cookie, UUID nodeId, Optional<Integer> optVersion) {
     return Optional.ofNullable(
         filesClient
             .downloadFile(cookie, nodeId.toString(), optVersion)
             .onFailure(failure -> logger.error(failure.getMessage(), failure))
-            .getOrNull()
-    );
+            .getOrNull());
   }
 
   public Optional<NodeUpdatedTimestamp> saveBlob(
@@ -177,15 +166,14 @@ public class WopiService {
       Optional<Integer> optOffsetFromUtc,
       InputStream blob,
       long contentLength,
-      boolean coolIsAutosave
-  ) throws ServiceDependencyException, AccountOverQuotaException {
-    NodeAttributes nodeAttributes = filesClient
-        .genericGraphQLRequest(
-            cookie,
-            NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty())
-        )
-        .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-        .getOrElseThrow(ServiceDependencyException::new);
+      boolean coolIsAutosave)
+      throws ServiceDependencyException, AccountOverQuotaException {
+    NodeAttributes nodeAttributes =
+        filesClient
+            .genericGraphQLRequest(
+                cookie, NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty()))
+            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
+            .getOrElseThrow(ServiceDependencyException::new);
 
     if (nodeAttributes == null) {
       // Same "successful GraphQL response, no matching node" case as FilesService#openFile /
@@ -193,34 +181,38 @@ public class WopiService {
       throw new NoSuchElementException("Node " + nodeId + " not found");
     }
 
-    NodeIdVersion uploadedNodeIdVersion = filesClient
-        .uploadFileVersion(
-            cookie,
-            nodeId.toString(),
-            createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
-            nodeAttributes.getMime_type(),
-            blob,
-            contentLength,
-            coolIsAutosave
-        ).mapFailure(
-            Case(
-                $(Predicates.instanceOf(AccountInOverQuota.class)),
-                new AccountOverQuotaException(
-                    "Unable to save blob %s to Files (owner is over quota)".formatted(nodeId))),
-            Case(
-                $(Predicates.instanceOf(UnAuthorized.class)),
-                new ServiceDependencyException("Unable to save blob %s to Files (424)".formatted(nodeId))),
-            Case(
-                $(Predicates.instanceOf(InternalServerError.class)),
-                new ServiceDependencyException("Unable to save blob %s to Files (500)".formatted(nodeId)))
-        ).get();
+    NodeIdVersion uploadedNodeIdVersion =
+        filesClient
+            .uploadFileVersion(
+                cookie,
+                nodeId.toString(),
+                createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
+                nodeAttributes.getMime_type(),
+                blob,
+                contentLength,
+                coolIsAutosave)
+            .mapFailure(
+                Case(
+                    $(Predicates.instanceOf(AccountInOverQuota.class)),
+                    new AccountOverQuotaException(
+                        "Unable to save blob %s to Files (owner is over quota)".formatted(nodeId))),
+                Case(
+                    $(Predicates.instanceOf(UnAuthorized.class)),
+                    new ServiceDependencyException(
+                        "Unable to save blob %s to Files (424)".formatted(nodeId))),
+                Case(
+                    $(Predicates.instanceOf(InternalServerError.class)),
+                    new ServiceDependencyException(
+                        "Unable to save blob %s to Files (500)".formatted(nodeId))))
+            .get();
 
     // Notify callback (Advanced: updates savedAt on open_document record)
     saveBlobCallback.onBlobSaved(nodeId);
 
-    Optional<Integer> uploadedNodeVersion = uploadedNodeIdVersion != null
-        ? Optional.ofNullable(uploadedNodeIdVersion.getVersion())
-        : Optional.empty();
+    Optional<Integer> uploadedNodeVersion =
+        uploadedNodeIdVersion != null
+            ? Optional.ofNullable(uploadedNodeIdVersion.getVersion())
+            : Optional.empty();
 
     /*
      * Retrieve the last update timestamp of the saved file
@@ -229,33 +221,35 @@ public class WopiService {
         filesClient
             .genericGraphQLRequest(
                 cookie,
-                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion)
-            )
-            .map(graphQLResponse -> {
-              try {
-                NodeAttributes updatedModeAttributes = NodeAttributes.mapFromJSON(graphQLResponse);
+                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion))
+            .map(
+                graphQLResponse -> {
+                  try {
+                    NodeAttributes updatedModeAttributes =
+                        NodeAttributes.mapFromJSON(graphQLResponse);
 
-                NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
-                updatedTimestamp.setLastModifiedTime(
-                    formatDateToIso8601WithOffset(
-                        new Date(updatedModeAttributes.getUpdated_at()), optOffsetFromUtc)
-                );
+                    NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+                    updatedTimestamp.setLastModifiedTime(
+                        formatDateToIso8601WithOffset(
+                            new Date(updatedModeAttributes.getUpdated_at()), optOffsetFromUtc));
 
-                logger.info("Saving blob with instant: {}", formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
+                    logger.info(
+                        "Saving blob with instant: {}",
+                        formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
 
-                return updatedTimestamp;
+                    return updatedTimestamp;
 
-              } catch (JsonProcessingException exception) {
-                logger.error(exception.getMessage(), exception);
-                return null;
-              }
-            })
+                  } catch (JsonProcessingException exception) {
+                    logger.error(exception.getMessage(), exception);
+                    return null;
+                  }
+                })
             .onFailure(failure -> logger.error(failure.getMessage(), failure))
-            .getOrNull()
-    );
+            .getOrNull());
   }
 
-  private String formatDateToIso8601WithOffset(Date modifiedTime, Optional<Integer> optOffsetMinutes) {
+  private String formatDateToIso8601WithOffset(
+      Date modifiedTime, Optional<Integer> optOffsetMinutes) {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
     // TODO marked for removal, ignore it completely and only deal with UTC

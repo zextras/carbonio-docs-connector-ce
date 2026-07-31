@@ -32,9 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link WopiResource}. No CDI container — WopiService is mocked.
- */
+/** Unit tests for {@link WopiResource}. No CDI container — WopiService is mocked. */
 class WopiResourceTest {
 
   private WopiService wopiService;
@@ -53,12 +51,7 @@ class WopiResourceTest {
 
   private OpenDocumentToken buildValidToken(UUID tokenId, UUID documentId) {
     return new OpenDocumentToken(
-        tokenId,
-        documentId,
-        REQUESTER_ID,
-        COOKIE,
-        Instant.now().plusSeconds(43200)
-    );
+        tokenId, documentId, REQUESTER_ID, COOKIE, Instant.now().plusSeconds(43200));
   }
 
   private ContainerRequestContext buildContextWithToken(OpenDocumentToken token) {
@@ -70,26 +63,29 @@ class WopiResourceTest {
   // ----- docsEditorAttributes (GET /wopi/{nodeId}) -----
 
   @Test
-  @DisplayName("docsEditorAttributes should return 200 when token matches node and attributes are found")
+  @DisplayName(
+      "docsEditorAttributes should return 200 when token matches node and attributes are found")
   void givenMatchingTokenDocsEditorAttributesShouldReturn200() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
     ContainerRequestContext ctx = buildContextWithToken(token);
 
-    DocsEditorAttributes attrs = new DocsEditorAttributes()
-        .setBaseFileName("doc.odt")
-        .setVersion(1)
-        .setUserCanWrite(true)
-        .setUserFriendlyName("Test User")
-        .setSize(1024L);
+    DocsEditorAttributes attrs =
+        new DocsEditorAttributes()
+            .setBaseFileName("doc.odt")
+            .setVersion(1)
+            .setUserCanWrite(true)
+            .setUserFriendlyName("Test User")
+            .setSize(1024L);
 
     when(wopiService.getDocsEditorAttributes(
-        eq(REQUESTER_ID), eq(COOKIE), eq(NODE_ID), eq(Optional.empty()), eq(Optional.empty())))
+            eq(REQUESTER_ID), eq(COOKIE), eq(NODE_ID), eq(Optional.empty()), eq(Optional.empty())))
         .thenReturn(Optional.of(attrs));
 
     // When
-    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+    Response response =
+        wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -105,7 +101,8 @@ class WopiResourceTest {
     ContainerRequestContext ctx = buildContextWithToken(token);
 
     // When
-    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+    Response response =
+        wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -124,7 +121,8 @@ class WopiResourceTest {
         .thenReturn(Optional.empty());
 
     // When
-    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+    Response response =
+        wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -132,7 +130,9 @@ class WopiResourceTest {
   }
 
   @Test
-  @DisplayName("docsEditorAttributes should return 404 when service throws NoSuchElementException (requester not found)")
+  @DisplayName(
+      "docsEditorAttributes should return 404 when service throws NoSuchElementException (requester"
+          + " not found)")
   void givenNoSuchElementExceptionDocsEditorAttributesShouldReturn404() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
@@ -143,7 +143,8 @@ class WopiResourceTest {
         .thenThrow(new java.util.NoSuchElementException());
 
     // When
-    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+    Response response =
+        wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -151,7 +152,9 @@ class WopiResourceTest {
   }
 
   @Test
-  @DisplayName("docsEditorAttributes should return 503 when service throws ServiceDependencyException (user-management unavailable)")
+  @DisplayName(
+      "docsEditorAttributes should return 503 when service throws ServiceDependencyException"
+          + " (user-management unavailable)")
   void givenServiceDependencyExceptionDocsEditorAttributesShouldReturn503() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
@@ -162,7 +165,8 @@ class WopiResourceTest {
         .thenThrow(new ServiceDependencyException("user-management unavailable"));
 
     // When
-    Response response = wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
+    Response response =
+        wopiResource.docsEditorAttributes(ACCESS_TOKEN_STR, NODE_ID, null, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -241,15 +245,20 @@ class WopiResourceTest {
     NodeUpdatedTimestamp timestamp = new NodeUpdatedTimestamp();
     timestamp.setLastModifiedTime("2026-01-01T00:00:00");
 
-    when(wopiService.saveBlob(eq(COOKIE), eq(NODE_ID), eq(Optional.empty()),
-        any(InputStream.class), anyLong(), anyBoolean()))
+    when(wopiService.saveBlob(
+            eq(COOKIE),
+            eq(NODE_ID),
+            eq(Optional.empty()),
+            any(InputStream.class),
+            anyLong(),
+            anyBoolean()))
         .thenReturn(Optional.of(timestamp));
 
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -257,7 +266,8 @@ class WopiResourceTest {
   }
 
   @Test
-  @DisplayName("saveBlob should return 404 when service throws NoSuchElementException (node not found)")
+  @DisplayName(
+      "saveBlob should return 404 when service throws NoSuchElementException (node not found)")
   void givenNoSuchElementExceptionSaveBlobShouldReturn404() throws Exception {
     // Given
     UUID tokenId = UUID.fromString(ACCESS_TOKEN_STR);
@@ -270,8 +280,8 @@ class WopiResourceTest {
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -292,8 +302,8 @@ class WopiResourceTest {
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(424);
@@ -310,8 +320,8 @@ class WopiResourceTest {
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus())
@@ -332,8 +342,8 @@ class WopiResourceTest {
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(424);
@@ -355,8 +365,8 @@ class WopiResourceTest {
     InputStream body = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Response response = wopiResource.saveBlob(
-        ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
+    Response response =
+        wopiResource.saveBlob(ACCESS_TOKEN_STR, NODE_ID, true, false, 12L, null, body, ctx);
 
     // Then — over-quota save maps to 413 (Payload Too Large)
     Assertions.assertThat(response.getStatus()).isEqualTo(413);

@@ -28,9 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link FilesResource}. No CDI container — FilesService is mocked.
- */
+/** Unit tests for {@link FilesResource}. No CDI container — FilesService is mocked. */
 class FilesResourceTest {
 
   private FilesService filesService;
@@ -113,13 +111,13 @@ class FilesResourceTest {
     String editorPath = "services/docs/editor/browser/dist/cool.html?access_token=abc&WOPISrc=xyz";
 
     when(filesService.openFile(
-        eq(REQUESTER_ID),
-        eq(Locale.ENGLISH),
-        eq(COOKIE),
-        eq(NODE_ID_STR),
-        eq(Optional.empty()),
-        eq(Optional.empty())
-    )).thenReturn(editorPath);
+            eq(REQUESTER_ID),
+            eq(Locale.ENGLISH),
+            eq(COOKIE),
+            eq(NODE_ID_STR),
+            eq(Optional.empty()),
+            eq(Optional.empty())))
+        .thenReturn(editorPath);
 
     ContainerRequestContext ctx = buildRequestContext();
 
@@ -139,13 +137,13 @@ class FilesResourceTest {
     String editorPath = "services/docs/editor/browser/dist/cool.html?access_token=abc&WOPISrc=xyz";
 
     when(filesService.openFile(
-        eq(REQUESTER_ID),
-        eq(Locale.ENGLISH),
-        eq(COOKIE),
-        eq(NODE_ID_STR),
-        eq(Optional.empty()),
-        eq(Optional.empty())
-    )).thenReturn(editorPath);
+            eq(REQUESTER_ID),
+            eq(Locale.ENGLISH),
+            eq(COOKIE),
+            eq(NODE_ID_STR),
+            eq(Optional.empty()),
+            eq(Optional.empty())))
+        .thenReturn(editorPath);
 
     ContainerRequestContext ctx = buildRequestContext();
 
@@ -172,7 +170,8 @@ class FilesResourceTest {
     Response response = filesResource.openFile(COOKIE, NODE_ID, null, null, null, ctx);
 
     // Then
-    Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -209,7 +208,8 @@ class FilesResourceTest {
     Response response = filesResource.openFile(COOKIE, NODE_ID, null, null, null, ctx);
 
     // Then
-    Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    Assertions.assertThat(response.getStatus())
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   // ----- Over-quota behavior tests (task 5 — TDD additions) -----

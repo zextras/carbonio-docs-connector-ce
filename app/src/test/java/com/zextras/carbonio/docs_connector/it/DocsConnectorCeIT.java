@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Layer 2 integration tests for carbonio-docs-connector-ce.
  *
- * <p>Uses {@code @QuarkusIntegrationTest}: the app runs out-of-process, as a packaged artifact
- * (the same {@code carbonio-docs-connector-ce-runner} the Jenkinsfile builds natively), not in
- * Quarkus' in-JVM test mode. {@code @Inject}/{@code @InjectMock} are therefore NOT available; all
+ * <p>Uses {@code @QuarkusIntegrationTest}: the app runs out-of-process, as a packaged artifact (the
+ * same {@code carbonio-docs-connector-ce-runner} the Jenkinsfile builds natively), not in Quarkus'
+ * in-JVM test mode. {@code @Inject}/{@code @InjectMock} are therefore NOT available; all
  * dependencies are either real containers or WireMock, wired purely through externalized config
  * (see {@link CeStackTestResource}).
  *
@@ -39,27 +39,27 @@ import org.junit.jupiter.api.Test;
  *       permission) drives it by ACTUALLY creating that state via files' own real HTTP contract —
  *       {@link CeStackTestResource#rawUploadToFiles} / {@link CeStackTestResource#rawCreateShare}
  *       for cases docs-connector's own {@code /files/create} (fixed blank templates only) can't
- *       reach — never by stubbing an arbitrary GraphQL response. Only carbonio-storages (files'
- *       OWN blob backend, one level further down) stays mocked; see {@link CeStackTestResource}'s
- *       class javadoc for why downloaded content is a fixed fixture rather than a genuine echo of
- *       what was uploaded.
+ *       reach — never by stubbing an arbitrary GraphQL response. Only carbonio-storages (files' OWN
+ *       blob backend, one level further down) stays mocked; see {@link CeStackTestResource}'s class
+ *       javadoc for why downloaded content is a fixed fixture rather than a genuine echo of what
+ *       was uploaded.
  * </ul>
  *
  * <p><b>Coverage note:</b> the previous {@code @QuarkusTest} version of this class also asserted
  * two scenarios that a real, correctly-functioning user-management container can never produce:
  * user-management responding with a 5xx, and user-management being unreachable
  * (connection-refused). Reading {@code UserResource}/{@code UserService} in
- * carbonio-user-management confirms {@code GET /internal/users/myself} only ever answers 200 or
- * 401 — any mailbox-side failure (timeout, 5xx, malformed response) is normalized internally to a
- * plain 401, by design. There is no way to make a live instance of that service return a 5xx or
- * drop the connection without literally killing/misconfiguring it for the whole test class, which
- * would break every other scenario in this suite. Those two scenarios are NOT dropped: they remain
- * covered, unchanged, as plain-Mockito unit tests in {@code CookieAuthenticationFilterTest}
- * ({@code givenUserManagement5xxTheFilterShouldReturn503} and {@code
- * givenUserManagementUnreachableTheFilterShouldReturn503}), which exercise
- * {@link com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter}'s error-mapping
- * logic directly against a mocked {@code UserResourceApi} that throws the exact {@code
- * ApiException} shapes a broken/unreachable dependency would produce.
+ * carbonio-user-management confirms {@code GET /internal/users/myself} only ever answers 200 or 401
+ * — any mailbox-side failure (timeout, 5xx, malformed response) is normalized internally to a plain
+ * 401, by design. There is no way to make a live instance of that service return a 5xx or drop the
+ * connection without literally killing/misconfiguring it for the whole test class, which would
+ * break every other scenario in this suite. Those two scenarios are NOT dropped: they remain
+ * covered, unchanged, as plain-Mockito unit tests in {@code CookieAuthenticationFilterTest} ({@code
+ * givenUserManagement5xxTheFilterShouldReturn503} and {@code
+ * givenUserManagementUnreachableTheFilterShouldReturn503}), which exercise {@link
+ * com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter}'s error-mapping logic
+ * directly against a mocked {@code UserResourceApi} that throws the exact {@code ApiException}
+ * shapes a broken/unreachable dependency would produce.
  */
 @QuarkusIntegrationTest
 @WithTestResource(CeStackTestResource.class)
@@ -78,9 +78,12 @@ class DocsConnectorCeIT {
   void givenNoCookieCreateFileShouldReturn401() {
     given()
         .contentType(ContentType.JSON)
-        .body("{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/files/create")
-        .then().statusCode(401);
+        .body(
+            "{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
+        .when()
+        .post("/files/create")
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -91,20 +94,27 @@ class DocsConnectorCeIT {
     given()
         .contentType(ContentType.JSON)
         .cookie("ZM_AUTH_TOKEN", "invalid-token")
-        .body("{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/files/create")
-        .then().statusCode(401);
+        .body(
+            "{\"filename\":\"test\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
+        .when()
+        .post("/files/create")
+        .then()
+        .statusCode(401);
   }
 
   @Test
-  @DisplayName("POST /files/create with valid cookie should upload template and return 200 with nodeId")
+  @DisplayName(
+      "POST /files/create with valid cookie should upload template and return 200 with nodeId")
   void givenValidCookieCreateFileShouldAttemptUpload() {
     // Real end-to-end: docs-connector uploads a blank ODT template to the REAL files container.
     given()
         .contentType(ContentType.JSON)
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .body("{\"filename\":\"New Doc\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
-        .when().post("/files/create")
+        .body(
+            "{\"filename\":\"New"
+                + " Doc\",\"destinationFolderId\":\"LOCAL_ROOT\",\"type\":\"LIBRE_DOCUMENT\"}")
+        .when()
+        .post("/files/create")
         .then()
         .statusCode(200)
         .body("nodeId", org.hamcrest.Matchers.notNullValue());
@@ -115,9 +125,7 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("GET /files/open/{nodeId} without cookie should return 401")
   void givenNoCookieOpenFileShouldReturn401() {
-    given()
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+    given().when().get("/files/open/" + NEVER_CREATED_NODE_ID).then().statusCode(401);
   }
 
   @Test
@@ -125,8 +133,10 @@ class DocsConnectorCeIT {
   void givenInvalidCookieOpenFileShouldReturn401() {
     given()
         .cookie("ZM_AUTH_TOKEN", "bad-token")
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/files/open/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -137,8 +147,10 @@ class DocsConnectorCeIT {
     // node does not exist it returns null"), which docs-connector maps to 404.
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(404);
+        .when()
+        .get("/files/open/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(404);
   }
 
   // ----- /wopi/{nodeId} access-token boundary cases -----
@@ -150,9 +162,7 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("GET /wopi/{nodeId} without access_token query param should return 401")
   void givenNoAccessTokenGetWopiAttributesShouldReturn401() {
-    given()
-        .when().get("/wopi/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+    given().when().get("/wopi/" + NEVER_CREATED_NODE_ID).then().statusCode(401);
   }
 
   @Test
@@ -161,8 +171,10 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "00000000-0000-0000-0000-000000000000")
         .queryParam("access_token_ttl", String.valueOf(System.currentTimeMillis() + 10000))
-        .when().get("/wopi/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/wopi/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -171,8 +183,10 @@ class DocsConnectorCeIT {
     given()
         .contentType(ContentType.BINARY)
         .body("file-content".getBytes(StandardCharsets.UTF_8))
-        .when().post("/wopi/" + NEVER_CREATED_NODE_ID + "/contents")
-        .then().statusCode(401);
+        .when()
+        .post("/wopi/" + NEVER_CREATED_NODE_ID + "/contents")
+        .then()
+        .statusCode(401);
   }
 
   // ----- Full happy-path WOPI flow -----
@@ -181,8 +195,7 @@ class DocsConnectorCeIT {
   private String uploadRealOdt(String authToken, String filename) throws Exception {
     byte[] content = ("real-content-" + filename).getBytes(StandardCharsets.UTF_8);
     return CeStackTestResource.rawUploadToFiles(
-        authToken, "LOCAL_ROOT", filename,
-        "application/vnd.oasis.opendocument.text", content);
+        authToken, "LOCAL_ROOT", filename, "application/vnd.oasis.opendocument.text", content);
   }
 
   @Test
@@ -190,12 +203,17 @@ class DocsConnectorCeIT {
   void givenValidCookieFullWopiFlowShouldSucceed() throws Exception {
     String nodeId = uploadRealOdt(CeStackTestResource.AUTH_TOKEN, "wopi-flow.odt");
 
-    // Step 1: GET /files/open/{nodeId} — should return 200 with redirect URL containing access_token
-    Response openResponse = given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200)
-        .extract().response();
+    // Step 1: GET /files/open/{nodeId} — should return 200 with redirect URL containing
+    // access_token
+    Response openResponse =
+        given()
+            .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+            .when()
+            .get("/files/open/" + nodeId)
+            .then()
+            .statusCode(200)
+            .extract()
+            .response();
 
     // Extract access_token from the redirect URL in the response body
     // DocsEditorRedirect record serialises as {"fileOpenUrl":"..."}
@@ -218,16 +236,20 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
-        .when().get("/wopi/" + nodeId)
-        .then().statusCode(200);
+        .when()
+        .get("/wopi/" + nodeId)
+        .then()
+        .statusCode(200);
 
     // Step 3: GET /wopi/{nodeId}/contents?access_token={token} — should return file content
     // (from the mocked storages backend -- see CeStackTestResource class javadoc).
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
-        .when().get("/wopi/" + nodeId + "/contents")
-        .then().statusCode(200);
+        .when()
+        .get("/wopi/" + nodeId + "/contents")
+        .then()
+        .statusCode(200);
 
     // Step 4: POST /wopi/{nodeId}/contents?access_token={token} — should return 200 (real
     // uploadFileVersion against real files, backed by the mocked storages upload stub).
@@ -237,8 +259,10 @@ class DocsConnectorCeIT {
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", futureTtl)
         .body(newContent)
-        .when().post("/wopi/" + nodeId + "/contents")
-        .then().statusCode(200);
+        .when()
+        .post("/wopi/" + nodeId + "/contents")
+        .then()
+        .statusCode(200);
   }
 
   private String extractAccessToken(String redirectUrl) {
@@ -259,15 +283,18 @@ class DocsConnectorCeIT {
     // layer rejects a blank token with 401 before calling mailbox (see UserResource#getMyself).
     given()
         .cookie("ZM_AUTH_TOKEN", "")
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/files/open/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   // NOTE: "user-management returns a 5xx" and "user-management is unreachable" are intentionally
   // NOT reproduced here. See the class-level javadoc: a real, correctly-functioning
   // user-management instance can only ever answer 200 or 401 on this endpoint, by design. Both
   // scenarios remain covered as plain-Mockito unit tests in CookieAuthenticationFilterTest
-  // (givenUserManagement5xxTheFilterShouldReturn503, givenUserManagementUnreachableTheFilterShouldReturn503).
+  // (givenUserManagement5xxTheFilterShouldReturn503,
+  // givenUserManagementUnreachableTheFilterShouldReturn503).
 
   // ----- AccessTokenValidationFilter edge cases (IT) -----
 
@@ -277,8 +304,10 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "not-a-uuid-at-all")
         .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
-        .when().get("/wopi/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/wopi/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -287,8 +316,10 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", "")
         .queryParam("access_token_ttl", System.currentTimeMillis() + 10000)
-        .when().get("/wopi/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/wopi/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   // ----- File size limit edge cases (IT) -----
@@ -301,28 +332,40 @@ class DocsConnectorCeIT {
     // recorded size (see CeStackTestResource#setupStoragesStubs), so this exceeds the real
     // 10 MB spreadsheet limit for real, not via a canned stub value.
     byte[] oversized = new byte[11 * 1024 * 1024];
-    String nodeId = CeStackTestResource.rawUploadToFiles(
-        CeStackTestResource.AUTH_TOKEN, "LOCAL_ROOT", "budget.ods",
-        "application/vnd.oasis.opendocument.spreadsheet", oversized);
+    String nodeId =
+        CeStackTestResource.rawUploadToFiles(
+            CeStackTestResource.AUTH_TOKEN,
+            "LOCAL_ROOT",
+            "budget.ods",
+            "application/vnd.oasis.opendocument.spreadsheet",
+            oversized);
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(403);
+        .when()
+        .get("/files/open/" + nodeId)
+        .then()
+        .statusCode(403);
   }
 
   @Test
   @DisplayName("GET /files/open/{nodeId} for presentation exceeding 100 MB limit should return 403")
   void givenPresentationExceedingSizeLimitOpenFileShouldReturn403() throws Exception {
     byte[] oversized = new byte[101 * 1024 * 1024];
-    String nodeId = CeStackTestResource.rawUploadToFiles(
-        CeStackTestResource.AUTH_TOKEN, "LOCAL_ROOT", "slides.odp",
-        "application/vnd.oasis.opendocument.presentation", oversized);
+    String nodeId =
+        CeStackTestResource.rawUploadToFiles(
+            CeStackTestResource.AUTH_TOKEN,
+            "LOCAL_ROOT",
+            "slides.odp",
+            "application/vnd.oasis.opendocument.presentation",
+            oversized);
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(403);
+        .when()
+        .get("/files/open/" + nodeId)
+        .then()
+        .statusCode(403);
   }
 
   // ----- 8 new IT cases -----
@@ -330,15 +373,20 @@ class DocsConnectorCeIT {
   @Test
   @DisplayName("GET /files/open/{nodeId} for .docx (OOXML) returns 200")
   void givenValidCookieAndDocxFile_whenOpenFile_thenReturn200() throws Exception {
-    String nodeId = CeStackTestResource.rawUploadToFiles(
-        CeStackTestResource.AUTH_TOKEN, "LOCAL_ROOT", "report.docx",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "docx-content".getBytes(StandardCharsets.UTF_8));
+    String nodeId =
+        CeStackTestResource.rawUploadToFiles(
+            CeStackTestResource.AUTH_TOKEN,
+            "LOCAL_ROOT",
+            "report.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "docx-content".getBytes(StandardCharsets.UTF_8));
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200);
+        .when()
+        .get("/files/open/" + nodeId)
+        .then()
+        .statusCode(200);
   }
 
   @Test
@@ -349,8 +397,10 @@ class DocsConnectorCeIT {
     // request never reaches files, so the nodeId does not need to exist.
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.GUEST_AUTH_TOKEN)
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/files/open/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -360,8 +410,10 @@ class DocsConnectorCeIT {
     // never reaches files, so the nodeId does not need to exist.
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.INACTIVE_AUTH_TOKEN)
-        .when().get("/files/open/" + NEVER_CREATED_NODE_ID)
-        .then().statusCode(401);
+        .when()
+        .get("/files/open/" + NEVER_CREATED_NODE_ID)
+        .then()
+        .statusCode(401);
   }
 
   @Test
@@ -371,19 +423,28 @@ class DocsConnectorCeIT {
     // Genuine real permission state: SECOND_USER owns the node and shares it READ_ONLY with the
     // main test user via files' real GraphQL createShare mutation -- files' permission model is
     // real DB state now that files is a real container, so this cannot be stubbed.
-    String nodeId = CeStackTestResource.rawUploadToFiles(
-        CeStackTestResource.SECOND_AUTH_TOKEN, "LOCAL_ROOT", "readonly-doc.odt",
-        "application/vnd.oasis.opendocument.text",
-        "owned-by-second-user".getBytes(StandardCharsets.UTF_8));
+    String nodeId =
+        CeStackTestResource.rawUploadToFiles(
+            CeStackTestResource.SECOND_AUTH_TOKEN,
+            "LOCAL_ROOT",
+            "readonly-doc.odt",
+            "application/vnd.oasis.opendocument.text",
+            "owned-by-second-user".getBytes(StandardCharsets.UTF_8));
     CeStackTestResource.rawCreateShare(
-        CeStackTestResource.SECOND_AUTH_TOKEN, nodeId, CeStackTestResource.TEST_USER_ID,
+        CeStackTestResource.SECOND_AUTH_TOKEN,
+        nodeId,
+        CeStackTestResource.TEST_USER_ID,
         "READ_ONLY");
 
-    Response r = given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200)
-        .extract().response();
+    Response r =
+        given()
+            .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+            .when()
+            .get("/files/open/" + nodeId)
+            .then()
+            .statusCode(200)
+            .extract()
+            .response();
 
     JsonNode json = new ObjectMapper().readTree(r.asString());
     String url = json.get("fileOpenUrl").asText();
@@ -397,10 +458,13 @@ class DocsConnectorCeIT {
 
     given()
         .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .redirects().follow(false)
+        .redirects()
+        .follow(false)
         .queryParam("redirect", true)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(307);
+        .when()
+        .get("/files/open/" + nodeId)
+        .then()
+        .statusCode(307);
   }
 
   @Test
@@ -409,11 +473,15 @@ class DocsConnectorCeIT {
       throws Exception {
     String nodeId = uploadRealOdt(CeStackTestResource.AUTH_TOKEN, "wopi-attrs.odt");
 
-    Response openR = given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200)
-        .extract().response();
+    Response openR =
+        given()
+            .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+            .when()
+            .get("/files/open/" + nodeId)
+            .then()
+            .statusCode(200)
+            .extract()
+            .response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
     String accessToken = extractAccessToken(url);
 
@@ -422,8 +490,10 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/wopi/" + nodeId)
-        .then().statusCode(200)
+        .when()
+        .get("/wopi/" + nodeId)
+        .then()
+        .statusCode(200)
         .body("$", org.hamcrest.Matchers.notNullValue());
   }
 
@@ -432,25 +502,35 @@ class DocsConnectorCeIT {
   void givenValidCookieAndOpenedFile_whenGetFileContents_thenReturnFileBytes() throws Exception {
     String nodeId = uploadRealOdt(CeStackTestResource.AUTH_TOKEN, "wopi-contents.odt");
 
-    Response openR = given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200).extract().response();
+    Response openR =
+        given()
+            .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+            .when()
+            .get("/files/open/" + nodeId)
+            .then()
+            .statusCode(200)
+            .extract()
+            .response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
     String accessToken = extractAccessToken(url);
 
-    byte[] returned = given()
-        .queryParam("access_token", accessToken)
-        .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/wopi/" + nodeId + "/contents")
-        .then().statusCode(200)
-        .extract().asByteArray();
+    byte[] returned =
+        given()
+            .queryParam("access_token", accessToken)
+            .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
+            .when()
+            .get("/wopi/" + nodeId + "/contents")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asByteArray();
 
     // storages is mocked (see CeStackTestResource class javadoc): the real files container never
     // actually persists what was uploaded to it, so the download genuinely returns the mock's
     // fixed fixture content, not an echo of whatever bytes were uploaded above.
     assertThat(returned)
-        .isEqualTo(CeStackTestResource.MOCKED_STORAGE_FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+        .isEqualTo(
+            CeStackTestResource.MOCKED_STORAGE_FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -458,10 +538,15 @@ class DocsConnectorCeIT {
   void givenWopiAccessToken_whenAccessedAcrossDifferentNodeId_thenReturn401() throws Exception {
     String nodeId = uploadRealOdt(CeStackTestResource.AUTH_TOKEN, "cross-node.odt");
 
-    Response openR = given()
-        .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
-        .when().get("/files/open/" + nodeId)
-        .then().statusCode(200).extract().response();
+    Response openR =
+        given()
+            .cookie("ZM_AUTH_TOKEN", CeStackTestResource.AUTH_TOKEN)
+            .when()
+            .get("/files/open/" + nodeId)
+            .then()
+            .statusCode(200)
+            .extract()
+            .response();
     String url = new ObjectMapper().readTree(openR.asString()).get("fileOpenUrl").asText();
     String accessToken = extractAccessToken(url);
 
@@ -472,7 +557,9 @@ class DocsConnectorCeIT {
     given()
         .queryParam("access_token", accessToken)
         .queryParam("access_token_ttl", System.currentTimeMillis() + 43_200_000L)
-        .when().get("/wopi/" + otherNode)
-        .then().statusCode(401);
+        .when()
+        .get("/wopi/" + otherNode)
+        .then()
+        .statusCode(401);
   }
 }

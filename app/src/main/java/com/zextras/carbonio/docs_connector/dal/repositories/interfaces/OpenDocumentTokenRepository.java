@@ -10,11 +10,7 @@ import java.util.UUID;
 
 public interface OpenDocumentTokenRepository {
 
-  OpenDocumentToken createToken(
-    UUID documentId,
-    String requesterId,
-    String requesterCookie
-  );
+  OpenDocumentToken createToken(UUID documentId, String requesterId, String requesterCookie);
 
   Optional<OpenDocumentToken> getToken(UUID tokenId);
 }

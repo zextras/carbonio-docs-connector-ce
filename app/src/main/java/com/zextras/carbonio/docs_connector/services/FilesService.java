@@ -71,13 +71,14 @@ public class FilesService {
       String cookie,
       String nodeId,
       Optional<Integer> optVersion,
-      Optional<Integer> optOffsetFromUtc
-  ) throws ServiceDependencyException, FileSizeTooLargeException {
+      Optional<Integer> optOffsetFromUtc)
+      throws ServiceDependencyException, FileSizeTooLargeException {
 
-    NodeAttributes nodeAttributes = filesClient
-        .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
-        .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-        .getOrElseThrow(ServiceDependencyException::new);
+    NodeAttributes nodeAttributes =
+        filesClient
+            .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
+            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
+            .getOrElseThrow(ServiceDependencyException::new);
 
     if (nodeAttributes == null) {
       // files' getNode GraphQL resolver answers a nullable field with a JSON null for a genuinely
@@ -92,18 +93,16 @@ public class FilesService {
     GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
     long maxFileSizeInMb = getMaxSizeLimitForFileType(fileType);
     if (nodeAttributes.getSize() > maxFileSizeInMb * MEGA_BYTE) {
-      String message = "File %s with mime type %s and size %d is too large to open".formatted(
-          nodeId,
-          nodeAttributes.getMime_type(),
-          nodeAttributes.getSize()
-      );
+      String message =
+          "File %s with mime type %s and size %d is too large to open"
+              .formatted(nodeId, nodeAttributes.getMime_type(), nodeAttributes.getSize());
 
       logger.info(message);
       throw new FileSizeTooLargeException(message, maxFileSizeInMb);
     }
 
-    OpenDocumentToken openDocumentToken = openDocumentTokenRepository
-        .createToken(UUID.fromString(nodeId), requesterId, cookie);
+    OpenDocumentToken openDocumentToken =
+        openDocumentTokenRepository.createToken(UUID.fromString(nodeId), requesterId, cookie);
 
     // Instance selection (Advanced: sticky routing via Consul + DB; CE: empty = static config)
     Optional<UUID> selectedInstanceId =
@@ -111,26 +110,27 @@ public class FilesService {
 
     // WopiSRC
     String wopiProtocol = Constants.Config.Wopi.DEFAULT_PROTOCOL;
-    String wopiHost = networkingConfig
-        .get(DocsConnectorServiceConfig.NetworkingConfig.WOPI_HOST)
-        .orElseThrow();
-    String wopiPort = networkingConfig
-        .get(DocsConnectorServiceConfig.NetworkingConfig.WOPI_PORT)
-        .orElseThrow();
+    String wopiHost =
+        networkingConfig.get(DocsConnectorServiceConfig.NetworkingConfig.WOPI_HOST).orElseThrow();
+    String wopiPort =
+        networkingConfig.get(DocsConnectorServiceConfig.NetworkingConfig.WOPI_PORT).orElseThrow();
 
-    StringBuilder wopiEndpointBuilder = new StringBuilder()
-        .append(wopiProtocol).append("://").append(wopiHost).append(":").append(wopiPort)
-        .append("/wopi/")
-        .append(nodeId);
+    StringBuilder wopiEndpointBuilder =
+        new StringBuilder()
+            .append(wopiProtocol)
+            .append("://")
+            .append(wopiHost)
+            .append(":")
+            .append(wopiPort)
+            .append("/wopi/")
+            .append(nodeId);
 
     // Query params order: version -> service_id -> offset_from_utc.
     // Collect present params then join with "&" so there is never a trailing "&".
     List<String> wopiParams = new ArrayList<>();
     optVersion.ifPresent(version -> wopiParams.add("version=" + version));
-    selectedInstanceId.ifPresent(
-        instanceId -> wopiParams.add("service_id=" + instanceId));
-    optOffsetFromUtc.ifPresent(
-        offsetFromUtc -> wopiParams.add("offset_from_utc=" + offsetFromUtc));
+    selectedInstanceId.ifPresent(instanceId -> wopiParams.add("service_id=" + instanceId));
+    optOffsetFromUtc.ifPresent(offsetFromUtc -> wopiParams.add("offset_from_utc=" + offsetFromUtc));
     if (!wopiParams.isEmpty()) {
       wopiEndpointBuilder.append("?").append(String.join("&", wopiParams));
     }
@@ -139,23 +139,21 @@ public class FilesService {
     // it can contain the version:
     // - services/docs/files/open/<node_id>?redirect=true
     // - services/docs/files/open/<node_id>?version=<version>&redirect=true
-    StringBuilder publicURLBuilder = new StringBuilder()
-        .append("services/docs/files/open/")
-        .append(nodeId)
-        .append("?");
+    StringBuilder publicURLBuilder =
+        new StringBuilder().append("services/docs/files/open/").append(nodeId).append("?");
 
-    optVersion
-        .map(version -> publicURLBuilder.append("version=").append(version).append("&"));
+    optVersion.map(version -> publicURLBuilder.append("version=").append(version).append("&"));
 
     publicURLBuilder.append("redirect=true");
 
     // Cool html resource + token parameter
-    StringBuilder docsPathAndParametersBuilder = new StringBuilder()
-        .append("services/docs/editor/browser/dist/cool.html")
-        .append("?access_token=")
-        .append(openDocumentToken.getTokenId())
-        .append("&access_token_ttl=")
-        .append(openDocumentToken.getExpirationTimestamp().toEpochMilli());
+    StringBuilder docsPathAndParametersBuilder =
+        new StringBuilder()
+            .append("services/docs/editor/browser/dist/cool.html")
+            .append("?access_token=")
+            .append(openDocumentToken.getTokenId())
+            .append("&access_token_ttl=")
+            .append(openDocumentToken.getExpirationTimestamp().toEpochMilli());
 
     /*
      * If the version is specified then the document should be opened in read only.
@@ -165,8 +163,7 @@ public class FilesService {
      * This is a temporary solution and if the client requests a specific version then it
      * will be opened in read only even if it should be editable
      */
-    boolean overQuota = quotaChecker.isOverQuota(
-        nodeAttributes.getOwner().getId(), cookie);
+    boolean overQuota = quotaChecker.isOverQuota(nodeAttributes.getOwner().getId(), cookie);
     if (!nodeAttributes.getPermissions().getCan_write_file()
         || optVersion.isPresent()
         || overQuota) {
@@ -176,10 +173,9 @@ public class FilesService {
     // Document title parameter
     docsPathAndParametersBuilder
         .append("&title=")
-        .append(URLEncoder.encode(
-            nodeAttributes.getName().replaceAll(" ", "_"),
-            StandardCharsets.UTF_8
-        ));
+        .append(
+            URLEncoder.encode(
+                nodeAttributes.getName().replaceAll(" ", "_"), StandardCharsets.UTF_8));
 
     // UI parameters
     docsPathAndParametersBuilder
@@ -199,37 +195,36 @@ public class FilesService {
 
     docsPathAndParametersBuilder.append("&lang=").append(requesterLocale.toLanguageTag());
 
-    selectedInstanceId.ifPresent(instanceId ->
-        docsPathAndParametersBuilder.append("&service_id=").append(instanceId));
+    selectedInstanceId.ifPresent(
+        instanceId -> docsPathAndParametersBuilder.append("&service_id=").append(instanceId));
 
     logger.info(docsPathAndParametersBuilder.toString());
     return docsPathAndParametersBuilder.toString();
   }
 
-  public Optional<CreatedFile> uploadTemplate(
-      String cookie,
-      InsertFile docsFile
-  ) throws AccountOverQuotaException {
+  public Optional<CreatedFile> uploadTemplate(String cookie, InsertFile docsFile)
+      throws AccountOverQuotaException {
     Optional<byte[]> optTemplateRaw = TemplateUtils.getTemplateRaw(docsFile.getType());
     if (optTemplateRaw.isEmpty()) {
       return Optional.empty();
     }
 
     byte[] templateRaw = optTemplateRaw.get();
-    Try<CreatedFile> result = filesClient
-        .uploadFile(
-            cookie,
-            docsFile.getDestinationFolderId(),
-            TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
-            TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
-            new ByteArrayInputStream(templateRaw),
-            templateRaw.length
-        )
-        .map(nodeId -> {
-          CreatedFile createdFile = new CreatedFile();
-          createdFile.setNodeId(UUID.fromString(nodeId.getNodeId()));
-          return createdFile;
-        });
+    Try<CreatedFile> result =
+        filesClient
+            .uploadFile(
+                cookie,
+                docsFile.getDestinationFolderId(),
+                TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
+                TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
+                new ByteArrayInputStream(templateRaw),
+                templateRaw.length)
+            .map(
+                nodeId -> {
+                  CreatedFile createdFile = new CreatedFile();
+                  createdFile.setNodeId(UUID.fromString(nodeId.getNodeId()));
+                  return createdFile;
+                });
 
     if (result.isFailure()) {
       Throwable cause = result.getCause();
@@ -244,24 +239,23 @@ public class FilesService {
   }
 
   /**
-   * Resolves the max file size limit (in MB) for the given file type from Consul KV via
-   * {@link ApplicationConfigService}. Operators may override the limits via Consul KV
-   * ({@code carbonio-docs-connector/max-file-size-in-mb/{document|presentation|spreadsheet}});
-   * when absent, the defaults declared in {@code application.properties} under the
-   * {@code application-config.} prefix apply (legacy 50/100/10 MB). The lookup therefore always
-   * resolves a value, so {@code orElseThrow} only fires on a genuine misconfiguration (a default
-   * was removed). Note: {@code @ConfigKey(ifNotPresent = ...)} is documentation-only and is NOT a
-   * runtime default.
+   * Resolves the max file size limit (in MB) for the given file type from Consul KV via {@link
+   * ApplicationConfigService}. Operators may override the limits via Consul KV ({@code
+   * carbonio-docs-connector/max-file-size-in-mb/{document|presentation|spreadsheet}}); when absent,
+   * the defaults declared in {@code application.properties} under the {@code application-config.}
+   * prefix apply (legacy 50/100/10 MB). The lookup therefore always resolves a value, so {@code
+   * orElseThrow} only fires on a genuine misconfiguration (a default was removed). Note:
+   * {@code @ConfigKey(ifNotPresent = ...)} is documentation-only and is NOT a runtime default.
    */
   private long getMaxSizeLimitForFileType(GenericFileType fileType) {
-    String configKey = switch (fileType) {
-      case DOCUMENT -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT;
-      case PRESENTATION -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_PRESENTATION;
-      case SPREADSHEET -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_SPREADSHEET;
-    };
-    return applicationConfig
-        .get(configKey)
-        .map(Long::parseLong)
-        .orElseThrow();
+    String configKey =
+        switch (fileType) {
+          case DOCUMENT -> DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_DOCUMENT;
+          case PRESENTATION ->
+              DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_PRESENTATION;
+          case SPREADSHEET ->
+              DocsConnectorServiceConfig.ApplicationConfig.MAX_FILE_SIZE_MB_SPREADSHEET;
+        };
+    return applicationConfig.get(configKey).map(Long::parseLong).orElseThrow();
   }
 }

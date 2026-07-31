@@ -71,12 +71,7 @@ class AccessTokenValidationFilterTest {
 
   private OpenDocumentToken buildToken(UUID tokenId, Instant expiration) {
     return new OpenDocumentToken(
-        tokenId,
-        UUID.randomUUID(),
-        "requester-id",
-        "ZM_AUTH_TOKEN=abc123",
-        expiration
-    );
+        tokenId, UUID.randomUUID(), "requester-id", "ZM_AUTH_TOKEN=abc123", expiration);
   }
 
   @Test
@@ -182,7 +177,8 @@ class AccessTokenValidationFilterTest {
   }
 
   @Test
-  @DisplayName("Given a token that expires exactly at the clock instant the filter should return 401")
+  @DisplayName(
+      "Given a token that expires exactly at the clock instant the filter should return 401")
   void givenATokenExpiringExactlyNowTheFilterShouldReturn401() {
     // Given — token expiration == clock time → NOT strictly greater → expired
     UUID tokenId = UUID.randomUUID();

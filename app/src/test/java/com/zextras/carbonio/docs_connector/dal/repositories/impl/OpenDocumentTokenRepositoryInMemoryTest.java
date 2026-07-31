@@ -6,7 +6,6 @@ package com.zextras.carbonio.docs_connector.dal.repositories.impl;
 import com.zextras.carbonio.docs_connector.cache.CacheManager;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -109,8 +108,7 @@ class OpenDocumentTokenRepositoryInMemoryTest {
     String badCookie = "SESSION=somevalue";
 
     // When / Then
-    Assertions.assertThatThrownBy(
-            () -> repository.createToken(documentId, "user-id", badCookie))
+    Assertions.assertThatThrownBy(() -> repository.createToken(documentId, "user-id", badCookie))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("ZM_AUTH_TOKEN");
   }
@@ -129,7 +127,9 @@ class OpenDocumentTokenRepositoryInMemoryTest {
   }
 
   @Test
-  @DisplayName("createToken with cookie containing multiple key-value pairs should extract only ZM_AUTH_TOKEN")
+  @DisplayName(
+      "createToken with cookie containing multiple key-value pairs should extract only"
+          + " ZM_AUTH_TOKEN")
   void givenCookieWithMultipleKeyValuePairsCreateTokenShouldExtractOnlyZmAuthToken() {
     // Given
     UUID documentId = UUID.randomUUID();
@@ -146,7 +146,9 @@ class OpenDocumentTokenRepositoryInMemoryTest {
   }
 
   @Test
-  @DisplayName("createToken with ZM_AUTH_TOKEN at end of cookie string (no trailing semicolon) should be extracted")
+  @DisplayName(
+      "createToken with ZM_AUTH_TOKEN at end of cookie string (no trailing semicolon) should be"
+          + " extracted")
   void givenZmAuthTokenAtEndOfCookieStringCreateTokenShouldBeExtracted() {
     // Given — ZM_AUTH_TOKEN is the last field, no trailing semicolon
     UUID documentId = UUID.randomUUID();
