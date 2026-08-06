@@ -70,10 +70,10 @@ SPDX-License-Identifier: AGPL-3.0-only
       <version>${carbonio-files-sdk.version}</version>
     </dependency>
 
-    <!-- Caffeine: used by token cache (CacheManager) -->
+    <!-- Quarkus extension, not raw caffeine: registers Caffeine's reflectively-loaded cache impl classes for GraalVM native -->
     <dependency>
-      <groupId>com.github.ben-manes.caffeine</groupId>
-      <artifactId>caffeine</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-caffeine</artifactId>
     </dependency>
 
     <!-- Consul client: needed for getDocsEditorInstanceIds() health query -->
