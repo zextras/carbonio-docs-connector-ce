@@ -72,6 +72,7 @@ Apache-2.0 (https://spdx.org/licenses/Apache-2.0.html) applies to:
   Quarkus - ArC - Runtime (io.quarkus:quarkus-arc:3.37.2)
   Quarkus - Bootstrap - Classloader common utilities (io.quarkus:quarkus-classloader-commons:3.37.2)
   Quarkus - Bootstrap - Runner (io.quarkus:quarkus-bootstrap-runner:3.37.2)
+  Quarkus - Caffeine - Runtime (io.quarkus:quarkus-caffeine:3.37.2)
   Quarkus - Core - Runtime (io.quarkus:quarkus-core:3.37.2)
   Quarkus - Credentials - Runtime (io.quarkus:quarkus-credentials:3.37.2)
   Quarkus - Development mode - SPI (io.quarkus:quarkus-development-mode-spi:3.37.2)
