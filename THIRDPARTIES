@@ -201,6 +201,7 @@ List of third-party dependencies grouped by their license type.
         * okhttp (com.squareup.okhttp3:okhttp:4.9.0 - https://square.github.io/okhttp/)
         * Okio (com.squareup.okio:okio:2.8.0 - https://github.com/square/okio/)
         * Quarkus - ArC - Runtime (io.quarkus:quarkus-arc:3.37.2 - https://github.com/quarkusio/quarkus)
+        * Quarkus - Caffeine - Runtime (io.quarkus:quarkus-caffeine:3.37.2 - https://github.com/quarkusio/quarkus)
         * Quarkus - Core - Runtime (io.quarkus:quarkus-core:3.37.2 - https://github.com/quarkusio/quarkus)
         * Quarkus - Credentials - Runtime (io.quarkus:quarkus-credentials:3.37.2 - https://github.com/quarkusio/quarkus)
         * Quarkus - Development mode - SPI (io.quarkus:quarkus-development-mode-spi:3.37.2 - https://github.com/quarkusio/quarkus)

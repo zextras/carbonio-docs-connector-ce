@@ -27,7 +27,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
   <properties>
     <assertj.version>3.27.7</assertj.version>
-    <caffeine.version>3.2.3</caffeine.version>
     <carbonio-files-sdk.version>1.1.0-1</carbonio-files-sdk.version>
 
     <maven-compiler.version>3.13.0</maven-compiler.version>
