@@ -18,8 +18,8 @@ import com.zextras.carbonio.files.entities.NodeIdVersion;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
- * Registers, for the GraalVM native image, the POJOs that Jackson (de)serializes at runtime but that
- * Quarkus does not auto-register, so without reflection metadata they fail in native mode.
+ * Registers, for the GraalVM native image, the POJOs that Jackson (de)serializes at runtime but
+ * that Quarkus does not auto-register, so without reflection metadata they fail in native mode.
  *
  * <p>Two categories:
  *
@@ -29,26 +29,24 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  *       <ul>
  *         <li>{@link NodeAttributes}, {@link User}, {@link Permissions} — parsed by {@code
  *             NodeAttributes.mapFromJSON} on the files GraphQL response (open file / WOPI). Missing
- *             registration surfaced as a generic 404 on {@code /files/open}.</li>
+ *             registration surfaced as a generic 404 on {@code /files/open}.
  *         <li>{@link NodeId}, {@link NodeIdVersion} — parsed by the carbonio-files-sdk {@code
  *             FilesClient.uploadFile} response. Missing registration surfaced as a 404 on {@code
- *             /files/create}.</li>
+ *             /files/create}.
  *       </ul>
- *   </li>
- *   <li><b>JAX-RS JSON DTOs returned/consumed through an opaque {@code jakarta.ws.rs.core.Response}</b>
- *       — because the resource methods declare {@code Response} (not the concrete type), Quarkus
- *       cannot infer the entity type at build time and does not register it, so native Jackson
- *       serialization fails with {@code "No serializer found ... no properties discovered to create
- *       BeanSerializer"}:
+ *   <li><b>JAX-RS JSON DTOs returned/consumed through an opaque {@code
+ *       jakarta.ws.rs.core.Response}</b> — because the resource methods declare {@code Response}
+ *       (not the concrete type), Quarkus cannot infer the entity type at build time and does not
+ *       register it, so native Jackson serialization fails with {@code "No serializer found ... no
+ *       properties discovered to create BeanSerializer"}:
  *       <ul>
- *         <li>{@link DocsEditorRedirect} — {@code FilesResource#openFile} response;</li>
+ *         <li>{@link DocsEditorRedirect} — {@code FilesResource#openFile} response;
  *         <li>{@link CreatedFile}, {@link InsertFile} — {@code FilesResource#createFile} response /
- *             request body;</li>
- *         <li>{@link DocsEditorAttributes} — {@code WopiResource} CheckFileInfo response;</li>
- *         <li>{@link NodeUpdatedTimestamp} — {@code WopiResource#saveBlob} response;</li>
- *         <li>{@link FileType} — enum nested in the DTOs above.</li>
+ *             request body;
+ *         <li>{@link DocsEditorAttributes} — {@code WopiResource} CheckFileInfo response;
+ *         <li>{@link NodeUpdatedTimestamp} — {@code WopiResource#saveBlob} response;
+ *         <li>{@link FileType} — enum nested in the DTOs above.
  *       </ul>
- *   </li>
  * </ul>
  */
 @RegisterForReflection(

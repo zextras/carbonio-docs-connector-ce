@@ -21,10 +21,8 @@ public class CacheManager {
 
   @Inject
   public CacheManager() {
-    tokenCache = Caffeine
-        .newBuilder()
-        .expireAfterWrite(tokenDurationInMs, TimeUnit.MILLISECONDS)
-        .build();
+    tokenCache =
+        Caffeine.newBuilder().expireAfterWrite(tokenDurationInMs, TimeUnit.MILLISECONDS).build();
   }
 
   public Cache<String, OpenDocumentToken> getTokenCache() {

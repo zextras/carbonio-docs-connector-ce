@@ -26,7 +26,6 @@ public final class Constants {
 
         public static final String WOPI = "wopi";
         public static final String FILES = "files";
-
       }
 
       public static final class Wopi {
@@ -50,12 +49,13 @@ public final class Constants {
 
     /**
      * TEST-ONLY override for the requester domain used in docs-editor redirects. Read directly from
-     * this system property (or an env var of the same logical name) by
-     * {@link com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter}; it is
-     * intentionally NOT a Consul KV / application-config key, so it never appears in the generated
-     * configs.md. Matches the legacy property name for continuity.
+     * this system property (or an env var of the same logical name) by {@link
+     * com.zextras.carbonio.docs_connector.auth.CookieAuthenticationFilter}; it is intentionally NOT
+     * a Consul KV / application-config key, so it never appears in the generated configs.md.
+     * Matches the legacy property name for continuity.
      */
-    public static final String OVERRIDE_REQUESTER_DOMAIN_PROPERTY = "carbonio.docs-connector.requester-domain-override";
+    public static final String OVERRIDE_REQUESTER_DOMAIN_PROPERTY =
+        "carbonio.docs-connector.requester-domain-override";
 
     public static final String REQUESTER_LOCALE = "requester-locale";
   }
@@ -66,54 +66,53 @@ public final class Constants {
 
     public static final String ACCEPTED_COOKIE_TYPE = "ZM_AUTH_TOKEN";
 
-    public static final List<String> DOCUMENT_MIME_TYPES = List.of(
-      "text/rtf",
-      "text/plain",
-      "application/msword",
-      "application/rtf",
-      "application/vnd.lotus-wordpro",
-      "application/vnd.ms-word.document.macroEnabled.12",
-      "application/vnd.ms-word.template.macroEnabled.12",
-      "application/vnd.oasis.opendocument.text",
-      "application/vnd.oasis.opendocument.text-flat-xml",
-      "application/vnd.oasis.opendocument.text-master",
-      "application/vnd.oasis.opendocument.text-master-template",
-      "application/vnd.oasis.opendocument.text-template",
-      "application/vnd.oasis.opendocument.text-web",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
-      "application/vnd.sun.xml.writer",
-      "application/vnd.sun.xml.writer.global",
-      "application/vnd.sun.xml.writer.template"
-    );
-    public static final List<String> PRESENTATION_MIME_TYPES = List.of(
-      "application/vnd.ms-powerpoint",
-      "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
-      "application/vnd.ms-powerpoint.template.macroEnabled.12",
-      "application/vnd.oasis.opendocument.presentation",
-      "application/vnd.oasis.opendocument.presentation-flat-xml",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "application/vnd.openxmlformats-officedocument.presentationml.template",
-      "application/vnd.sun.xml.impress",
-      "application/vnd.sun.xml.impress.template"
-    );
-    public static final List<String> SPREADSHEET_MIME_TYPES = List.of(
-      "application/vnd.ms-excel",
-      "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
-      "application/vnd.ms-excel.sheet.macroEnabled.12",
-      "application/vnd.ms-excel.template.macroEnabled.12",
-      "application/vnd.oasis.opendocument.spreadsheet",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
-      "application/vnd.sun.xml.calc",
-      "application/vnd.sun.xml.calc.template"
-    );
+    public static final List<String> DOCUMENT_MIME_TYPES =
+        List.of(
+            "text/rtf",
+            "text/plain",
+            "application/msword",
+            "application/rtf",
+            "application/vnd.lotus-wordpro",
+            "application/vnd.ms-word.document.macroEnabled.12",
+            "application/vnd.ms-word.template.macroEnabled.12",
+            "application/vnd.oasis.opendocument.text",
+            "application/vnd.oasis.opendocument.text-flat-xml",
+            "application/vnd.oasis.opendocument.text-master",
+            "application/vnd.oasis.opendocument.text-master-template",
+            "application/vnd.oasis.opendocument.text-template",
+            "application/vnd.oasis.opendocument.text-web",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+            "application/vnd.sun.xml.writer",
+            "application/vnd.sun.xml.writer.global",
+            "application/vnd.sun.xml.writer.template");
+    public static final List<String> PRESENTATION_MIME_TYPES =
+        List.of(
+            "application/vnd.ms-powerpoint",
+            "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
+            "application/vnd.ms-powerpoint.template.macroEnabled.12",
+            "application/vnd.oasis.opendocument.presentation",
+            "application/vnd.oasis.opendocument.presentation-flat-xml",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.openxmlformats-officedocument.presentationml.template",
+            "application/vnd.sun.xml.impress",
+            "application/vnd.sun.xml.impress.template");
+    public static final List<String> SPREADSHEET_MIME_TYPES =
+        List.of(
+            "application/vnd.ms-excel",
+            "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
+            "application/vnd.ms-excel.sheet.macroEnabled.12",
+            "application/vnd.ms-excel.template.macroEnabled.12",
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+            "application/vnd.sun.xml.calc",
+            "application/vnd.sun.xml.calc.template");
     public static final Map<GenericFileType, List<String>> GENERIC_FILE_TYPE_MIME_TYPES_MAP =
-      Map.of(
-        GenericFileType.DOCUMENT, DOCUMENT_MIME_TYPES,
-        GenericFileType.PRESENTATION, PRESENTATION_MIME_TYPES,
-        GenericFileType.SPREADSHEET, SPREADSHEET_MIME_TYPES
-      );
+        Map.of(
+            GenericFileType.DOCUMENT, DOCUMENT_MIME_TYPES,
+            GenericFileType.PRESENTATION, PRESENTATION_MIME_TYPES,
+            GenericFileType.SPREADSHEET, SPREADSHEET_MIME_TYPES);
 
     public static final class Wopi {
 

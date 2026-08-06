@@ -8,9 +8,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Default CE implementation of {@link DocsEditorInstanceSelector}.
- * Returns {@link Optional#empty()} so that the static WOPI host/port from the config is used.
- * Advanced overrides this bean with a real instance selector via {@code @Alternative @Priority(1)}.
+ * Default CE implementation of {@link DocsEditorInstanceSelector}. Returns {@link Optional#empty()}
+ * so that the static WOPI host/port from the config is used. Advanced overrides this bean with a
+ * real instance selector via {@code @Alternative @Priority(1)}.
  */
 @ApplicationScoped
 public class SingleDocsEditorInstanceSelector implements DocsEditorInstanceSelector {

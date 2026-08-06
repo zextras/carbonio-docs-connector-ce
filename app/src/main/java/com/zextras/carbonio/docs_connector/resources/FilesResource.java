@@ -82,18 +82,20 @@ public class FilesResource {
       @jakarta.ws.rs.core.Context ContainerRequestContext requestContext) {
 
     String requesterId = (String) requestContext.getProperty(Constants.Context.REQUESTER_ID);
-    String requesterDomain = (String) requestContext.getProperty(Constants.Context.REQUESTER_DOMAIN);
-    Locale requesterLocale = (Locale) requestContext.getProperty(Constants.Context.REQUESTER_LOCALE);
+    String requesterDomain =
+        (String) requestContext.getProperty(Constants.Context.REQUESTER_DOMAIN);
+    Locale requesterLocale =
+        (Locale) requestContext.getProperty(Constants.Context.REQUESTER_LOCALE);
 
     try {
-      String docsEditorURL = filesService.openFile(
-          requesterId,
-          requesterLocale,
-          cookie,
-          nodeId.toString(),
-          Optional.ofNullable(version),
-          Optional.ofNullable(offsetFromUtc)
-      );
+      String docsEditorURL =
+          filesService.openFile(
+              requesterId,
+              requesterLocale,
+              cookie,
+              nodeId.toString(),
+              Optional.ofNullable(version),
+              Optional.ofNullable(offsetFromUtc));
       String docsRedirectURL = "%s/%s".formatted(requesterDomain, docsEditorURL);
 
       return (redirect != null && redirect)

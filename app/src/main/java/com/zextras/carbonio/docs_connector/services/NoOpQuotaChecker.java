@@ -6,9 +6,9 @@ package com.zextras.carbonio.docs_connector.services;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * Default (CE) no-op implementation of {@link QuotaChecker}.
- * Always returns {@code false} (not over quota) because CE has no quota concept.
- * Advanced overrides this bean via {@code @Alternative @Priority(1)}.
+ * Default (CE) no-op implementation of {@link QuotaChecker}. Always returns {@code false} (not over
+ * quota) because CE has no quota concept. Advanced overrides this bean via
+ * {@code @Alternative @Priority(1)}.
  */
 @ApplicationScoped
 public class NoOpQuotaChecker implements QuotaChecker {

@@ -6,6 +6,7 @@
 target/
 dist/
 boot/dependency-reduced-pom.xml
+.flattened-pom.xml
 
 # JetBrains IDE
 .idea/

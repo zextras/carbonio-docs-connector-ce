@@ -15,8 +15,8 @@ import java.util.Map.Entry;
  *   <li>LIBRE_PRESENTATION
  *   <li>LIBRE_SPREADSHEET
  * </ul>
- * <p>
- * Otherwise, it can be a Microsoft Office document format:
+ *
+ * <p>Otherwise, it can be a Microsoft Office document format:
  *
  * <ul>
  *   <li>MS_DOCUMENT
@@ -25,7 +25,6 @@ import java.util.Map.Entry;
  * </ul>
  */
 public enum FileType {
-
   LIBRE_DOCUMENT("LIBRE_DOCUMENT"),
   LIBRE_PRESENTATION("LIBRE_PRESENTATION"),
   LIBRE_SPREADSHEET("LIBRE_SPREADSHEET"),
@@ -50,13 +49,11 @@ public enum FileType {
     SPREADSHEET;
 
     public static GenericFileType fromMimeType(String fileMimeType) {
-      return Config.GENERIC_FILE_TYPE_MIME_TYPES_MAP
-        .entrySet()
-        .stream()
-        .filter(entry -> entry.getValue().contains(fileMimeType))
-        .map(Entry::getKey)
-        .findFirst()
-        .orElse(GenericFileType.DOCUMENT);
+      return Config.GENERIC_FILE_TYPE_MIME_TYPES_MAP.entrySet().stream()
+          .filter(entry -> entry.getValue().contains(fileMimeType))
+          .map(Entry::getKey)
+          .findFirst()
+          .orElse(GenericFileType.DOCUMENT);
     }
   }
 }

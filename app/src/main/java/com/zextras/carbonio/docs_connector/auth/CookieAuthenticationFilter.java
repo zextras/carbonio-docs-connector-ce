@@ -33,8 +33,8 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
    * TEST-ONLY override for the requester domain used in docs-editor redirects. It is read directly
    * from the system property {@value Context#OVERRIDE_REQUESTER_DOMAIN_PROPERTY} (or, equivalently,
    * from an env var of the same logical name) and is intentionally NOT a Consul KV /
-   * application-config key, so it never appears in the generated configs.md and is excluded from the
-   * config-migration surface. It exists purely to let developers/tests force redirects onto a
+   * application-config key, so it never appears in the generated configs.md and is excluded from
+   * the config-migration surface. It exists purely to let developers/tests force redirects onto a
    * different domain. Mirrors the legacy system property name for continuity.
    */
   static final String REQUESTER_DOMAIN_OVERRIDE_PROPERTY =
@@ -55,12 +55,10 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
 
     if (Endpoints.FILES.equals(endpoint)) {
 
-      Optional<Cookie> optZmCookie = requestContext
-          .getCookies()
-          .values()
-          .stream()
-          .filter(cookie -> Config.ACCEPTED_COOKIE_TYPE.equals(cookie.getName()))
-          .findFirst();
+      Optional<Cookie> optZmCookie =
+          requestContext.getCookies().values().stream()
+              .filter(cookie -> Config.ACCEPTED_COOKIE_TYPE.equals(cookie.getName()))
+              .findFirst();
 
       if (optZmCookie.isEmpty()) {
         logger.error("The request is unauthorized: the cookie is missing");
@@ -133,7 +131,8 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
         } else if (e.getCode() == 0 || e.getCode() >= 500) {
           logger.error(
               "The request could not be authenticated: user-management is unavailable (code {})",
-              e.getCode(), e);
+              e.getCode(),
+              e);
           requestContext.abortWith(Response.status(Status.SERVICE_UNAVAILABLE).build());
         } else {
           logger.error("The request is unauthorized: REST error {}", e.getCode(), e);
@@ -144,17 +143,18 @@ public class CookieAuthenticationFilter implements ContainerRequestFilter {
   }
 
   /**
-   * Reads the TEST-ONLY requester-domain override. Looks first at the system property
-   * {@link #REQUESTER_DOMAIN_OVERRIDE_PROPERTY}, then at an environment variable of the same logical
-   * name (dots normalized to underscores: {@code CARBONIO_DOCS_CONNECTOR_REQUESTER_DOMAIN_OVERRIDE}).
+   * Reads the TEST-ONLY requester-domain override. Looks first at the system property {@link
+   * #REQUESTER_DOMAIN_OVERRIDE_PROPERTY}, then at an environment variable of the same logical name
+   * (dots normalized to underscores: {@code CARBONIO_DOCS_CONNECTOR_REQUESTER_DOMAIN_OVERRIDE}).
    * Blank values are treated as unset. This is intentionally NOT a Consul KV / application-config
    * key.
    */
   private static Optional<String> requesterDomainOverride() {
     String value = System.getProperty(REQUESTER_DOMAIN_OVERRIDE_PROPERTY);
     if (value == null || value.isBlank()) {
-      value = System.getenv(
-          REQUESTER_DOMAIN_OVERRIDE_PROPERTY.replace('.', '_').replace('-', '_').toUpperCase());
+      value =
+          System.getenv(
+              REQUESTER_DOMAIN_OVERRIDE_PROPERTY.replace('.', '_').replace('-', '_').toUpperCase());
     }
     return (value == null || value.isBlank()) ? Optional.empty() : Optional.of(value);
   }

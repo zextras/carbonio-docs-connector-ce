@@ -34,9 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link WopiService}. All dependencies are mocked — no CDI container.
- */
+/** Unit tests for {@link WopiService}. All dependencies are mocked — no CDI container. */
 class WopiServiceTest {
 
   private UserResourceApi userResourceApi;
@@ -47,26 +45,35 @@ class WopiServiceTest {
   private static final String REQUESTER_ID = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
   private static final String COOKIE = "ZM_AUTH_TOKEN=test-token";
 
-  private String buildGetNodeResponse(UUID nodeId, String ownerId, String name, String ext,
-      String mimeType, long updatedAt, long size, int version, boolean canWrite) {
+  private String buildGetNodeResponse(
+      UUID nodeId,
+      String ownerId,
+      String name,
+      String ext,
+      String mimeType,
+      long updatedAt,
+      long size,
+      int version,
+      boolean canWrite) {
     return """
-        {
-          "data": {
-            "getNode": {
-              "permissions": { "can_write_file": %b },
-              "owner": { "id": "%s", "full_name": "Owner" },
-              "parent": { "id": "LOCAL_ROOT" },
-              "id": "%s",
-              "name": "%s",
-              "updated_at": %d,
-              "extension": "%s",
-              "mime_type": "%s",
-              "size": %d,
-              "version": %d
-            }
-          }
+    {
+      "data": {
+        "getNode": {
+          "permissions": { "can_write_file": %b },
+          "owner": { "id": "%s", "full_name": "Owner" },
+          "parent": { "id": "LOCAL_ROOT" },
+          "id": "%s",
+          "name": "%s",
+          "updated_at": %d,
+          "extension": "%s",
+          "mime_type": "%s",
+          "size": %d,
+          "version": %d
         }
-        """.formatted(canWrite, ownerId, nodeId, name, updatedAt, ext, mimeType, size, version);
+      }
+    }
+    """
+        .formatted(canWrite, ownerId, nodeId, name, updatedAt, ext, mimeType, size, version);
   }
 
   @BeforeEach
@@ -82,20 +89,28 @@ class WopiServiceTest {
   @DisplayName("getDocsEditorAttributes should return attributes when user and node are found")
   void givenValidRequesterAndNodeGetDocsEditorAttributesShouldReturnAttributes() throws Exception {
     // Given
-    UserInfoDto userInfo = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .fullName("Test User")
-        .email("test@example.com");
+    UserInfoDto userInfo =
+        new UserInfoDto().userId(REQUESTER_ID).fullName("Test User").email("test@example.com");
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
-    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "test-doc", "odt",
-        "application/vnd.oasis.opendocument.text", 100000L, 1024L * 1024, 1, true);
+    String graphQLResponse =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            "test-doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            100000L,
+            1024L * 1024,
+            1,
+            true);
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
     // When
-    Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
-        REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+    Optional<DocsEditorAttributes> result =
+        wopiService.getDocsEditorAttributes(
+            REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
 
     // Then
     Assertions.assertThat(result).isPresent();
@@ -107,63 +122,80 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management reports 404 (user not found)")
+  @DisplayName(
+      "getDocsEditorAttributes should throw NoSuchElementException when user-management reports 404"
+          + " (user not found)")
   void givenUserManagement404GetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
     // Given
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
         .thenThrow(new ApiException(404, "Not Found"));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management reports a 5xx")
-  void givenUserManagement5xxGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
+  @DisplayName(
+      "getDocsEditorAttributes should throw ServiceDependencyException when user-management reports"
+          + " a 5xx")
+  void givenUserManagement5xxGetDocsEditorAttributesShouldThrowServiceDependencyException()
+      throws Exception {
     // Given
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
         .thenThrow(new ApiException(503, "Service Unavailable"));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(ServiceDependencyException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when user-management call fails with getCode()==0 (network failure)")
-  void givenUserManagementNetworkFailureGetDocsEditorAttributesShouldThrowServiceDependencyException() throws Exception {
+  @DisplayName(
+      "getDocsEditorAttributes should throw ServiceDependencyException when user-management call"
+          + " fails with getCode()==0 (network failure)")
+  void
+      givenUserManagementNetworkFailureGetDocsEditorAttributesShouldThrowServiceDependencyException()
+          throws Exception {
     // Given — ApiException(Throwable) never sets a code, so getCode() == 0 (connection
     // refused / timeout / a body that failed to deserialize)
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID))
         .thenThrow(new ApiException(new java.io.IOException("connection refused")));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(ServiceDependencyException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when user-management returns a null UserInfoDto (blank 2xx body)")
+  @DisplayName(
+      "getDocsEditorAttributes should throw NoSuchElementException when user-management returns a"
+          + " null UserInfoDto (blank 2xx body)")
   void givenNullUserInfoGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
     // Given — the generated client returns null outright for a 2xx response with a blank body
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(null);
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when userId is null (nullable field, no gRPC empty-string guarantee)")
+  @DisplayName(
+      "getDocsEditorAttributes should throw NoSuchElementException when userId is null (nullable"
+          + " field, no gRPC empty-string guarantee)")
   void givenNullUserIdGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
     // Given — under gRPC a missing userId was guaranteed "" (IllegalArgumentException on
     // UUID.fromString); the REST DTO field is @Nullable, so it can be null instead.
@@ -171,20 +203,23 @@ class WopiServiceTest {
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw ServiceDependencyException when files graphQL fails")
+  @DisplayName(
+      "getDocsEditorAttributes should throw ServiceDependencyException when files graphQL fails")
   void givenFilesGraphQLFailureGetDocsEditorAttributesShouldThrowServiceDependencyException()
       throws Exception {
     // Given -- a genuinely failed/unreachable files call is a dependency failure, distinct from a
     // successful GraphQL response reporting a nonexistent node (see
     // givenNodeNotFoundGetDocsEditorAttributesShouldThrowNoSuchElement below). Same idiom as
-    // FilesService#openFile / WopiService#saveBlob: getOrElseThrow(ServiceDependencyException::new).
+    // FilesService#openFile / WopiService#saveBlob:
+    // getOrElseThrow(ServiceDependencyException::new).
     UserInfoDto userInfo = new UserInfoDto().userId(REQUESTER_ID).fullName("Test User");
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
@@ -192,14 +227,17 @@ class WopiServiceTest {
         .thenReturn(Try.failure(new RuntimeException("Files unavailable")));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(ServiceDependencyException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes should throw NoSuchElementException when files reports the node does not exist")
+  @DisplayName(
+      "getDocsEditorAttributes should throw NoSuchElementException when files reports the node does"
+          + " not exist")
   void givenNodeNotFoundGetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
     // Given -- files' getNode GraphQL resolver answers a nullable field with a JSON null for a
     // genuinely nonexistent (or inaccessible) node: a normal, successful GraphQL response
@@ -211,9 +249,10 @@ class WopiServiceTest {
         .thenReturn(Try.success("{\"data\":{\"getNode\":null}}"));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.getDocsEditorAttributes(REQUESTER_ID, COOKIE, NODE_ID,
-                Optional.empty(), Optional.empty()))
+    Assertions.assertThatThrownBy(
+            () ->
+                wopiService.getDocsEditorAttributes(
+                    REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty()))
         .isInstanceOf(NoSuchElementException.class);
   }
 
@@ -255,25 +294,49 @@ class WopiServiceTest {
   @DisplayName("saveBlob should return NodeUpdatedTimestamp when everything succeeds")
   void givenValidInputsSaveBlobShouldReturnUpdatedTimestamp() throws Exception {
     // Given
-    String graphQLResponseBefore = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
-        "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);
-    String graphQLResponseAfter = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
-        "application/vnd.oasis.opendocument.text", 59000L, 1024L, 5, true);
+    String graphQLResponseBefore =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            "doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            100L,
+            1024L,
+            4,
+            true);
+    String graphQLResponseAfter =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            "doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            59000L,
+            1024L,
+            5,
+            true);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponseBefore))
         .thenReturn(Try.success(graphQLResponseAfter));
 
     NodeIdVersion uploadedVersion = new NodeIdVersion(NODE_ID.toString(), 5);
-    when(filesClient.uploadFileVersion(eq(COOKIE), eq(NODE_ID.toString()), anyString(),
-        anyString(), any(InputStream.class), anyLong(), eq(true)))
+    when(filesClient.uploadFileVersion(
+            eq(COOKIE),
+            eq(NODE_ID.toString()),
+            anyString(),
+            anyString(),
+            any(InputStream.class),
+            anyLong(),
+            eq(true)))
         .thenReturn(Try.success(uploadedVersion));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When
-    Optional<NodeUpdatedTimestamp> result = wopiService.saveBlob(
-        COOKIE, NODE_ID, Optional.empty(), blob, 12L, true);
+    Optional<NodeUpdatedTimestamp> result =
+        wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, true);
 
     // Then
     Assertions.assertThat(result).isPresent();
@@ -290,13 +353,14 @@ class WopiServiceTest {
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+    Assertions.assertThatThrownBy(
+            () -> wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(ServiceDependencyException.class);
   }
 
   @Test
-  @DisplayName("saveBlob should throw NoSuchElementException when files reports the node does not exist")
+  @DisplayName(
+      "saveBlob should throw NoSuchElementException when files reports the node does not exist")
   void givenNodeNotFoundSaveBlobShouldThrowNoSuchElement() {
     // Given -- same "successful GraphQL response, no matching node" distinction as
     // getDocsEditorAttributes / FilesService#openFile above.
@@ -306,77 +370,122 @@ class WopiServiceTest {
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+    Assertions.assertThatThrownBy(
+            () -> wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
-  @DisplayName("saveBlob should throw ServiceDependencyException when uploadFileVersion returns UnAuthorized")
+  @DisplayName(
+      "saveBlob should throw ServiceDependencyException when uploadFileVersion returns"
+          + " UnAuthorized")
   void givenUploadReturnsUnAuthorizedSaveBlobShouldThrowServiceDependencyException() {
     // Given
-    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
-        "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);
+    String graphQLResponse =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            "doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            100L,
+            1024L,
+            4,
+            true);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
-    when(filesClient.uploadFileVersion(eq(COOKIE), eq(NODE_ID.toString()), anyString(),
-        anyString(), any(InputStream.class), anyLong(), eq(false)))
+    when(filesClient.uploadFileVersion(
+            eq(COOKIE),
+            eq(NODE_ID.toString()),
+            anyString(),
+            anyString(),
+            any(InputStream.class),
+            anyLong(),
+            eq(false)))
         .thenReturn(Try.failure(new UnAuthorized()));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
     // When / Then
-    Assertions.assertThatThrownBy(() ->
-            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+    Assertions.assertThatThrownBy(
+            () -> wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(ServiceDependencyException.class);
   }
 
   // ----- Over-quota saveBlob tests (task 5 — TDD additions) -----
 
   @Test
-  @DisplayName("saveBlob should throw AccountOverQuotaException when Files returns AccountInOverQuota")
+  @DisplayName(
+      "saveBlob should throw AccountOverQuotaException when Files returns AccountInOverQuota")
   void givenAccountInOverQuotaSaveBlobShouldThrowAccountOverQuotaException() {
     // Given
-    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, "doc", "odt",
-        "application/vnd.oasis.opendocument.text", 100L, 1024L, 4, true);
+    String graphQLResponse =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            "doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            100L,
+            1024L,
+            4,
+            true);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
     // Files SDK throws AccountInOverQuota when saving
-    when(filesClient.uploadFileVersion(eq(COOKIE), eq(NODE_ID.toString()), anyString(),
-        anyString(), any(InputStream.class), anyLong(), eq(false)))
+    when(filesClient.uploadFileVersion(
+            eq(COOKIE),
+            eq(NODE_ID.toString()),
+            anyString(),
+            anyString(),
+            any(InputStream.class),
+            anyLong(),
+            eq(false)))
         .thenReturn(Try.failure(new AccountInOverQuota("account is over quota")));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
-    // When / Then — WopiService must propagate AccountOverQuotaException (mapped from AccountInOverQuota)
-    Assertions.assertThatThrownBy(() ->
-            wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
+    // When / Then — WopiService must propagate AccountOverQuotaException (mapped from
+    // AccountInOverQuota)
+    Assertions.assertThatThrownBy(
+            () -> wopiService.saveBlob(COOKIE, NODE_ID, Optional.empty(), blob, 12L, false))
         .isInstanceOf(AccountOverQuotaException.class);
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes when filename exceeds 64 chars should abbreviate to 50 chars of name + extension")
+  @DisplayName(
+      "getDocsEditorAttributes when filename exceeds 64 chars should abbreviate to 50 chars of name"
+          + " + extension")
   void givenFilenameExceeding64CharsGetDocsEditorAttributesShouldAbbreviate() throws Exception {
     // Given
-    String longName = "a".repeat(60); // 60-char name + ".odt" = 64 chars → abbreviate to 50 + ".odt" = 54
-    UserInfoDto userInfo = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .fullName("Test User")
-        .email("test@example.com");
+    String longName =
+        "a".repeat(60); // 60-char name + ".odt" = 64 chars → abbreviate to 50 + ".odt" = 54
+    UserInfoDto userInfo =
+        new UserInfoDto().userId(REQUESTER_ID).fullName("Test User").email("test@example.com");
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
-    String graphQLResponse = buildGetNodeResponse(NODE_ID, REQUESTER_ID, longName, "odt",
-        "application/vnd.oasis.opendocument.text", 100000L, 1024L * 1024, 1, true);
+    String graphQLResponse =
+        buildGetNodeResponse(
+            NODE_ID,
+            REQUESTER_ID,
+            longName,
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            100000L,
+            1024L * 1024,
+            1,
+            true);
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponse));
 
     // When
-    Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
-        REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+    Optional<DocsEditorAttributes> result =
+        wopiService.getDocsEditorAttributes(
+            REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
 
     // Then — baseFileName should be abbreviated: first 50 chars of name + ".odt"
     Assertions.assertThat(result).isPresent();
@@ -387,10 +496,13 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getDocsEditorAttributes with null extension should not throw and return filename without extension")
+  @DisplayName(
+      "getDocsEditorAttributes with null extension should not throw and return filename without"
+          + " extension")
   void givenNullExtensionGetDocsEditorAttributesShouldHandleGracefully() throws Exception {
     // Given — null extension in JSON
-    String graphQLResponseNullExt = """
+    String graphQLResponseNullExt =
+        """
         {
           "data": {
             "getNode": {
@@ -407,23 +519,25 @@ class WopiServiceTest {
             }
           }
         }
-        """.formatted(REQUESTER_ID, NODE_ID);
+        """
+            .formatted(REQUESTER_ID, NODE_ID);
 
-    UserInfoDto userInfo = new UserInfoDto()
-        .userId(REQUESTER_ID)
-        .fullName("Test User")
-        .email("test@example.com");
+    UserInfoDto userInfo =
+        new UserInfoDto().userId(REQUESTER_ID).fullName("Test User").email("test@example.com");
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
         .thenReturn(Try.success(graphQLResponseNullExt));
 
     // When / Then — must not throw, baseFileName is just the name
-    Assertions.assertThatCode(() -> {
-      Optional<DocsEditorAttributes> result = wopiService.getDocsEditorAttributes(
-          REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
-      Assertions.assertThat(result).isPresent();
-      Assertions.assertThat(result.get().getBaseFileName()).isEqualTo("nodoc");
-    }).doesNotThrowAnyException();
+    Assertions.assertThatCode(
+            () -> {
+              Optional<DocsEditorAttributes> result =
+                  wopiService.getDocsEditorAttributes(
+                      REQUESTER_ID, COOKIE, NODE_ID, Optional.empty(), Optional.empty());
+              Assertions.assertThat(result).isPresent();
+              Assertions.assertThat(result.get().getBaseFileName()).isEqualTo("nodoc");
+            })
+        .doesNotThrowAnyException();
   }
 }

@@ -25,7 +25,7 @@ class CacheManagerTest {
     Assertions.assertThat(tokenCache.policy().expireAfterAccess()).isEmpty();
     Assertions.assertThat(tokenCache.policy().expireVariably()).isEmpty();
     Assertions.assertThat(tokenCache.policy().expireAfterWrite().get().getExpiresAfter())
-      .hasMillis(Duration.ofHours(12).toMillis());
+        .hasMillis(Duration.ofHours(12).toMillis());
   }
 
   @Test
@@ -35,6 +35,6 @@ class CacheManagerTest {
 
     // Then
     Assertions.assertThat(cacheManager.getTokenDurationInMs())
-      .isEqualTo(Duration.ofHours(12).toMillis());
+        .isEqualTo(Duration.ofHours(12).toMillis());
   }
 }

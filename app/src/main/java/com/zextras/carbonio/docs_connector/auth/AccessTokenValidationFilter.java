@@ -18,13 +18,12 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Provider
 @ApplicationScoped
@@ -37,8 +36,7 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
 
   @Inject
   public AccessTokenValidationFilter(
-      OpenDocumentTokenRepository openDocumentTokenRepository,
-      Clock clock) {
+      OpenDocumentTokenRepository openDocumentTokenRepository, Clock clock) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
     this.clock = clock;
   }
@@ -54,9 +52,8 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
     logger.debug("Request received for '{}' endpoint", endpoint);
 
     if (Endpoints.WOPI.equals(endpoint)) {
-      MultivaluedMap<String, String> queryParameters = requestContext
-          .getUriInfo()
-          .getQueryParameters();
+      MultivaluedMap<String, String> queryParameters =
+          requestContext.getUriInfo().getQueryParameters();
 
       if (queryParameters.containsKey(API.Wopi.ACCESS_TOKEN_QUERY_PARAM)) {
         List<String> accessTokens = queryParameters.get(Wopi.ACCESS_TOKEN_QUERY_PARAM);
@@ -70,8 +67,7 @@ public class AccessTokenValidationFilter implements ContainerRequestFilter {
             return;
           }
 
-          Optional<OpenDocumentToken> maybeToken =
-              openDocumentTokenRepository.getToken(tokenUuid);
+          Optional<OpenDocumentToken> maybeToken = openDocumentTokenRepository.getToken(tokenUuid);
           if (maybeToken.isEmpty()) {
             requestContext.abortWith(Response.status(Status.UNAUTHORIZED).build());
             return;
