@@ -76,14 +76,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       <artifactId>quarkus-caffeine</artifactId>
     </dependency>
 
-    <!-- Consul client: needed for getDocsEditorInstanceIds() health query -->
-    <!-- Bootstrap extension does NOT expose a Consul healthClient bean (Q2 confirmed) -->
-    <dependency>
-      <groupId>com.orbitz.consul</groupId>
-      <artifactId>consul-client</artifactId>
-      <version>1.5.3</version>
-    </dependency>
-
     <!-- Bean validation (jakarta.validation annotations on InsertFile etc.) -->
     <dependency>
       <groupId>io.quarkus</groupId>
