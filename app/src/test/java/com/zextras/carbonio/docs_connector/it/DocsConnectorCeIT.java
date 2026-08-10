@@ -8,8 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.common.WithTestResource;
-import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import java.nio.charset.StandardCharsets;
@@ -61,9 +59,7 @@ import org.junit.jupiter.api.Test;
  * directly against a mocked {@code UserResourceApi} that throws the exact {@code ApiException}
  * shapes a broken/unreachable dependency would produce.
  */
-@QuarkusIntegrationTest
-@WithTestResource(CeStackTestResource.class)
-class DocsConnectorCeIT {
+class DocsConnectorCeIT extends AbstractDocsConnectorCeIT {
 
   // A node id that is never created by any test in this suite -- used to genuinely exercise
   // files' real "node not found" behavior (as opposed to stubbing an arbitrary response).
