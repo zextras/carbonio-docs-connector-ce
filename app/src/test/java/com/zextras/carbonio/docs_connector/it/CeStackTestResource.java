@@ -30,15 +30,15 @@ import org.testcontainers.lifecycle.Startables;
  *       — not a stub. The {@code UserResourceApi} REST SDK bean therefore talks to a genuine,
  *       running service over HTTP, exactly as it does in production.
  *   <li>{@code carbonio-files} is ALSO a direct dependency (docs-connector-ce declares {@code
- *       carbonio-files-sdk} and calls it directly from {@code FilesService}/{@code WopiService}),
- *       so per the same policy it runs as a real {@code
- *       registry.dev.zextras.com/dev/carbonio-files-ce:devel} container (NOT the sibling {@code
- *       carbonio-files:devel} Advanced image -- separate repo, separate registry tag, separate
- *       storage backend), with its own real {@code postgres:16} database. Since carbonio-files-ce
- *       commit {@code 491f99f2} (PR #302) that image validates auth via the REST user-management
- *       SDK, so it is pointed at the SAME real user-management container docs-connector uses — a
- *       stubbed/unreachable user-management here makes files answer a bare, misleading 401 with no
- *       message.
+ *       carbonio-files-ce-rest-sdk} and calls it via {@code FilesInternalClient} from {@code
+ *       FilesService}/{@code WopiService}), so per the same policy it runs as a real {@code
+ *       registry.dev.zextras.com/dev/carbonio-files-ce:quarkus-migration} container (NOT the
+ *       sibling {@code carbonio-files:quarkus-migration} Advanced image — separate repo, separate
+ *       registry tag, separate storage backend), with its own real {@code postgres:16} database.
+ *       The quarkus-migration image is Quarkus native and exposes the new {@code /internal} REST
+ *       surface the SDK targets. It is pointed at the SAME real user-management container
+ *       docs-connector uses — a stubbed/unreachable user-management makes files answer a bare,
+ *       misleading 401 with no message.
  *   <li>{@code carbonio-mailbox} is a dependency of user-management, not of docs-connector-ce
  *       directly, so it is replaced by a lightweight WireMock container acting as the mailbox
  *       internal REST API (matching the pattern already used by carbonio-tasks-ce's {@code
@@ -135,7 +135,13 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
     wireMock =
         new GenericContainer<>("wiremock/wiremock:3.9.2")
             .withNetwork(network)
-            .withNetworkAliases("carbonio-mailbox-mock", "consul", "carbonio-storages")
+            .withNetworkAliases(
+                "carbonio-mailbox-mock",
+                "consul",
+                "carbonio-storages",
+                "carbonio-preview",
+                "carbonio-message-broker",
+                "carbonio-docs-connector")
             .withCommand("--global-response-templating")
             .withExposedPorts(8080)
             .waitingFor(
@@ -191,51 +197,42 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
 
     userManagement.start();
 
-    // Real carbonio-files container: direct dependency (carbonio-files-sdk), real image, per
-    // policy. Its own DB is the postgres container above; its storages/UM dependencies point at
-    // the containers already running in this same network.
+    // Real carbonio-files container: direct dependency (carbonio-files-ce-rest-sdk), real image,
+    // per policy. quarkus-migration image: Quarkus native, exposes the new /internal REST surface
+    // this SDK targets. Config via NETWORKING_CONFIG_* env (extensions chain); DB credentials
+    // read from Consul KV root recursive GET at boot. Notifications disabled — no RabbitMQ needed.
     files =
-        new GenericContainer<>("registry.dev.zextras.com/dev/carbonio-files-ce:devel")
+        new GenericContainer<>("registry.dev.zextras.com/dev/carbonio-files-ce:quarkus-migration")
             .withNetwork(network)
             .withNetworkAliases("carbonio-files")
             .withExposedPorts(10000)
-            .withEnv("CARBONIO_FILES_HOST", "0.0.0.0")
-            .withEnv("CARBONIO_FILES_PORT", "10000")
-            .withEnv("CARBONIO_POSTGRESQL_HOST", "carbonio-postgres")
-            .withEnv("CARBONIO_POSTGRESQL_PORT", "5432")
-            .withEnv("CARBONIO_STORAGES_HOST", "carbonio-storages")
-            .withEnv("CARBONIO_STORAGES_PORT", "8080")
-            // Critical (see class javadoc): files:devel validates auth via the REST
-            // user-management SDK as of 2026-07-27 -- point it at the REAL container, not a stub,
-            // or every authenticated call answers a bare, unhelpful 401.
-            .withEnv("CARBONIO_USER_MANAGEMENT_HOST", "carbonio-user-management")
-            .withEnv("CARBONIO_USER_MANAGEMENT_PORT", "10000")
-            .withEnv("CARBONIO_SERVICE_DISCOVER_HOST", "consul")
-            .withEnv("CARBONIO_SERVICE_DISCOVER_PORT", "8080")
-            .withEnv("CARBONIO_MAILBOX_HOST", "carbonio-mailbox-mock")
-            .withEnv("CARBONIO_MAILBOX_PORT", "8080")
-            // Workaround for a real bug in carbonio-files-ce:devel itself (independent of this
-            // test harness): commit 256fee2e ("adopt carbonio-systemd-notify for native sd_notify
-            // readiness", #250) added SystemdNotify.ready(...) to NettyServer.start(), and that
-            // call requires --enable-preview (class file version 65.65535). docker/entrypoint.sh's
-            // `exec java ...` line was never updated to pass that flag, so the shipped image
-            // crashes with "UnsupportedClassVersionError: Preview features are not enabled" the
-            // instant it reaches NettyServer.start() (i.e. as soon as DB connectivity succeeds) --
-            // confirmed by running the image directly with `docker run`. JAVA_TOOL_OPTIONS is
-            // picked up automatically by the JVM launcher inside entrypoint.sh's `exec java ...`
-            // without needing to touch the image or its entrypoint script.
-            .withEnv("JAVA_TOOL_OPTIONS", "--enable-preview")
+            .withEnv("CONSUL_HTTP_TOKEN", "test-token")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_SERVICE_HOST", "0.0.0.0")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_SERVICE_PORT", "10000")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_SERVICE_DISCOVER_HOST", "consul")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_SERVICE_DISCOVER_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_POSTGRESQL_HOST", "carbonio-postgres")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_POSTGRESQL_PORT", "5432")
+            // Critical: files:quarkus-migration validates auth via the REST user-management SDK --
+            // point it at the REAL container, not a stub, or every authenticated call gets a bare
+            // unhelpful 401.
+            .withEnv("NETWORKING_CONFIG_CARBONIO_USER_MANAGEMENT_HOST", "carbonio-user-management")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_USER_MANAGEMENT_PORT", "10000")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_STORAGES_HOST", "carbonio-storages")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_STORAGES_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_MAILBOX_HOST", "carbonio-mailbox-mock")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_MAILBOX_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_PREVIEW_HOST", "carbonio-preview")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_PREVIEW_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_DOCS_CONNECTOR_HOST", "carbonio-docs-connector")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_DOCS_CONNECTOR_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_MESSAGE_BROKER_HOST", "carbonio-message-broker")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_MESSAGE_BROKER_PORT", "8080")
+            .withEnv("NETWORKING_CONFIG_CARBONIO_FILES_ENABLE_NOTIFICATIONS", "false")
             .dependsOn(postgres, wireMock, userManagement)
             .waitingFor(
-                // files' HealthController answers /health/live with 204 No Content (not 200) --
-                // HttpWaitStrategy's default matcher only accepts 200, so without this explicit
-                // forStatusCode(204) the wait strategy times out after 5 minutes even though the
-                // container is genuinely healthy and answering the whole time (confirmed by
-                // polling the endpoint directly during a real run: consistent HTTP 204 from the
-                // first check onward).
-                Wait.forHttp("/health/live")
+                Wait.forHttp("/q/health/live")
                     .forPort(10000)
-                    .forStatusCode(204)
                     .withStartupTimeout(Duration.ofMinutes(5)));
 
     files.start();
@@ -423,22 +420,23 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
    * KV namespace and carbonio-files' KV namespace.
    *
    * <p>{@code carbonio-quarkus-extensions}' {@code CarbonioBootstrapFactory} (used by
-   * docs-connector-ce and user-management) issues a SINGLE ROOT recursive GET at boot: {@code GET
-   * /v1/kv/?recurse} — so the root recurse stub below carries docs-connector's own {@code
-   * carbonio-docs-connector/*} keys.
+   * docs-connector-ce, user-management, and carbonio-files:quarkus-migration) issues a SINGLE ROOT
+   * recursive GET at boot: {@code GET /v1/kv/?recurse} — so the root recurse stub carries BOTH
+   * docs-connector's {@code carbonio-docs-connector/*} keys and files' {@code
+   * carbonio-files/database/credentials/*} DB credentials (the bootstrap-database extension reads
+   * the latter sub-path).
    *
-   * <p>carbonio-files is the OLD pre-Quarkus Guice/Ebean service (its own Quarkus rewrite is still
-   * in progress on a separate branch): its {@code FilesConfig} reads DB credentials via {@code
-   * ServiceDiscoverHttpClient} with INDIVIDUAL per-key GETs — {@code GET
-   * /v1/kv/carbonio-files/db-name}, {@code .../db-username}, {@code .../db-password} (see {@code
-   * carbonio-files-ce core/src/main/java/.../clients/ServiceDiscoverHttpClient.java}) — so those
-   * three keys are ALSO stubbed individually (a recursive stub alone would never be matched by
-   * files' actual requests).
+   * <p>Individual-key stubs and the {@code carbonio-files/} prefix recursive stub are kept as a
+   * defensive fallback in case the image is rebuilt against an older extension version that still
+   * issues per-key GETs.
    */
   private static void setupConsulStubs(String wireMockAdminUrl) throws Exception {
     HttpClient client = HttpClient.newHttpClient();
 
-    // docs-connector-ce's own config (root recurse; prefix == "").
+    // Root recursive GET (prefix == ""): all services that issue GET /v1/kv/?recurse at boot
+    // derive their own <service-name>/* config subset from this single response.
+    // docs-connector-ce uses carbonio-docs-connector/* for its max-file-size limits.
+    // carbonio-files:quarkus-migration uses carbonio-files/database/credentials/* for DB creds.
     postConsulKvRecursiveStub(
         client,
         wireMockAdminUrl,
@@ -447,6 +445,9 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
           {"carbonio-docs-connector/max-file-size-in-mb/document", "50"},
           {"carbonio-docs-connector/max-file-size-in-mb/presentation", "100"},
           {"carbonio-docs-connector/max-file-size-in-mb/spreadsheet", "10"},
+          {"carbonio-files/database/credentials/db-name", FILES_DB_NAME},
+          {"carbonio-files/database/credentials/db-username", FILES_DB_USER},
+          {"carbonio-files/database/credentials/db-password", FILES_DB_PASSWORD},
         });
 
     // carbonio-files DB credentials -- individual-key GETs (see javadoc above).
@@ -455,8 +456,8 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
         client, wireMockAdminUrl, "carbonio-files/db-username", FILES_DB_USER);
     postConsulKvIndividualStub(
         client, wireMockAdminUrl, "carbonio-files/db-password", FILES_DB_PASSWORD);
-    // Recursive stub too (defensive: covers a future Quarkus migration of the files image, which
-    // would issue a root/prefix recurse instead of individual-key GETs).
+    // Prefix recursive stub: covers both legacy flat keys (pre-Quarkus image) and the new
+    // database/credentials/ sub-path (quarkus-migration image bootstrap-database extension).
     postConsulKvRecursiveStub(
         client,
         wireMockAdminUrl,
@@ -465,6 +466,9 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
           {"carbonio-files/db-name", FILES_DB_NAME},
           {"carbonio-files/db-username", FILES_DB_USER},
           {"carbonio-files/db-password", FILES_DB_PASSWORD},
+          {"carbonio-files/database/credentials/db-name", FILES_DB_NAME},
+          {"carbonio-files/database/credentials/db-username", FILES_DB_USER},
+          {"carbonio-files/database/credentials/db-password", FILES_DB_PASSWORD},
         });
 
     // Catch-all for unknown KV keys -> 404 (priority 10 = lowest; urlPathPattern ignores query).
