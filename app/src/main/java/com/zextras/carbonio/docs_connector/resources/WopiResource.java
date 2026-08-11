@@ -20,7 +20,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -69,7 +68,6 @@ public class WopiResource {
         return wopiService
             .getDocsEditorAttributes(
                 openDocumentToken.getRequesterId(),
-                openDocumentToken.getRequesterCookie(),
                 nodeId,
                 Optional.ofNullable(version),
                 Optional.ofNullable(offsetFromUtc))
@@ -104,13 +102,12 @@ public class WopiResource {
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
       return wopiService
-          .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
+          .getBlob(openDocumentToken.getRequesterId(), nodeId, Optional.ofNullable(version))
           .map(
-              filesBlob ->
+              inputStream ->
                   Response.ok()
                       .type(MediaType.APPLICATION_OCTET_STREAM)
-                      .entity(filesBlob.getContent())
-                      .header(HttpHeaders.CONTENT_LENGTH, filesBlob.getSize())
+                      .entity(inputStream)
                       .build())
           .orElse(Response.serverError().build());
     }
@@ -142,7 +139,7 @@ public class WopiResource {
       try {
         return wopiService
             .saveBlob(
-                openDocumentToken.getRequesterCookie(),
+                openDocumentToken.getRequesterId(),
                 nodeId,
                 Optional.ofNullable(offsetFromUtc),
                 body,

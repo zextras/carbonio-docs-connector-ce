@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
   <properties>
     <assertj.version>3.27.7</assertj.version>
-    <carbonio-files-sdk.version>1.1.0-1</carbonio-files-sdk.version>
+    <carbonio-files-ce-rest-sdk.version>1.3.9-SNAPSHOT.382.caee872c</carbonio-files-ce-rest-sdk.version>
 
     <maven-compiler.version>3.13.0</maven-compiler.version>
     <maven-failsafe.version>3.5.6</maven-failsafe.version>
@@ -94,6 +94,10 @@ SPDX-License-Identifier: AGPL-3.0-only
     <repository>
       <id>zextras-java-sdk</id>
       <url>https://zextras.jfrog.io/artifactory/java-sdk</url>
+    </repository>
+    <repository>
+      <id>zextras-public-maven-repo</id>
+      <url>https://zextras.jfrog.io/artifactory/public-maven-repo</url>
     </repository>
   </repositories>
 
