@@ -20,6 +20,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -104,10 +105,11 @@ public class WopiResource {
       return wopiService
           .getBlob(openDocumentToken.getRequesterId(), nodeId, Optional.ofNullable(version))
           .map(
-              inputStream ->
+              blob ->
                   Response.ok()
                       .type(MediaType.APPLICATION_OCTET_STREAM)
-                      .entity(inputStream)
+                      .entity(blob.content())
+                      .header(HttpHeaders.CONTENT_LENGTH, blob.size())
                       .build())
           .orElse(Response.serverError().build());
     }

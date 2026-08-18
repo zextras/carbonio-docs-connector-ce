@@ -89,7 +89,10 @@ public class WopiService {
 
     InternalNodeDto node;
     try {
-      node = filesClient.getNode(requesterId, nodeId.toString());
+      node =
+          optVersion.isPresent()
+              ? filesClient.getNode(requesterId, nodeId.toString(), optVersion.get())
+              : filesClient.getNode(requesterId, nodeId.toString());
     } catch (FilesInternalClientException e) {
       if (e.isNotFound() || e.isForbidden()) {
         logger.error("Unable to retrieve node {}: not found", nodeId);
@@ -98,19 +101,14 @@ public class WopiService {
       throw new ServiceDependencyException(e);
     }
 
-    long updatedAt = node.getUpdatedAt() != null ? node.getUpdatedAt() : 0L;
     String lastModifiedTimeFormatted =
-        formatDateToIso8601WithOffset(new Date(updatedAt), optOffsetFromUtc);
+        formatDateToIso8601WithOffset(new Date(node.getUpdatedAt()), optOffsetFromUtc);
 
     logger.info("Getting blob with instant: {}", lastModifiedTimeFormatted);
 
-    String abbreviateFilename =
-        abbreviateFilename(node.getName(), node.getExtension());
+    String abbreviateFilename = abbreviateFilename(node.getName(), node.getExtension());
 
-    UUID nodeOwnerId =
-        node.getOwner() != null && node.getOwner().getId() != null
-            ? UUID.fromString(node.getOwner().getId())
-            : null;
+    UUID nodeOwnerId = UUID.fromString(node.getOwner().getId());
 
     DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
     docsEditorAttributes.setOwnerId(nodeOwnerId);
@@ -139,10 +137,16 @@ public class WopiService {
     return Optional.of(docsEditorAttributes);
   }
 
-  public Optional<InputStream> getBlob(
-      String userId, UUID nodeId, Optional<Integer> optVersion) {
+  public record WopiBlob(InputStream content, Long size) {}
+
+  public Optional<WopiBlob> getBlob(String userId, UUID nodeId, Optional<Integer> optVersion) {
     try {
-      return Optional.of(filesClient.downloadFile(userId, nodeId.toString(), optVersion));
+      InternalNodeDto node =
+          optVersion.isPresent()
+              ? filesClient.getNode(userId, nodeId.toString(), optVersion.get())
+              : filesClient.getNode(userId, nodeId.toString());
+      InputStream content = filesClient.downloadFile(userId, nodeId.toString(), optVersion);
+      return Optional.of(new WopiBlob(content, node.getSize()));
     } catch (FilesInternalClientException e) {
       logger.error(e.getMessage(), e);
       return Optional.empty();
@@ -204,7 +208,8 @@ public class WopiService {
           formatDateToIso8601WithOffset(new Date(updatedAt), optOffsetFromUtc));
 
       logger.info(
-          "Saving blob with instant: {}", formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
+          "Saving blob with instant: {}",
+          formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
 
       return Optional.of(updatedTimestamp);
     } catch (FilesInternalClientException e) {

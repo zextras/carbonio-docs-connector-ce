@@ -186,13 +186,15 @@ class WopiResourceTest {
     InputStream blobStream = new ByteArrayInputStream(blobContent);
 
     when(wopiService.getBlob(eq(REQUESTER_ID), eq(NODE_ID), eq(Optional.empty())))
-        .thenReturn(Optional.of(blobStream));
+        .thenReturn(Optional.of(new WopiService.WopiBlob(blobStream, (long) blobContent.length)));
 
     // When
     Response response = wopiResource.getBlob(ACCESS_TOKEN_STR, NODE_ID, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    Assertions.assertThat(response.getHeaderString("Content-Length"))
+        .isEqualTo(String.valueOf(blobContent.length));
   }
 
   @Test

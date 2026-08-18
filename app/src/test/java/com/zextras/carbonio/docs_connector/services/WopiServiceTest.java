@@ -4,7 +4,6 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -112,6 +111,43 @@ class WopiServiceTest {
 
   @Test
   @DisplayName(
+      "getDocsEditorAttributes with a specific version should return version-scoped metadata"
+          + " (historical-version parity)")
+  void givenAVersionGetDocsEditorAttributesShouldUseVersionAwareGetNode() throws Exception {
+    // Given -- opening version 2 must return version 2's size/updatedAt/version, not the current
+    // version's. Only the 3-arg getNode is stubbed: a call to the 2-arg overload would return a
+    // null node and NPE, proving the version is actually forwarded.
+    UserInfoDto userInfo =
+        new UserInfoDto().userId(REQUESTER_ID).fullName("Test User").email("test@example.com");
+    when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
+
+    long historicalSize = 4242L;
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID.toString()), eq(2)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "test-doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                200000L,
+                historicalSize,
+                2,
+                true));
+
+    // When
+    Optional<DocsEditorAttributes> result =
+        wopiService.getDocsEditorAttributes(
+            REQUESTER_ID, NODE_ID, Optional.of(2), Optional.empty());
+
+    // Then -- metadata reflects the requested version
+    Assertions.assertThat(result).isPresent();
+    Assertions.assertThat(result.get().getVersion()).isEqualTo(2);
+    Assertions.assertThat(result.get().getSize()).isEqualTo(historicalSize);
+  }
+
+  @Test
+  @DisplayName(
       "getDocsEditorAttributes should throw NoSuchElementException when user-management reports 404"
           + " (user not found)")
   void givenUserManagement404GetDocsEditorAttributesShouldThrowNoSuchElement() throws Exception {
@@ -211,8 +247,7 @@ class WopiServiceTest {
 
     when(filesClient.getNode(anyString(), anyString()))
         .thenThrow(
-            new FilesInternalClientException(
-                "Files unavailable", -1, new RuntimeException()));
+            new FilesInternalClientException("Files unavailable", -1, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -232,8 +267,7 @@ class WopiServiceTest {
     when(userResourceApi.internalUsersIdUserIdGet(REQUESTER_ID)).thenReturn(userInfo);
 
     when(filesClient.getNode(anyString(), anyString()))
-        .thenThrow(
-            new FilesInternalClientException("not found", 404, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("not found", 404, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -244,33 +278,92 @@ class WopiServiceTest {
   }
 
   @Test
-  @DisplayName("getBlob should return Optional with InputStream when download succeeds")
-  void givenValidInputsGetBlobShouldReturnInputStream() {
+  @DisplayName("getBlob should return the blob content and node size when download succeeds")
+  void givenValidInputsGetBlobShouldReturnBlobWithSize() {
     // Given
     byte[] blobBytes = "file content".getBytes(StandardCharsets.UTF_8);
     InputStream blobStream = new ByteArrayInputStream(blobBytes);
 
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID.toString())))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                1000L,
+                blobBytes.length,
+                1,
+                true));
     when(filesClient.downloadFile(eq(REQUESTER_ID), eq(NODE_ID.toString()), eq(Optional.empty())))
         .thenReturn(blobStream);
 
     // When
-    Optional<InputStream> result = wopiService.getBlob(REQUESTER_ID, NODE_ID, Optional.empty());
+    Optional<WopiService.WopiBlob> result =
+        wopiService.getBlob(REQUESTER_ID, NODE_ID, Optional.empty());
 
     // Then
     Assertions.assertThat(result).isPresent();
+    Assertions.assertThat(result.get().content()).isSameAs(blobStream);
+    Assertions.assertThat(result.get().size()).isEqualTo((long) blobBytes.length);
+  }
+
+  @Test
+  @DisplayName("getBlob with a specific version should size the blob from that version (parity)")
+  void givenAVersionGetBlobShouldSizeFromVersionAwareGetNode() {
+    // Given -- serving version 3 must report version 3's size, not the current version's
+    byte[] blobBytes = "historical content".getBytes(StandardCharsets.UTF_8);
+    InputStream blobStream = new ByteArrayInputStream(blobBytes);
+    long historicalSize = 987L;
+
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID.toString()), eq(3)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                1000L,
+                historicalSize,
+                3,
+                true));
+    when(filesClient.downloadFile(eq(REQUESTER_ID), eq(NODE_ID.toString()), eq(Optional.of(3))))
+        .thenReturn(blobStream);
+
+    // When
+    Optional<WopiService.WopiBlob> result =
+        wopiService.getBlob(REQUESTER_ID, NODE_ID, Optional.of(3));
+
+    // Then
+    Assertions.assertThat(result).isPresent();
+    Assertions.assertThat(result.get().size()).isEqualTo(historicalSize);
   }
 
   @Test
   @DisplayName("getBlob should return empty Optional when download fails")
   void givenDownloadFailureGetBlobShouldReturnEmpty() {
     // Given
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID.toString())))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                1000L,
+                1024L,
+                1,
+                true));
     when(filesClient.downloadFile(eq(REQUESTER_ID), eq(NODE_ID.toString()), any()))
         .thenThrow(
-            new FilesInternalClientException(
-                "Download failed", 500, new RuntimeException()));
+            new FilesInternalClientException("Download failed", 500, new RuntimeException()));
 
     // When
-    Optional<InputStream> result = wopiService.getBlob(REQUESTER_ID, NODE_ID, Optional.empty());
+    Optional<WopiService.WopiBlob> result =
+        wopiService.getBlob(REQUESTER_ID, NODE_ID, Optional.empty());
 
     // Then
     Assertions.assertThat(result).isEmpty();
@@ -334,8 +427,7 @@ class WopiServiceTest {
     // Given
     when(filesClient.getNode(anyString(), anyString()))
         .thenThrow(
-            new FilesInternalClientException(
-                "Files unavailable", -1, new RuntimeException()));
+            new FilesInternalClientException("Files unavailable", -1, new RuntimeException()));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
@@ -351,8 +443,7 @@ class WopiServiceTest {
   void givenNodeNotFoundSaveBlobShouldThrowNoSuchElement() {
     // Given -- HTTP 404 from getNode means node does not exist or is inaccessible.
     when(filesClient.getNode(anyString(), anyString()))
-        .thenThrow(
-            new FilesInternalClientException("not found", 404, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("not found", 404, new RuntimeException()));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
@@ -390,8 +481,7 @@ class WopiServiceTest {
             any(),
             anyLong(),
             eq(false)))
-        .thenThrow(
-            new FilesInternalClientException("unauthorized", 403, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("unauthorized", 403, new RuntimeException()));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 
@@ -431,8 +521,7 @@ class WopiServiceTest {
             anyLong(),
             eq(false)))
         .thenThrow(
-            new FilesInternalClientException(
-                "account is over quota", 422, new RuntimeException()));
+            new FilesInternalClientException("account is over quota", 422, new RuntimeException()));
 
     InputStream blob = new ByteArrayInputStream("file-content".getBytes(StandardCharsets.UTF_8));
 

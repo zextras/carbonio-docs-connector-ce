@@ -4,6 +4,7 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -183,8 +184,7 @@ class FilesServiceTest {
   void givenFilesClientFailureOpenFileShouldThrowServiceDependencyException() {
     // Given
     when(filesClient.getNode(anyString(), anyString()))
-        .thenThrow(
-            new FilesInternalClientException("Network error", -1, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("Network error", -1, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -205,8 +205,7 @@ class FilesServiceTest {
   void givenNodeNotFoundOpenFileShouldThrowNoSuchElement() {
     // Given -- HTTP 404 from getNode means the node does not exist or is inaccessible.
     when(filesClient.getNode(anyString(), anyString()))
-        .thenThrow(
-            new FilesInternalClientException("not found", 404, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("not found", 404, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -261,9 +260,9 @@ class FilesServiceTest {
   @DisplayName("openFile with version parameter should add permission=readonly to URL")
   void givenAVersionParameterOpenFileShouldAddReadonlyPermission()
       throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given
+    // Given -- a specific version is requested, so openFile must use the version-aware getNode
     long fileSizeBytes = 5 * 1024 * 1024L;
-    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), eq(2)))
         .thenReturn(
             buildNodeDto(
                 NODE_ID,
@@ -339,8 +338,7 @@ class FilesServiceTest {
 
     when(filesClient.uploadFile(
             anyString(), anyString(), anyString(), anyString(), any(), anyLong()))
-        .thenThrow(
-            new FilesInternalClientException("upload failed", 500, new RuntimeException()));
+        .thenThrow(new FilesInternalClientException("upload failed", 500, new RuntimeException()));
 
     // When
     Optional<CreatedFile> result = filesService.uploadTemplate(REQUESTER_ID, insertFile);
@@ -531,9 +529,9 @@ class FilesServiceTest {
           + " string")
   void givenVersionAndOffsetFromUtcOpenFileShouldIncludeVersionInWopiSrc()
       throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given
+    // Given -- a specific version is requested, so openFile must use the version-aware getNode
     long fileSizeBytes = 5L * 1024 * 1024;
-    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), eq(3)))
         .thenReturn(
             buildNodeDto(
                 NODE_ID,
@@ -590,8 +588,7 @@ class FilesServiceTest {
   // ----- Over-quota behavior tests (task 5 — TDD additions) -----
 
   @Test
-  @DisplayName(
-      "uploadTemplate should throw AccountOverQuotaException when FilesClient throws 422")
+  @DisplayName("uploadTemplate should throw AccountOverQuotaException when FilesClient throws 422")
   void givenAccountInOverQuotaUploadTemplateShouldThrowAccountOverQuotaException() {
     // Given
     InsertFile insertFile = new InsertFile();
@@ -664,16 +661,17 @@ class FilesServiceTest {
   }
 
   private OpenDocumentToken stubValidNode(long fileSizeBytes) {
-    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
-        .thenReturn(
-            buildNodeDto(
-                NODE_ID,
-                REQUESTER_ID,
-                "doc",
-                "odt",
-                "application/vnd.oasis.opendocument.text",
-                fileSizeBytes,
-                true));
+    InternalNodeDto node =
+        buildNodeDto(
+            NODE_ID,
+            REQUESTER_ID,
+            "doc",
+            "odt",
+            "application/vnd.oasis.opendocument.text",
+            fileSizeBytes,
+            true);
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID))).thenReturn(node);
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), anyInt())).thenReturn(node);
     OpenDocumentToken token =
         new OpenDocumentToken(
             UUID.randomUUID(),

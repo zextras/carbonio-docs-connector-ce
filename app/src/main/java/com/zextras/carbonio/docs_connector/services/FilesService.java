@@ -75,7 +75,10 @@ public class FilesService {
 
     InternalNodeDto node;
     try {
-      node = filesClient.getNode(requesterId, nodeId);
+      node =
+          optVersion.isPresent()
+              ? filesClient.getNode(requesterId, nodeId, optVersion.get())
+              : filesClient.getNode(requesterId, nodeId);
     } catch (FilesInternalClientException e) {
       if (e.isNotFound() || e.isForbidden()) {
         throw new NoSuchElementException("Node " + nodeId + " not found");
@@ -85,11 +88,10 @@ public class FilesService {
 
     GenericFileType fileType = GenericFileType.fromMimeType(node.getMimeType());
     long maxFileSizeInMb = getMaxSizeLimitForFileType(fileType);
-    long nodeSize = node.getSize() != null ? node.getSize() : 0L;
-    if (nodeSize > maxFileSizeInMb * MEGA_BYTE) {
+    if (node.getSize() > maxFileSizeInMb * MEGA_BYTE) {
       String message =
           "File %s with mime type %s and size %d is too large to open"
-              .formatted(nodeId, node.getMimeType(), nodeSize);
+              .formatted(nodeId, node.getMimeType(), node.getSize());
 
       logger.info(message);
       throw new FileSizeTooLargeException(message, maxFileSizeInMb);
@@ -157,8 +159,7 @@ public class FilesService {
      * This is a temporary solution and if the client requests a specific version then it
      * will be opened in read only even if it should be editable
      */
-    String ownerId = node.getOwner() != null ? node.getOwner().getId() : null;
-    boolean overQuota = quotaChecker.isOverQuota(ownerId, cookie);
+    boolean overQuota = quotaChecker.isOverQuota(node.getOwner().getId(), cookie);
     if (!Boolean.TRUE.equals(node.getPermissions().getCanWriteFile())
         || optVersion.isPresent()
         || overQuota) {
@@ -168,9 +169,7 @@ public class FilesService {
     // Document title parameter
     docsPathAndParametersBuilder
         .append("&title=")
-        .append(
-            URLEncoder.encode(
-                node.getName().replaceAll(" ", "_"), StandardCharsets.UTF_8));
+        .append(URLEncoder.encode(node.getName().replaceAll(" ", "_"), StandardCharsets.UTF_8));
 
     // UI parameters
     docsPathAndParametersBuilder
