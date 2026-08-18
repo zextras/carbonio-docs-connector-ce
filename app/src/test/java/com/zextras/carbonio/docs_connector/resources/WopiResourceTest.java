@@ -18,7 +18,6 @@ import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException
 import com.zextras.carbonio.docs_connector.services.WopiService;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.NodeUpdatedTimestamp;
-import com.zextras.carbonio.files.entities.FilesBlob;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
@@ -80,7 +79,7 @@ class WopiResourceTest {
             .setSize(1024L);
 
     when(wopiService.getDocsEditorAttributes(
-            eq(REQUESTER_ID), eq(COOKIE), eq(NODE_ID), eq(Optional.empty()), eq(Optional.empty())))
+            eq(REQUESTER_ID), eq(NODE_ID), eq(Optional.empty()), eq(Optional.empty())))
         .thenReturn(Optional.of(attrs));
 
     // When
@@ -117,7 +116,7 @@ class WopiResourceTest {
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
     ContainerRequestContext ctx = buildContextWithToken(token);
 
-    when(wopiService.getDocsEditorAttributes(any(), anyString(), any(), any(), any()))
+    when(wopiService.getDocsEditorAttributes(any(), any(), any(), any()))
         .thenReturn(Optional.empty());
 
     // When
@@ -139,7 +138,7 @@ class WopiResourceTest {
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
     ContainerRequestContext ctx = buildContextWithToken(token);
 
-    when(wopiService.getDocsEditorAttributes(any(), anyString(), any(), any(), any()))
+    when(wopiService.getDocsEditorAttributes(any(), any(), any(), any()))
         .thenThrow(new java.util.NoSuchElementException());
 
     // When
@@ -161,7 +160,7 @@ class WopiResourceTest {
     OpenDocumentToken token = buildValidToken(tokenId, NODE_ID);
     ContainerRequestContext ctx = buildContextWithToken(token);
 
-    when(wopiService.getDocsEditorAttributes(any(), anyString(), any(), any(), any()))
+    when(wopiService.getDocsEditorAttributes(any(), any(), any(), any()))
         .thenThrow(new ServiceDependencyException("user-management unavailable"));
 
     // When
@@ -184,18 +183,18 @@ class WopiResourceTest {
     ContainerRequestContext ctx = buildContextWithToken(token);
 
     byte[] blobContent = "file-content".getBytes(StandardCharsets.UTF_8);
-    FilesBlob filesBlob = mock(FilesBlob.class);
-    when(filesBlob.getContent()).thenReturn(new ByteArrayInputStream(blobContent));
-    when(filesBlob.getSize()).thenReturn((long) blobContent.length);
+    InputStream blobStream = new ByteArrayInputStream(blobContent);
 
-    when(wopiService.getBlob(eq(COOKIE), eq(NODE_ID), eq(Optional.empty())))
-        .thenReturn(Optional.of(filesBlob));
+    when(wopiService.getBlob(eq(REQUESTER_ID), eq(NODE_ID), eq(Optional.empty())))
+        .thenReturn(Optional.of(new WopiService.WopiBlob(blobStream, (long) blobContent.length)));
 
     // When
     Response response = wopiResource.getBlob(ACCESS_TOKEN_STR, NODE_ID, null, ctx);
 
     // Then
     Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    Assertions.assertThat(response.getHeaderString("Content-Length"))
+        .isEqualTo(String.valueOf(blobContent.length));
   }
 
   @Test
@@ -246,7 +245,7 @@ class WopiResourceTest {
     timestamp.setLastModifiedTime("2026-01-01T00:00:00");
 
     when(wopiService.saveBlob(
-            eq(COOKIE),
+            eq(REQUESTER_ID),
             eq(NODE_ID),
             eq(Optional.empty()),
             any(InputStream.class),

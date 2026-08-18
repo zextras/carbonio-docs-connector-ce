@@ -66,7 +66,7 @@ class FilesResourceTest {
     CreatedFile createdFile = new CreatedFile();
     createdFile.setNodeId(NODE_ID);
 
-    when(filesService.uploadTemplate(eq(COOKIE), any(InsertFile.class)))
+    when(filesService.uploadTemplate(eq(REQUESTER_ID), any(InsertFile.class)))
         .thenReturn(Optional.of(createdFile));
 
     ContainerRequestContext ctx = buildRequestContext();
@@ -223,7 +223,7 @@ class FilesResourceTest {
     insertFile.setFilename("New Document");
     insertFile.setDestinationFolderId("LOCAL_ROOT");
 
-    when(filesService.uploadTemplate(eq(COOKIE), any(InsertFile.class)))
+    when(filesService.uploadTemplate(eq(REQUESTER_ID), any(InsertFile.class)))
         .thenThrow(new AccountOverQuotaException("Account is over quota"));
 
     ContainerRequestContext ctx = buildRequestContext();

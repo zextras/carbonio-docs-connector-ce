@@ -9,7 +9,6 @@ import com.zextras.carbonio.docs_connector.cluster.DocsEditorInstanceSelector;
 import com.zextras.carbonio.docs_connector.config.DocsConnectorServiceConfig;
 import com.zextras.carbonio.docs_connector.dal.dao.OpenDocumentToken;
 import com.zextras.carbonio.docs_connector.dal.repositories.interfaces.OpenDocumentTokenRepository;
-import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
@@ -17,11 +16,11 @@ import com.zextras.carbonio.docs_connector.services.utilities.TemplateUtils;
 import com.zextras.carbonio.docs_connector.types.CreatedFile;
 import com.zextras.carbonio.docs_connector.types.FileType.GenericFileType;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
-import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
+import com.zextras.carbonio.files.sdk.FilesInternalClient;
+import com.zextras.carbonio.files.sdk.FilesInternalClientException;
+import com.zextras.carbonio.files.sdk.rest.model.InternalNodeDto;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.ApplicationConfigService;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.NetworkingConfigService;
-import io.vavr.control.Try;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.ByteArrayInputStream;
@@ -45,7 +44,7 @@ public class FilesService {
   private final OpenDocumentTokenRepository openDocumentTokenRepository;
   private final ApplicationConfigService applicationConfig;
   private final NetworkingConfigService networkingConfig;
-  private final FilesClient filesClient;
+  private final FilesInternalClient filesClient;
   private final QuotaChecker quotaChecker;
   private final DocsEditorInstanceSelector docsEditorInstanceSelector;
 
@@ -54,7 +53,7 @@ public class FilesService {
       OpenDocumentTokenRepository openDocumentTokenRepository,
       ApplicationConfigService applicationConfig,
       NetworkingConfigService networkingConfig,
-      FilesClient filesClient,
+      FilesInternalClient filesClient,
       QuotaChecker quotaChecker,
       DocsEditorInstanceSelector docsEditorInstanceSelector) {
     this.openDocumentTokenRepository = openDocumentTokenRepository;
@@ -74,28 +73,25 @@ public class FilesService {
       Optional<Integer> optOffsetFromUtc)
       throws ServiceDependencyException, FileSizeTooLargeException {
 
-    NodeAttributes nodeAttributes =
-        filesClient
-            .genericGraphQLRequest(cookie, NodeAttributes.getNodeGraphQLRequest(nodeId, optVersion))
-            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-            .getOrElseThrow(ServiceDependencyException::new);
-
-    if (nodeAttributes == null) {
-      // files' getNode GraphQL resolver answers a nullable field with a JSON null for a genuinely
-      // nonexistent (or inaccessible) node -- a normal, successful GraphQL response (HTTP 200,
-      // {"data":{"getNode":null}}), not a dependency failure. NodeAttributes#mapFromJSON happily
-      // deserializes that into a null NodeAttributes without throwing, so it is NOT caught by the
-      // getOrElseThrow above: only a genuinely failed/unreachable files call reaches
-      // ServiceDependencyException. This is the actual "node not found" signal.
-      throw new NoSuchElementException("Node " + nodeId + " not found");
+    InternalNodeDto node;
+    try {
+      node =
+          optVersion.isPresent()
+              ? filesClient.getNode(requesterId, nodeId, optVersion.get())
+              : filesClient.getNode(requesterId, nodeId);
+    } catch (FilesInternalClientException e) {
+      if (e.isNotFound() || e.isForbidden()) {
+        throw new NoSuchElementException("Node " + nodeId + " not found");
+      }
+      throw new ServiceDependencyException(e);
     }
 
-    GenericFileType fileType = GenericFileType.fromMimeType(nodeAttributes.getMime_type());
+    GenericFileType fileType = GenericFileType.fromMimeType(node.getMimeType());
     long maxFileSizeInMb = getMaxSizeLimitForFileType(fileType);
-    if (nodeAttributes.getSize() > maxFileSizeInMb * MEGA_BYTE) {
+    if (node.getSize() > maxFileSizeInMb * MEGA_BYTE) {
       String message =
           "File %s with mime type %s and size %d is too large to open"
-              .formatted(nodeId, nodeAttributes.getMime_type(), nodeAttributes.getSize());
+              .formatted(nodeId, node.getMimeType(), node.getSize());
 
       logger.info(message);
       throw new FileSizeTooLargeException(message, maxFileSizeInMb);
@@ -163,8 +159,8 @@ public class FilesService {
      * This is a temporary solution and if the client requests a specific version then it
      * will be opened in read only even if it should be editable
      */
-    boolean overQuota = quotaChecker.isOverQuota(nodeAttributes.getOwner().getId(), cookie);
-    if (!nodeAttributes.getPermissions().getCan_write_file()
+    boolean overQuota = quotaChecker.isOverQuota(node.getOwner().getId(), cookie);
+    if (!Boolean.TRUE.equals(node.getPermissions().getCanWriteFile())
         || optVersion.isPresent()
         || overQuota) {
       docsPathAndParametersBuilder.append("&permission=readonly");
@@ -173,9 +169,7 @@ public class FilesService {
     // Document title parameter
     docsPathAndParametersBuilder
         .append("&title=")
-        .append(
-            URLEncoder.encode(
-                nodeAttributes.getName().replaceAll(" ", "_"), StandardCharsets.UTF_8));
+        .append(URLEncoder.encode(node.getName().replaceAll(" ", "_"), StandardCharsets.UTF_8));
 
     // UI parameters
     docsPathAndParametersBuilder
@@ -202,7 +196,7 @@ public class FilesService {
     return docsPathAndParametersBuilder.toString();
   }
 
-  public Optional<CreatedFile> uploadTemplate(String cookie, InsertFile docsFile)
+  public Optional<CreatedFile> uploadTemplate(String userId, InsertFile docsFile)
       throws AccountOverQuotaException {
     Optional<byte[]> optTemplateRaw = TemplateUtils.getTemplateRaw(docsFile.getType());
     if (optTemplateRaw.isEmpty()) {
@@ -210,32 +204,26 @@ public class FilesService {
     }
 
     byte[] templateRaw = optTemplateRaw.get();
-    Try<CreatedFile> result =
-        filesClient
-            .uploadFile(
-                cookie,
-                docsFile.getDestinationFolderId(),
-                TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
-                TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
-                new ByteArrayInputStream(templateRaw),
-                templateRaw.length)
-            .map(
-                nodeId -> {
-                  CreatedFile createdFile = new CreatedFile();
-                  createdFile.setNodeId(UUID.fromString(nodeId.getNodeId()));
-                  return createdFile;
-                });
-
-    if (result.isFailure()) {
-      Throwable cause = result.getCause();
-      if (cause instanceof AccountInOverQuota) {
-        throw new AccountOverQuotaException("Account is over quota", cause);
+    try {
+      String uploadedNodeId =
+          filesClient.uploadFile(
+              userId,
+              docsFile.getDestinationFolderId(),
+              TemplateUtils.appendExtensionByType(docsFile.getType(), docsFile.getFilename()),
+              TemplateUtils.detectMimeTypeFrom(docsFile.getType()),
+              () -> new ByteArrayInputStream(templateRaw),
+              templateRaw.length);
+      CreatedFile createdFile = new CreatedFile();
+      createdFile.setNodeId(UUID.fromString(uploadedNodeId));
+      return Optional.of(createdFile);
+    } catch (FilesInternalClientException e) {
+      // HTTP 422 = over-quota (Advanced files enforces per-account quota on upload)
+      if (e.getStatusCode() == 422) {
+        throw new AccountOverQuotaException("Account is over quota", e);
       }
-      logger.error("Failed to upload the template: " + cause.getMessage(), cause);
+      logger.error("Failed to upload the template: " + e.getMessage(), e);
       return Optional.empty();
     }
-
-    return Optional.ofNullable(result.get());
   }
 
   /**

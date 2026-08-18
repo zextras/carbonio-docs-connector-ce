@@ -4,6 +4,7 @@
 package com.zextras.carbonio.docs_connector.services;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,13 +21,13 @@ import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException
 import com.zextras.carbonio.docs_connector.types.CreatedFile;
 import com.zextras.carbonio.docs_connector.types.FileType;
 import com.zextras.carbonio.docs_connector.types.InsertFile;
-import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.files.entities.NodeId;
-import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
+import com.zextras.carbonio.files.sdk.FilesInternalClient;
+import com.zextras.carbonio.files.sdk.FilesInternalClientException;
+import com.zextras.carbonio.files.sdk.rest.model.InternalNodeDto;
+import com.zextras.carbonio.files.sdk.rest.model.OwnerDto;
+import com.zextras.carbonio.files.sdk.rest.model.PermissionsDto;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.ApplicationConfigService;
 import com.zextras.carbonio.quarkus.extensions.bootstrap.NetworkingConfigService;
-import io.vavr.control.Try;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
@@ -42,7 +43,7 @@ class FilesServiceTest {
   private OpenDocumentTokenRepository tokenRepository;
   private ApplicationConfigService applicationConfig;
   private NetworkingConfigService networkingConfig;
-  private FilesClient filesClient;
+  private FilesInternalClient filesClient;
   private QuotaChecker quotaChecker;
   private DocsEditorInstanceSelector instanceSelector;
   private FilesService filesService;
@@ -51,8 +52,7 @@ class FilesServiceTest {
   private static final String REQUESTER_ID = "9e2cffc4-5860-4095-aedb-7b48d6ff889a";
   private static final String COOKIE = "ZM_AUTH_TOKEN=test-token";
 
-  /** Minimal graphQL JSON returned by files when node is found. */
-  private String buildGetNodeResponse(
+  private InternalNodeDto buildNodeDto(
       String nodeId,
       String ownerId,
       String name,
@@ -60,25 +60,16 @@ class FilesServiceTest {
       String mimeType,
       long size,
       boolean canWriteFile) {
-    return """
-    {
-      "data": {
-        "getNode": {
-          "permissions": { "can_write_file": %b },
-          "owner": { "id": "%s", "full_name": "Owner" },
-          "parent": { "id": "LOCAL_ROOT" },
-          "id": "%s",
-          "name": "%s",
-          "updated_at": 1000,
-          "extension": "%s",
-          "mime_type": "%s",
-          "size": %d,
-          "version": 1
-        }
-      }
-    }
-    """
-        .formatted(canWriteFile, ownerId, nodeId, name, ext, mimeType, size);
+    return new InternalNodeDto()
+        .id(nodeId)
+        .name(name)
+        .extension(ext)
+        .mimeType(mimeType)
+        .size(size)
+        .version(1)
+        .updatedAt(1000L)
+        .owner(new OwnerDto().id(ownerId))
+        .permissions(new PermissionsDto().canWriteFile(canWriteFile));
   }
 
   @BeforeEach
@@ -86,7 +77,7 @@ class FilesServiceTest {
     tokenRepository = mock(OpenDocumentTokenRepository.class);
     applicationConfig = mock(ApplicationConfigService.class);
     networkingConfig = mock(NetworkingConfigService.class);
-    filesClient = mock(FilesClient.class);
+    filesClient = mock(FilesInternalClient.class);
     quotaChecker = mock(QuotaChecker.class);
     instanceSelector = mock(DocsEditorInstanceSelector.class);
 
@@ -125,18 +116,16 @@ class FilesServiceTest {
       throws ServiceDependencyException, FileSizeTooLargeException {
     // Given
     long fileSizeBytes = 10 * 1024 * 1024L; // 10 MB, under 50 MB limit
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "test-doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "test-doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -166,18 +155,16 @@ class FilesServiceTest {
   void givenANodeExceedingDocumentSizeLimitOpenFileShouldThrowFileSizeTooLargeException() {
     // Given — 51 MB, exceeds 50 MB limit
     long oversizedBytes = 51L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "test-doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            oversizedBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "test-doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                oversizedBytes,
+                true));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -196,8 +183,8 @@ class FilesServiceTest {
   @DisplayName("openFile should throw ServiceDependencyException when files client fails")
   void givenFilesClientFailureOpenFileShouldThrowServiceDependencyException() {
     // Given
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.failure(new RuntimeException("Network error")));
+    when(filesClient.getNode(anyString(), anyString()))
+        .thenThrow(new FilesInternalClientException("Network error", -1, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -216,12 +203,9 @@ class FilesServiceTest {
   @DisplayName(
       "openFile should throw NoSuchElementException when files reports the node does not exist")
   void givenNodeNotFoundOpenFileShouldThrowNoSuchElement() {
-    // Given -- files' getNode GraphQL resolver answers a nullable field with a JSON null for a
-    // genuinely nonexistent (or inaccessible) node: a normal, successful GraphQL response
-    // ({"data":{"getNode":null}}), not a dependency failure (see
-    // givenFilesClientFailureOpenFileShouldThrowServiceDependencyException above for that case).
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success("{\"data\":{\"getNode\":null}}"));
+    // Given -- HTTP 404 from getNode means the node does not exist or is inaccessible.
+    when(filesClient.getNode(anyString(), anyString()))
+        .thenThrow(new FilesInternalClientException("not found", 404, new RuntimeException()));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -242,18 +226,16 @@ class FilesServiceTest {
       throws ServiceDependencyException, FileSizeTooLargeException {
     // Given
     long fileSizeBytes = 5 * 1024 * 1024L;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -278,20 +260,18 @@ class FilesServiceTest {
   @DisplayName("openFile with version parameter should add permission=readonly to URL")
   void givenAVersionParameterOpenFileShouldAddReadonlyPermission()
       throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given
+    // Given -- a specific version is requested, so openFile must use the version-aware getNode
     long fileSizeBytes = 5 * 1024 * 1024L;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), eq(2)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -317,18 +297,16 @@ class FilesServiceTest {
       throws ServiceDependencyException, FileSizeTooLargeException {
     // Given
     long fileSizeBytes = 5 * 1024 * 1024L;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            false); // no write permission
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                false)); // no write permission
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -358,16 +336,14 @@ class FilesServiceTest {
     insertFile.setFilename("New Doc");
     insertFile.setDestinationFolderId("LOCAL_ROOT");
 
-    // FilesClient.uploadFile returns failure
     when(filesClient.uploadFile(
-            anyString(), anyString(), anyString(), anyString(), any(InputStream.class), anyLong()))
-        .thenReturn(Try.failure(new RuntimeException("upload failed")));
+            anyString(), anyString(), anyString(), anyString(), any(), anyLong()))
+        .thenThrow(new FilesInternalClientException("upload failed", 500, new RuntimeException()));
 
     // When
-    Optional<CreatedFile> result = filesService.uploadTemplate(COOKIE, insertFile);
+    Optional<CreatedFile> result = filesService.uploadTemplate(REQUESTER_ID, insertFile);
 
-    // Then — template exists for LIBRE_DOCUMENT, upload is attempted, failure → getOrNull → null →
-    // empty
+    // Then — template exists for LIBRE_DOCUMENT, upload is attempted, failure → empty
     Assertions.assertThat(result).isEmpty();
   }
 
@@ -384,14 +360,13 @@ class FilesServiceTest {
     insertFile.setDestinationFolderId("LOCAL_ROOT");
 
     String expectedNodeId = "11111111-1111-1111-1111-111111111111";
-    NodeId nodeId = new NodeId(expectedNodeId);
 
     when(filesClient.uploadFile(
-            anyString(), anyString(), anyString(), anyString(), any(InputStream.class), anyLong()))
-        .thenReturn(Try.success(nodeId));
+            anyString(), anyString(), anyString(), anyString(), any(), anyLong()))
+        .thenReturn(expectedNodeId);
 
     // When
-    Optional<CreatedFile> result = filesService.uploadTemplate(COOKIE, insertFile);
+    Optional<CreatedFile> result = filesService.uploadTemplate(REQUESTER_ID, insertFile);
 
     // Then
     Assertions.assertThat(result).isPresent();
@@ -403,18 +378,16 @@ class FilesServiceTest {
   void givenSpreadsheetMimeTypeOpenFileShouldApply10MbLimit() {
     // Given — exactly at the limit: 10 MB is not strictly greater than 10 MB
     long exactLimitBytes = 10L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "budget",
-            "ods",
-            "application/vnd.oasis.opendocument.spreadsheet",
-            exactLimitBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "budget",
+                "ods",
+                "application/vnd.oasis.opendocument.spreadsheet",
+                exactLimitBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -444,18 +417,16 @@ class FilesServiceTest {
   void givenSpreadsheetExceeding10MbOpenFileShouldThrowFileSizeTooLargeException() {
     // Given — 1 byte over the limit
     long oversizedBytes = 10L * 1024 * 1024 + 1;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "budget",
-            "ods",
-            "application/vnd.oasis.opendocument.spreadsheet",
-            oversizedBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "budget",
+                "ods",
+                "application/vnd.oasis.opendocument.spreadsheet",
+                oversizedBytes,
+                true));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -485,18 +456,16 @@ class FilesServiceTest {
   void givenPresentationExceeding100MbOpenFileShouldThrowFileSizeTooLargeException() {
     // Given — 101 MB
     long oversizedBytes = 101L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "slides",
-            "odp",
-            "application/vnd.oasis.opendocument.presentation",
-            oversizedBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "slides",
+                "odp",
+                "application/vnd.oasis.opendocument.presentation",
+                oversizedBytes,
+                true));
 
     // When / Then
     Assertions.assertThatThrownBy(
@@ -530,18 +499,16 @@ class FilesServiceTest {
         .thenReturn(Optional.empty());
 
     long fileSizeBytes = 40L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     // When/Then — should fail loudly instead of silently using a hardcoded default
     Assertions.assertThatThrownBy(
@@ -562,20 +529,18 @@ class FilesServiceTest {
           + " string")
   void givenVersionAndOffsetFromUtcOpenFileShouldIncludeVersionInWopiSrc()
       throws ServiceDependencyException, FileSizeTooLargeException {
-    // Given
+    // Given -- a specific version is requested, so openFile must use the version-aware getNode
     long fileSizeBytes = 5L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), eq(3)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -607,14 +572,13 @@ class FilesServiceTest {
     insertFile.setDestinationFolderId("LOCAL_ROOT");
 
     String expectedNodeId = "22222222-2222-2222-2222-222222222222";
-    NodeId nodeId = new NodeId(expectedNodeId);
 
     when(filesClient.uploadFile(
-            anyString(), anyString(), anyString(), anyString(), any(InputStream.class), anyLong()))
-        .thenReturn(Try.success(nodeId));
+            anyString(), anyString(), anyString(), anyString(), any(), anyLong()))
+        .thenReturn(expectedNodeId);
 
     // When
-    Optional<CreatedFile> result = filesService.uploadTemplate(COOKIE, insertFile);
+    Optional<CreatedFile> result = filesService.uploadTemplate(REQUESTER_ID, insertFile);
 
     // Then
     Assertions.assertThat(result).isPresent();
@@ -624,9 +588,7 @@ class FilesServiceTest {
   // ----- Over-quota behavior tests (task 5 — TDD additions) -----
 
   @Test
-  @DisplayName(
-      "uploadTemplate should throw AccountOverQuotaException when FilesClient throws"
-          + " AccountInOverQuota")
+  @DisplayName("uploadTemplate should throw AccountOverQuotaException when FilesClient throws 422")
   void givenAccountInOverQuotaUploadTemplateShouldThrowAccountOverQuotaException() {
     // Given
     InsertFile insertFile = new InsertFile();
@@ -635,11 +597,12 @@ class FilesServiceTest {
     insertFile.setDestinationFolderId("LOCAL_ROOT");
 
     when(filesClient.uploadFile(
-            anyString(), anyString(), anyString(), anyString(), any(InputStream.class), anyLong()))
-        .thenReturn(Try.failure(new AccountInOverQuota("account is over quota")));
+            anyString(), anyString(), anyString(), anyString(), any(), anyLong()))
+        .thenThrow(
+            new FilesInternalClientException("account is over quota", 422, new RuntimeException()));
 
     // When / Then
-    Assertions.assertThatThrownBy(() -> filesService.uploadTemplate(COOKIE, insertFile))
+    Assertions.assertThatThrownBy(() -> filesService.uploadTemplate(REQUESTER_ID, insertFile))
         .isInstanceOf(AccountOverQuotaException.class);
   }
 
@@ -650,18 +613,16 @@ class FilesServiceTest {
       throws ServiceDependencyException, FileSizeTooLargeException {
     // Given
     long fileSizeBytes = 5L * 1024 * 1024;
-    String graphQLResponse =
-        buildGetNodeResponse(
-            NODE_ID,
-            REQUESTER_ID,
-            "doc",
-            "odt",
-            "application/vnd.oasis.opendocument.text",
-            fileSizeBytes,
-            true);
-
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID)))
+        .thenReturn(
+            buildNodeDto(
+                NODE_ID,
+                REQUESTER_ID,
+                "doc",
+                "odt",
+                "application/vnd.oasis.opendocument.text",
+                fileSizeBytes,
+                true));
 
     OpenDocumentToken token =
         new OpenDocumentToken(
@@ -700,8 +661,8 @@ class FilesServiceTest {
   }
 
   private OpenDocumentToken stubValidNode(long fileSizeBytes) {
-    String graphQLResponse =
-        buildGetNodeResponse(
+    InternalNodeDto node =
+        buildNodeDto(
             NODE_ID,
             REQUESTER_ID,
             "doc",
@@ -709,8 +670,8 @@ class FilesServiceTest {
             "application/vnd.oasis.opendocument.text",
             fileSizeBytes,
             true);
-    when(filesClient.genericGraphQLRequest(eq(COOKIE), anyString()))
-        .thenReturn(Try.success(graphQLResponse));
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID))).thenReturn(node);
+    when(filesClient.getNode(eq(REQUESTER_ID), eq(NODE_ID), anyInt())).thenReturn(node);
     OpenDocumentToken token =
         new OpenDocumentToken(
             UUID.randomUUID(),

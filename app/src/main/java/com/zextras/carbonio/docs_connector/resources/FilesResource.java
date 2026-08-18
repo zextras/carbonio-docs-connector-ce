@@ -56,13 +56,14 @@ public class FilesResource {
       @HeaderParam("Cookie") String cookie,
       InsertFile insertFile,
       @jakarta.ws.rs.core.Context ContainerRequestContext requestContext) {
+    String requesterId = (String) requestContext.getProperty(Constants.Context.REQUESTER_ID);
     try {
       // Parity with devel: an empty Optional (no template available OR a generic, non-quota
       // upload failure -- FilesService.uploadTemplate folds both into Optional.empty()) maps to
       // 404 NOT_FOUND, matching the legacy FilesControllerImpl.createFile behavior. Only the
       // over-quota case is distinguished as 422.
       return filesService
-          .uploadTemplate(cookie, insertFile)
+          .uploadTemplate(requesterId, insertFile)
           .map(createdFile -> Response.ok().entity(createdFile).build())
           .orElse(Response.status(Status.NOT_FOUND).build());
     } catch (AccountOverQuotaException e) {

@@ -3,10 +3,10 @@ List of third-party dependencies grouped by their license type.
 
     AGPL-3.0-only:
 
+        * Carbonio Files - REST SDK (com.zextras.carbonio.files:carbonio-files-ce-rest-sdk:2.1.0-1 - no url defined)
         * Carbonio Quarkus Extensions - Bootstrap Runtime (com.zextras.carbonio.quarkus:carbonio-quarkus-extensions-bootstrap:1.14.0-1 - no url defined)
         * Carbonio Quarkus Extensions - REST Runtime (com.zextras.carbonio.quarkus:carbonio-quarkus-extensions-rest:1.14.0-1 - no url defined)
         * Carbonio User Management - REST SDK (com.zextras.carbonio.user-management:carbonio-user-management-rest-sdk:1.3.0-1 - no url defined)
-        * carbonio-files-sdk (com.zextras.carbonio.files:carbonio-files-sdk:1.1.0-1 - no url defined)
 
     Apache 2.0:
 
@@ -31,13 +31,9 @@ List of third-party dependencies grouped by their license type.
 
     Apache License, Version 2.0:
 
-        * Apache HttpClient (org.apache.httpcomponents:httpclient:4.5.14 - http://hc.apache.org/httpcomponents-client-ga)
-        * Apache HttpCore (org.apache.httpcomponents:httpcore:4.4.16 - http://hc.apache.org/httpcomponents-core-ga)
         * ArC - Runtime (io.quarkus.arc:arc:3.37.2 - https://github.com/quarkusio/quarkus)
         * Caffeine cache (com.github.ben-manes.caffeine:caffeine:3.2.4 - https://github.com/ben-manes/caffeine)
         * ClassMate (com.fasterxml:classmate:1.7.1 - https://github.com/FasterXML/java-classmate)
-        * Guava: Google Core Libraries for Java (com.google.guava:guava:33.6.0-jre - https://github.com/google/guava)
-        * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:2.8 - https://github.com/google/j2objc/)
         * Jandex: Core (io.smallrye:jandex:3.6.0 - https://smallrye.io)
         * Java Concurrency Tools Core Library (org.jctools:jctools-core:4.0.5 - https://github.com/JCTools)
         * MicroProfile Config API (org.eclipse.microprofile.config:microprofile-config-api:3.1.1 - https://microprofile.io/project/eclipse/microprofile-config/microprofile-config-api)
@@ -96,7 +92,6 @@ List of third-party dependencies grouped by their license type.
 
     Apache-2.0:
 
-        * Apache Commons Codec (commons-codec:commons-codec:1.22.0 - https://commons.apache.org/proper/commons-codec/)
         * Apache Commons IO (commons-io:commons-io:2.22.0 - https://commons.apache.org/proper/commons-io/)
 
     BSD-2-Clause:
@@ -168,18 +163,12 @@ List of third-party dependencies grouped by their license type.
 
         * reactive-streams (org.reactivestreams:reactive-streams:1.0.4 - http://www.reactive-streams.org/)
 
-    Public Domain:
-
-        * AOP alliance (aopalliance:aopalliance:1.0 - http://aopalliance.sourceforge.net)
-
     The Apache License, Version 2.0:
 
         * JSpecify annotations (org.jspecify:jspecify:1.0.0 - http://jspecify.org/)
 
     The Apache Software License, Version 2.0:
 
-        * Google Guice - Core Library (com.google.inject:guice:5.0.1 - https://github.com/google/guice/guice)
-        * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.1 - https://github.com/google/guava/failureaccess)
         * Jackson datatype: jdk8 (com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.0 - https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jdk8)
         * Jackson datatype: JSR310 (com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.0 - https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jsr310)
         * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.22 - https://github.com/FasterXML/jackson)
@@ -188,7 +177,6 @@ List of third-party dependencies grouped by their license type.
         * Jackson-dataformat-YAML (com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.0 - https://github.com/FasterXML/jackson-dataformats-text)
         * Jackson-module-parameter-names (com.fasterxml.jackson.module:jackson-module-parameter-names:2.22.0 - https://github.com/FasterXML/jackson-modules-java8/jackson-module-parameter-names)
         * Jakarta Dependency Injection (jakarta.inject:jakarta.inject-api:2.0.1 - https://github.com/eclipse-ee4j/injection-api)
-        * javax.inject (javax.inject:javax.inject:1 - http://code.google.com/p/atinject/)
         * Netty/TomcatNative [OpenSSL - Classes] (io.netty:netty-tcnative-classes:2.0.77.Final - https://github.com/netty/netty-tcnative/netty-tcnative-classes/)
         * Quarkus - ArC - Runtime (io.quarkus:quarkus-arc:3.37.2 - https://github.com/quarkusio/quarkus)
         * Quarkus - Caffeine - Runtime (io.quarkus:quarkus-caffeine:3.37.2 - https://github.com/quarkusio/quarkus)
@@ -227,8 +215,6 @@ List of third-party dependencies grouped by their license type.
         * SmallRye Mutiny - Vert.x URI Template (io.smallrye.reactive:smallrye-mutiny-vertx-uri-template:3.22.2 - https://smallrye.io/smallrye-mutiny-vertx-bindings)
         * SmallRye Mutiny - Vert.x Web (io.smallrye.reactive:smallrye-mutiny-vertx-web:3.22.2 - https://smallrye.io/smallrye-mutiny-vertx-bindings)
         * SmallRye Mutiny - Vert.x Web Common (io.smallrye.reactive:smallrye-mutiny-vertx-web-common:3.22.2 - https://smallrye.io/smallrye-mutiny-vertx-bindings)
-        * Vavr (io.vavr:vavr:0.11.0 - https://vavr.io)
-        * Vavr Match (io.vavr:vavr-match:0.11.0 - https://vavr.io)
         * Vert.x Auth Common (io.vertx:vertx-auth-common:4.5.28 - https://github.com/vert-x3/vertx-parent/vertx-ext/vertx-ext-parent/vertx-auth-parent/vertx-auth-common)
         * Vert.x Bridge Common (io.vertx:vertx-bridge-common:4.5.28 - https://github.com/vert-x3/vertx-parent/vertx-ext/vertx-ext-parent/vertx-bridge-common)
         * Vert.x Core (io.vertx:vertx-core:4.5.28 - https://github.com/vert-x3/vertx-parent/vertx-core)

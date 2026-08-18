@@ -69,7 +69,6 @@ public class WopiResource {
         return wopiService
             .getDocsEditorAttributes(
                 openDocumentToken.getRequesterId(),
-                openDocumentToken.getRequesterCookie(),
                 nodeId,
                 Optional.ofNullable(version),
                 Optional.ofNullable(offsetFromUtc))
@@ -104,13 +103,13 @@ public class WopiResource {
 
     if (openDocumentToken.getDocumentId().equals(nodeId)) {
       return wopiService
-          .getBlob(openDocumentToken.getRequesterCookie(), nodeId, Optional.ofNullable(version))
+          .getBlob(openDocumentToken.getRequesterId(), nodeId, Optional.ofNullable(version))
           .map(
-              filesBlob ->
+              blob ->
                   Response.ok()
                       .type(MediaType.APPLICATION_OCTET_STREAM)
-                      .entity(filesBlob.getContent())
-                      .header(HttpHeaders.CONTENT_LENGTH, filesBlob.getSize())
+                      .entity(blob.content())
+                      .header(HttpHeaders.CONTENT_LENGTH, blob.size())
                       .build())
           .orElse(Response.serverError().build());
     }
@@ -142,7 +141,7 @@ public class WopiResource {
       try {
         return wopiService
             .saveBlob(
-                openDocumentToken.getRequesterCookie(),
+                openDocumentToken.getRequesterId(),
                 nodeId,
                 Optional.ofNullable(offsetFromUtc),
                 body,

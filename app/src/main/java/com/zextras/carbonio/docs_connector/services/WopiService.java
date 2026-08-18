@@ -4,26 +4,16 @@
 
 package com.zextras.carbonio.docs_connector.services;
 
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.zextras.carbonio.docs_connector.entities.files.graphql.NodeAttributes;
 import com.zextras.carbonio.docs_connector.exceptions.AccountOverQuotaException;
 import com.zextras.carbonio.docs_connector.exceptions.ServiceDependencyException;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.NodeUpdatedTimestamp;
-import com.zextras.carbonio.files.FilesClient;
-import com.zextras.carbonio.files.entities.FilesBlob;
-import com.zextras.carbonio.files.entities.NodeIdVersion;
-import com.zextras.carbonio.files.exceptions.AccountInOverQuota;
-import com.zextras.carbonio.files.exceptions.InternalServerError;
-import com.zextras.carbonio.files.exceptions.UnAuthorized;
+import com.zextras.carbonio.files.sdk.FilesInternalClient;
+import com.zextras.carbonio.files.sdk.FilesInternalClientException;
+import com.zextras.carbonio.files.sdk.rest.model.InternalNodeDto;
 import com.zextras.carbonio.user_management.sdk.rest.ApiException;
 import com.zextras.carbonio.user_management.sdk.rest.api.UserResourceApi;
 import com.zextras.carbonio.user_management.sdk.rest.model.UserInfoDto;
-import io.vavr.Predicates;
-import io.vavr.control.Try;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.InputStream;
@@ -43,12 +33,14 @@ public class WopiService {
   private static final Logger logger = LoggerFactory.getLogger(WopiService.class);
 
   private final UserResourceApi userResourceApi;
-  private final FilesClient filesClient;
+  private final FilesInternalClient filesClient;
   private final SaveBlobCallback saveBlobCallback;
 
   @Inject
   public WopiService(
-      UserResourceApi userResourceApi, FilesClient filesClient, SaveBlobCallback saveBlobCallback) {
+      UserResourceApi userResourceApi,
+      FilesInternalClient filesClient,
+      SaveBlobCallback saveBlobCallback) {
     this.userResourceApi = userResourceApi;
     this.filesClient = filesClient;
     this.saveBlobCallback = saveBlobCallback;
@@ -56,7 +48,6 @@ public class WopiService {
 
   public Optional<DocsEditorAttributes> getDocsEditorAttributes(
       String requesterId,
-      String requesterCookie,
       UUID nodeId,
       Optional<Integer> optVersion,
       Optional<Integer> optOffsetFromUtc)
@@ -96,45 +87,38 @@ public class WopiService {
       throw new NoSuchElementException();
     }
 
-    // Eager fetch (same idiom as FilesService#openFile / #saveBlob below): a genuinely
-    // failed/unreachable files call surfaces here as a thrown ServiceDependencyException
-    // (including a malformed/unparseable GraphQL response -- Try.of catches the checked
-    // JsonProcessingException from mapFromJSON too), while a successful call is guaranteed to
-    // have produced either a real NodeAttributes or a null one.
-    NodeAttributes nodeAttributes =
-        filesClient
-            .genericGraphQLRequest(
-                requesterCookie,
-                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), optVersion))
-            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-            .getOrElseThrow(ServiceDependencyException::new);
-
-    if (nodeAttributes == null) {
-      // files' getNode GraphQL resolver answers a nullable field with a JSON null for a
-      // genuinely nonexistent (or inaccessible) node -- a normal, successful GraphQL response,
-      // not a dependency failure. See FilesService#openFile for the identical distinction.
-      logger.error("Unable to retrieve node {}: not found", nodeId);
-      throw new NoSuchElementException("Node " + nodeId + " not found");
+    InternalNodeDto node;
+    try {
+      node =
+          optVersion.isPresent()
+              ? filesClient.getNode(requesterId, nodeId.toString(), optVersion.get())
+              : filesClient.getNode(requesterId, nodeId.toString());
+    } catch (FilesInternalClientException e) {
+      if (e.isNotFound() || e.isForbidden()) {
+        logger.error("Unable to retrieve node {}: not found", nodeId);
+        throw new NoSuchElementException("Node " + nodeId + " not found");
+      }
+      throw new ServiceDependencyException(e);
     }
 
     String lastModifiedTimeFormatted =
-        formatDateToIso8601WithOffset(new Date(nodeAttributes.getUpdated_at()), optOffsetFromUtc);
+        formatDateToIso8601WithOffset(new Date(node.getUpdatedAt()), optOffsetFromUtc);
 
     logger.info("Getting blob with instant: {}", lastModifiedTimeFormatted);
 
-    String abbreviateFilename =
-        abbreviateFilename(nodeAttributes.getName(), nodeAttributes.getExtension());
+    String abbreviateFilename = abbreviateFilename(node.getName(), node.getExtension());
 
-    UUID nodeOwnerId = UUID.fromString(nodeAttributes.getOwner().getId());
+    UUID nodeOwnerId = UUID.fromString(node.getOwner().getId());
 
     DocsEditorAttributes docsEditorAttributes = new DocsEditorAttributes();
     docsEditorAttributes.setOwnerId(nodeOwnerId);
     docsEditorAttributes.setUserId(UUID.fromString(userInfo.getUserId()));
     docsEditorAttributes.setUserFriendlyName(userInfo.getFullName());
-    docsEditorAttributes.setUserCanWrite(nodeAttributes.getPermissions().getCan_write_file());
+    docsEditorAttributes.setUserCanWrite(
+        Boolean.TRUE.equals(node.getPermissions().getCanWriteFile()));
     docsEditorAttributes.setBaseFileName(abbreviateFilename);
-    docsEditorAttributes.setVersion(nodeAttributes.getVersion());
-    docsEditorAttributes.setSize(nodeAttributes.getSize());
+    docsEditorAttributes.setVersion(node.getVersion());
+    docsEditorAttributes.setSize(node.getSize());
     docsEditorAttributes.setLastModifiedTime(lastModifiedTimeFormatted);
     docsEditorAttributes.setEnableOwnerTermination(false);
     docsEditorAttributes.setDisableCopy(false);
@@ -142,7 +126,8 @@ public class WopiService {
     docsEditorAttributes.setDisablePrint(false);
     docsEditorAttributes.setDisableInactiveMessages(true);
     docsEditorAttributes.setHideExportOption(false);
-    docsEditorAttributes.setHideSaveOption(!nodeAttributes.getPermissions().getCan_write_file());
+    docsEditorAttributes.setHideSaveOption(
+        !Boolean.TRUE.equals(node.getPermissions().getCanWriteFile()));
     docsEditorAttributes.setHidePrintOption(false);
     docsEditorAttributes.setHideChangeTrackingControls(false);
     docsEditorAttributes.setUserCanNotWriteRelative(true);
@@ -152,100 +137,85 @@ public class WopiService {
     return Optional.of(docsEditorAttributes);
   }
 
-  public Optional<FilesBlob> getBlob(String cookie, UUID nodeId, Optional<Integer> optVersion) {
-    return Optional.ofNullable(
-        filesClient
-            .downloadFile(cookie, nodeId.toString(), optVersion)
-            .onFailure(failure -> logger.error(failure.getMessage(), failure))
-            .getOrNull());
+  public record WopiBlob(InputStream content, Long size) {}
+
+  public Optional<WopiBlob> getBlob(String userId, UUID nodeId, Optional<Integer> optVersion) {
+    try {
+      InternalNodeDto node =
+          optVersion.isPresent()
+              ? filesClient.getNode(userId, nodeId.toString(), optVersion.get())
+              : filesClient.getNode(userId, nodeId.toString());
+      InputStream content = filesClient.downloadFile(userId, nodeId.toString(), optVersion);
+      return Optional.of(new WopiBlob(content, node.getSize()));
+    } catch (FilesInternalClientException e) {
+      logger.error(e.getMessage(), e);
+      return Optional.empty();
+    }
   }
 
   public Optional<NodeUpdatedTimestamp> saveBlob(
-      String cookie,
+      String userId,
       UUID nodeId,
       Optional<Integer> optOffsetFromUtc,
       InputStream blob,
       long contentLength,
       boolean coolIsAutosave)
       throws ServiceDependencyException, AccountOverQuotaException {
-    NodeAttributes nodeAttributes =
-        filesClient
-            .genericGraphQLRequest(
-                cookie, NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), Optional.empty()))
-            .flatMap(graphQLResponse -> Try.of(() -> NodeAttributes.mapFromJSON(graphQLResponse)))
-            .getOrElseThrow(ServiceDependencyException::new);
 
-    if (nodeAttributes == null) {
-      // Same "successful GraphQL response, no matching node" case as FilesService#openFile /
-      // #getDocsEditorAttributes above -- a genuine not-found, not a dependency failure.
-      throw new NoSuchElementException("Node " + nodeId + " not found");
+    InternalNodeDto node;
+    try {
+      node = filesClient.getNode(userId, nodeId.toString());
+    } catch (FilesInternalClientException e) {
+      if (e.isNotFound() || e.isForbidden()) {
+        // Same "successful response, no matching node" distinction as FilesService#openFile /
+        // #getDocsEditorAttributes above -- a genuine not-found, not a dependency failure.
+        throw new NoSuchElementException("Node " + nodeId + " not found");
+      }
+      throw new ServiceDependencyException(e);
     }
 
-    NodeIdVersion uploadedNodeIdVersion =
-        filesClient
-            .uploadFileVersion(
-                cookie,
-                nodeId.toString(),
-                createFullFilename(nodeAttributes.getName(), nodeAttributes.getExtension()),
-                nodeAttributes.getMime_type(),
-                blob,
-                contentLength,
-                coolIsAutosave)
-            .mapFailure(
-                Case(
-                    $(Predicates.instanceOf(AccountInOverQuota.class)),
-                    new AccountOverQuotaException(
-                        "Unable to save blob %s to Files (owner is over quota)".formatted(nodeId))),
-                Case(
-                    $(Predicates.instanceOf(UnAuthorized.class)),
-                    new ServiceDependencyException(
-                        "Unable to save blob %s to Files (424)".formatted(nodeId))),
-                Case(
-                    $(Predicates.instanceOf(InternalServerError.class)),
-                    new ServiceDependencyException(
-                        "Unable to save blob %s to Files (500)".formatted(nodeId))))
-            .get();
+    try {
+      filesClient.uploadFileVersion(
+          userId,
+          nodeId.toString(),
+          createFullFilename(node.getName(), node.getExtension()),
+          node.getMimeType(),
+          () -> blob,
+          contentLength,
+          coolIsAutosave);
+    } catch (FilesInternalClientException e) {
+      // HTTP 422 = over-quota (Advanced files enforces per-account quota on upload)
+      if (e.getStatusCode() == 422) {
+        throw new AccountOverQuotaException(
+            "Unable to save blob %s to Files (owner is over quota)".formatted(nodeId));
+      }
+      throw new ServiceDependencyException(
+          "Unable to save blob %s to Files (%d)".formatted(nodeId, e.getStatusCode()));
+    }
 
     // Notify callback (Advanced: updates savedAt on open_document record)
     saveBlobCallback.onBlobSaved(nodeId);
 
-    Optional<Integer> uploadedNodeVersion =
-        uploadedNodeIdVersion != null
-            ? Optional.ofNullable(uploadedNodeIdVersion.getVersion())
-            : Optional.empty();
-
     /*
      * Retrieve the last update timestamp of the saved file
      */
-    return Optional.ofNullable(
-        filesClient
-            .genericGraphQLRequest(
-                cookie,
-                NodeAttributes.getNodeGraphQLRequest(nodeId.toString(), uploadedNodeVersion))
-            .map(
-                graphQLResponse -> {
-                  try {
-                    NodeAttributes updatedModeAttributes =
-                        NodeAttributes.mapFromJSON(graphQLResponse);
+    try {
+      InternalNodeDto updatedNode = filesClient.getNode(userId, nodeId.toString());
+      long updatedAt = updatedNode.getUpdatedAt() != null ? updatedNode.getUpdatedAt() : 0L;
 
-                    NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
-                    updatedTimestamp.setLastModifiedTime(
-                        formatDateToIso8601WithOffset(
-                            new Date(updatedModeAttributes.getUpdated_at()), optOffsetFromUtc));
+      NodeUpdatedTimestamp updatedTimestamp = new NodeUpdatedTimestamp();
+      updatedTimestamp.setLastModifiedTime(
+          formatDateToIso8601WithOffset(new Date(updatedAt), optOffsetFromUtc));
 
-                    logger.info(
-                        "Saving blob with instant: {}",
-                        formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
+      logger.info(
+          "Saving blob with instant: {}",
+          formatDateToIso8601WithOffset(new Date(), optOffsetFromUtc));
 
-                    return updatedTimestamp;
-
-                  } catch (JsonProcessingException exception) {
-                    logger.error(exception.getMessage(), exception);
-                    return null;
-                  }
-                })
-            .onFailure(failure -> logger.error(failure.getMessage(), failure))
-            .getOrNull());
+      return Optional.of(updatedTimestamp);
+    } catch (FilesInternalClientException e) {
+      logger.error(e.getMessage(), e);
+      return Optional.empty();
+    }
   }
 
   private String formatDateToIso8601WithOffset(
