@@ -32,13 +32,13 @@ import org.testcontainers.lifecycle.Startables;
  *   <li>{@code carbonio-files} is ALSO a direct dependency (docs-connector-ce declares {@code
  *       carbonio-files-ce-rest-sdk} and calls it via {@code FilesInternalClient} from {@code
  *       FilesService}/{@code WopiService}), so per the same policy it runs as a real {@code
- *       registry.dev.zextras.com/dev/carbonio-files-ce:quarkus-migration} container (NOT the
- *       sibling {@code carbonio-files:quarkus-migration} Advanced image — separate repo, separate
- *       registry tag, separate storage backend), with its own real {@code postgres:16} database.
- *       The quarkus-migration image is Quarkus native and exposes the new {@code /internal} REST
- *       surface the SDK targets. It is pointed at the SAME real user-management container
- *       docs-connector uses — a stubbed/unreachable user-management makes files answer a bare,
- *       misleading 401 with no message.
+ *       registry.dev.zextras.com/dev/carbonio-files-ce:devel} container (NOT the sibling {@code
+ *       carbonio-files:quarkus-migration} Advanced image — separate repo, separate registry tag,
+ *       separate storage backend), with its own real {@code postgres:16} database. The devel image
+ *       is Quarkus native and exposes the new {@code /internal} REST surface the SDK targets. It is
+ *       pointed at the SAME real user-management container docs-connector uses — a
+ *       stubbed/unreachable user-management makes files answer a bare, misleading 401 with no
+ *       message.
  *   <li>{@code carbonio-mailbox} is a dependency of user-management, not of docs-connector-ce
  *       directly, so it is replaced by a lightweight WireMock container acting as the mailbox
  *       internal REST API (matching the pattern already used by carbonio-tasks-ce's {@code
@@ -198,11 +198,11 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
     userManagement.start();
 
     // Real carbonio-files container: direct dependency (carbonio-files-ce-rest-sdk), real image,
-    // per policy. quarkus-migration image: Quarkus native, exposes the new /internal REST surface
+    // per policy. devel image: Quarkus native, exposes the new /internal REST surface
     // this SDK targets. Config via NETWORKING_CONFIG_* env (extensions chain); DB credentials
     // read from Consul KV root recursive GET at boot. Notifications disabled — no RabbitMQ needed.
     files =
-        new GenericContainer<>("registry.dev.zextras.com/dev/carbonio-files-ce:quarkus-migration")
+        new GenericContainer<>("registry.dev.zextras.com/dev/carbonio-files-ce:devel")
             .withNetwork(network)
             .withNetworkAliases("carbonio-files")
             .withExposedPorts(10000)
@@ -213,7 +213,7 @@ public class CeStackTestResource implements QuarkusTestResourceLifecycleManager 
             .withEnv("NETWORKING_CONFIG_CARBONIO_SERVICE_DISCOVER_PORT", "8080")
             .withEnv("NETWORKING_CONFIG_CARBONIO_POSTGRESQL_HOST", "carbonio-postgres")
             .withEnv("NETWORKING_CONFIG_CARBONIO_POSTGRESQL_PORT", "5432")
-            // Critical: files:quarkus-migration validates auth via the REST user-management SDK --
+            // Critical: files:devel validates auth via the REST user-management SDK --
             // point it at the REAL container, not a stub, or every authenticated call gets a bare
             // unhelpful 401.
             .withEnv("NETWORKING_CONFIG_CARBONIO_USER_MANAGEMENT_HOST", "carbonio-user-management")
