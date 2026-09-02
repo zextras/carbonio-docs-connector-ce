@@ -1,3 +1,10 @@
+## [2.2.7](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.6...v2.2.7) (2026-09-02)
+
+### Bug Fixes
+
+* **ci:** bump jenkins-lib-common to v4.10.2 to fix semantic-release Release stage crash ([#182](https://github.com/zextras/carbonio-docs-connector-ce/issues/182)) ([040174a](https://github.com/zextras/carbonio-docs-connector-ce/commit/040174ac761faa2c65c602857d1bae5568e0ca44))
+* **ci:** point semantic-release at main ahead of default-branch rename ([#181](https://github.com/zextras/carbonio-docs-connector-ce/issues/181)) ([29c0e1e](https://github.com/zextras/carbonio-docs-connector-ce/commit/29c0e1ec54ac6f84cb3d752b14df4101ed463929))
+
 ## [2.2.6](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.5...v2.2.6) (2026-08-18)
 
 ## [2.2.5](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.4...v2.2.5) (2026-08-13)
