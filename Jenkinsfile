@@ -16,7 +16,10 @@ properties(defaultPipelineProperties())
 dt3_pipeline(
     repoName: 'carbonio-docs-connector-ce',
     mavenPublish: ['app'],
-    nativeBuild: [runnerName: 'carbonio-docs-connector-ce-runner'],
+    nativeBuild: [
+        runnerName: 'carbonio-docs-connector-ce-runner',
+        aarch64: true,
+    ],
     packaging: [
         buildFlags: '-ds',
     ],
@@ -25,6 +28,11 @@ dt3_pipeline(
          imageName: 'carbonio-docs-connector-ce',
          title: 'Carbonio Docs Connector CE',
          description: 'Carbonio Docs Connector Community Edition',
+         platforms: ['linux/amd64', 'linux/arm64'] as Set],
+        [dockerfile: 'docker/docs-connector-sidecar/Dockerfile',
+         imageName: 'carbonio-docs-connector-ce-sidecar',
+         title: 'Carbonio Docs Connector CE Sidecar',
+         description: 'Carbonio Docs Connector Community Edition Sidecar',
          platforms: ['linux/amd64', 'linux/arm64'] as Set],
     ],
     reuse: [projectType: 'CE'],
