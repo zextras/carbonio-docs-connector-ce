@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 # native-image can't cross-compile: arm64 runner comes from nativeBuild.aarch64 at app/target-arm64/.
+ARG SIDECAR_IMAGE=registry.dev.zextras.com/dev/carbonio-sidecar:main
 FROM --platform=$BUILDPLATFORM docker.io/library/busybox AS runner
 
 ARG TARGETARCH
@@ -18,7 +19,7 @@ RUN set -eu; mkdir -p /out; \
     esac; \
     cp "${src}"/*-runner /out/carbonio-docs-connector-ce-runner
 
-FROM registry.dev.zextras.com/dev/carbonio-sidecar:devel
+FROM ${SIDECAR_IMAGE}
 
 # Service registration
 COPY package/carbonio-docs-connector.hcl /consul/config/
