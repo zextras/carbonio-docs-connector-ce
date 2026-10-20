@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 library(
-    identifier: 'jenkins-lib-common@v4.15.2',
+    identifier: 'jenkins-lib-common@v5.0.8',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         credentialsId: 'jenkins-integration-with-github-account',
@@ -15,7 +15,7 @@ properties(defaultPipelineProperties())
 
 dt3_pipeline(
     repoName: 'carbonio-docs-connector-ce',
-    mavenPublish: ['app'],
+    mavenPublish: ['.', 'app'],
     nativeBuild: [
         runnerName: 'carbonio-docs-connector-ce-runner',
         aarch64: true,
