@@ -27,10 +27,10 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  * that Quarkus does not auto-register, so without reflection metadata they fail in native mode.
  *
  * <p><b>JAX-RS JSON DTOs returned/consumed through an opaque {@code
- * jakarta.ws.rs.core.Response}</b> — because the resource methods declare {@code Response}
- * (not the concrete type), Quarkus cannot infer the entity type at build time and does not
- * register it, so native Jackson serialization fails with {@code "No serializer found ... no
- * properties discovered to create BeanSerializer"}:
+ * jakarta.ws.rs.core.Response}</b> — because the resource methods declare {@code Response} (not the
+ * concrete type), Quarkus cannot infer the entity type at build time and does not register it, so
+ * native Jackson serialization fails with {@code "No serializer found ... no properties discovered
+ * to create BeanSerializer"}:
  *
  * <ul>
  *   <li>{@link DocsEditorRedirect} — {@code FilesResource#openFile} response;
@@ -41,8 +41,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  *   <li>{@link FileType} — enum nested in the DTOs above.
  * </ul>
  *
- * <p><b>carbonio-files-ce-rest-sdk DTOs</b> — the SDK is a plain jar, not a Quarkus extension,
- * so it contributes no native reflection metadata. Every DTO the generated {@code ApiClient}
+ * <p><b>carbonio-files-ce-rest-sdk DTOs</b> — the SDK is a plain jar, not a Quarkus extension, so
+ * it contributes no native reflection metadata. Every DTO the generated {@code ApiClient}
  * deserializes (Jackson POJO mapping, not tree-model) must be registered here explicitly:
  *
  * <ul>
