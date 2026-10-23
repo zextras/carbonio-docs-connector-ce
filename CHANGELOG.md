@@ -1,3 +1,9 @@
+## [2.2.8](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.7...v2.2.8) (2026-10-23)
+
+### Bug Fixes
+
+* **ci:** replace mapfile in checksum-verify for macOS bash 3.2 ([#192](https://github.com/zextras/carbonio-docs-connector-ce/issues/192)) ([4134af4](https://github.com/zextras/carbonio-docs-connector-ce/commit/4134af490e0785273ccbbaabf1934c00a96e7076)), closes [jenkins-lib-common#216](https://github.com/zextras/jenkins-lib-common/issues/216)
+
 ## [2.2.7](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.6...v2.2.7) (2026-09-02)
 
 ### Bug Fixes
