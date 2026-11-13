@@ -7,6 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>com.zextras.carbonio.quarkus</groupId>
+    <artifactId>carbonio-quarkus-extensions-parent</artifactId>
+    <version>1.16.3-172.0f9643d3-SNAPSHOT</version>
+    <relativePath/>
+  </parent>
+
   <licenses>
     <license>
       <comments>Copyright (C) 2026 Zextras, https://www.zextras.com</comments>
@@ -29,63 +36,21 @@ SPDX-License-Identifier: AGPL-3.0-only
     <assertj.version>3.27.7</assertj.version>
     <carbonio-files-ce-rest-sdk.version>2.1.0-1</carbonio-files-ce-rest-sdk.version>
 
-    <maven-compiler.version>3.13.0</maven-compiler.version>
-    <maven-failsafe.version>3.5.6</maven-failsafe.version>
-    <maven-jacoco.version>0.8.15</maven-jacoco.version>
-    <maven-surefire.version>3.5.6</maven-surefire.version>
-    <sonar-maven-plugin.version>5.5.0.6356</sonar-maven-plugin.version>
-
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-    <skip.integration.tests>true</skip.integration.tests>
-    <skip.unit.tests>true</skip.unit.tests>
-    <skip.jacoco.full.report.generation>true</skip.jacoco.full.report.generation>
-
     <revision>2.2.8</revision>
     <changelist>-SNAPSHOT</changelist>
   </properties>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>flatten-maven-plugin</artifactId>
-          <version>1.7.3</version>
-          <configuration>
-            <updatePomFile>true</updatePomFile>
-            <flattenMode>resolveCiFriendliesOnly</flattenMode>
-          </configuration>
-          <executions>
-            <execution>
-              <id>flatten</id>
-              <phase>validate</phase>
-              <goals><goal>flatten</goal></goals>
-            </execution>
-            <execution>
-              <id>flatten.clean</id>
-              <phase>clean</phase>
-              <goals><goal>clean</goal></goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>${maven-jacoco.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
-      <!-- Maven Central dropped the "sonar" prefix from the org.codehaus.mojo group
-           metadata, so mvn sonar:sonar can no longer resolve the plugin prefix on its own.
-           Declaring it here makes the prefix resolvable from the project. -->
       <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-        <version>${sonar-maven-plugin.version}</version>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>validate</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

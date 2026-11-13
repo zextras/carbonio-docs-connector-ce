@@ -25,23 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only
   </parent>
 
   <properties>
-    <quarkus.version>3.37.2</quarkus.version>
-    <carbonio-quarkus-extensions.version>1.14.0-1</carbonio-quarkus-extensions.version>
+    <carbonio-quarkus-extensions.version>1.16.3-172.0f9643d3-SNAPSHOT</carbonio-quarkus-extensions.version>
     <assertj.version>3.27.7</assertj.version>
     <mockito.version>5.23.0</mockito.version>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bom</artifactId>
-        <version>${quarkus.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <!-- Carbonio Quarkus Extensions: bootstrap (Consul/health/setup) + rest -->
@@ -74,7 +61,6 @@ SPDX-License-Identifier: AGPL-3.0-only
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.22.0</version>
     </dependency>
 
     <!-- Quarkus extension, not raw caffeine: registers Caffeine's reflectively-loaded cache impl classes for GraalVM native -->
@@ -147,62 +133,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus.version}</version>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven-surefire.version}</version>
-        <configuration>
-          <skipTests>${skip.unit.tests}</skipTests>
-          <systemPropertyVariables>
-            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${maven-failsafe.version}</version>
-        <configuration>
-          <skipITs>${skip.integration.tests}</skipITs>
-          <systemPropertyVariables>
-            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-          </systemPropertyVariables>
-        </configuration>
-        <executions>
-          <execution>
-            <goals><goal>integration-test</goal><goal>verify</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <goals><goal>prepare-agent</goal></goals>
-          </execution>
-          <execution>
-            <id>report</id><phase>verify</phase>
-            <goals><goal>report</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>flatten-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
