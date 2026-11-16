@@ -1,3 +1,9 @@
+## [2.2.9](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.8...v2.2.9) (2026-11-16)
+
+### Bug Fixes
+
+* repo sanity alignment ([#199](https://github.com/zextras/carbonio-docs-connector-ce/issues/199)) ([c376fc4](https://github.com/zextras/carbonio-docs-connector-ce/commit/c376fc4c59b05bf034748a20003f7f6b9315d3c1))
+
 ## [2.2.8](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.7...v2.2.8) (2026-10-23)
 
 ### Bug Fixes
