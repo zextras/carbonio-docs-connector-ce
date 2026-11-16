@@ -4,6 +4,7 @@
 
 package com.zextras.carbonio.docs_connector.config;
 
+import com.zextras.carbonio.docs_connector.exceptions.FileSizeTooLargeException;
 import com.zextras.carbonio.docs_connector.types.CreatedFile;
 import com.zextras.carbonio.docs_connector.types.DocsEditorAttributes;
 import com.zextras.carbonio.docs_connector.types.DocsEditorRedirect;
@@ -34,6 +35,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  *
  * <ul>
  *   <li>{@link DocsEditorRedirect} — {@code FilesResource#openFile} response;
+ *   <li>{@link FileSizeTooLargeException} — {@code FilesResource#openFile} 403 response body;
  *   <li>{@link CreatedFile}, {@link InsertFile} — {@code FilesResource#createFile} response /
  *       request body;
  *   <li>{@link DocsEditorAttributes} — {@code WopiResource} CheckFileInfo response;
@@ -68,6 +70,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
       CreatedFile.class,
       DocsEditorAttributes.class,
       NodeUpdatedTimestamp.class,
+      FileSizeTooLargeException.class,
       InsertFile.class,
       FileType.class,
       // carbonio-files-ce-rest-sdk model DTOs (plain jar, no native metadata)
