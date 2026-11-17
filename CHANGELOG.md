@@ -1,3 +1,9 @@
+## [2.2.10](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.9...v2.2.10) (2026-11-17)
+
+### Bug Fixes
+
+* [CO-3502] start carbonio-docs-connector.service with carbonio.target ([#200](https://github.com/zextras/carbonio-docs-connector-ce/issues/200)) ([b641817](https://github.com/zextras/carbonio-docs-connector-ce/commit/b6418173a618b5b0a0a4b03bc3e1db406482c706))
+
 ## [2.2.9](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.8...v2.2.9) (2026-11-16)
 
 ### Bug Fixes

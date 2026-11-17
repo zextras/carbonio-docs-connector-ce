@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <assertj.version>3.27.7</assertj.version>
     <carbonio-files-ce-rest-sdk.version>2.1.0-1</carbonio-files-ce-rest-sdk.version>
 
-    <revision>2.2.9</revision>
+    <revision>2.2.10</revision>
     <changelist>-SNAPSHOT</changelist>
   </properties>
 
