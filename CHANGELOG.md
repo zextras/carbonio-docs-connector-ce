@@ -1,3 +1,9 @@
+## [2.2.11](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.10...v2.2.11) (2026-11-17)
+
+### Bug Fixes
+
+* [CO-3502] treat exit 143 as success for docs-connector ([#201](https://github.com/zextras/carbonio-docs-connector-ce/issues/201)) ([a6626ed](https://github.com/zextras/carbonio-docs-connector-ce/commit/a6626ed6be81e942bb830d01eefeccf9241ad18a))
+
 ## [2.2.10](https://github.com/zextras/carbonio-docs-connector-ce/compare/v2.2.9...v2.2.10) (2026-11-17)
 
 ### Bug Fixes
