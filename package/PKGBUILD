@@ -47,7 +47,6 @@ sha256sums=(
   'ae9f03e59beaeff9407193e44a38524c32701fe9d6b3e842ba0f57319ce381bf'
 )
 backup=(
-  "etc/zextras/service-discover/carbonio-docs-connector.hcl"
   "etc/carbonio/docs-connector/config.properties"
 )
 
