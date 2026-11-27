@@ -39,7 +39,7 @@ sha256sums=(
   'ece8af20142189524c543e1fca1f42e3abdb544fb0d464b706f37db712d53149'
   'f909f036d6f30c90aa1235fd516a5cc3190e4c85d88e0826b63a160c832db321'
   '05b45926ccce5eabf108f52dad5142a9106a3f4e19ef06dc5774656389b12286'
-  '3dfa1619f91868c31c760892747bd9239d99aae0393741e76b9f6275c42d23f7'
+  '8c6bd5a469ba7c184a087be8c8b7ec4953c903b15db13740305453b687441253'
   'd48d4037eba16e60a7be4bb57bfc32fe5bd5f9e64df053265c06d4b32c924309'
   '8d0a6ba72b891bdfec8d1bf65eb9c384d66f5038939f8fdc05cff61946644e61'
   '8fabb3f2fc99bddcd55f4c0f39322d57d88bb4cb8c36aba9f209d464ca3a60bd'
@@ -146,6 +146,6 @@ postrm() {
 
   rm -f /etc/zextras/service-discover/carbonio-docs-connector.hcl
   if [ "$1" = "purge" ]; then
-    rm -f /etc/zextras/service-discover/carbonio-docs-connector.env /etc/zextras/service-discover/carbonio-docs-connector.hcl.bak
+    rm -f /etc/zextras/service-discover/carbonio-docs-connector.env
   fi
 }
