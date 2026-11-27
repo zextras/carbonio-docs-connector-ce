@@ -67,7 +67,6 @@ _package_common() {
   install -Dm644 "${srcdir}/carbonio-docs-connector-template.hcl" \
     "${pkgdir}/etc/zextras/service-discover/templates/carbonio-docs-connector-template.hcl"
 
-
   install -Dm644 "${srcdir}/521-carbonio-docs-connector.sh" \
     "${pkgdir}/etc/zextras/pending-setups.d/521-carbonio-docs-connector.sh"
 
@@ -112,26 +111,10 @@ postinst() {
     systemctl enable carbonio-docs-connector-sidecar.service >/dev/null 2>&1 || :
   fi
 
-  if [ "$1" = "configure" ]; then
-    env -i PATH=/usr/bin:/bin bash -c 'set -a; [ -r "$1" ] && . "$1"; exec consul-template -once -template "$2:$3"' _ \
-      /etc/zextras/service-discover/carbonio-docs-connector.env \
-      /etc/zextras/service-discover/templates/carbonio-docs-connector-template.hcl \
-      /etc/zextras/service-discover/carbonio-docs-connector.hcl > /dev/null \
-      || echo "WARNING: cannot render /etc/zextras/service-discover/carbonio-docs-connector.hcl, run carbonio-docs-connector-setup"
-  fi
-
   echo "======================================================"
   echo "Carbonio Docs Connector installed successfully!       "
   echo "You must run pending-setups to configure it correctly."
   echo "======================================================"
-}
-
-posttrans() {
-  env -i PATH=/usr/bin:/bin bash -c 'set -a; [ -r "$1" ] && . "$1"; exec consul-template -once -template "$2:$3"' _ \
-    /etc/zextras/service-discover/carbonio-docs-connector.env \
-    /etc/zextras/service-discover/templates/carbonio-docs-connector-template.hcl \
-    /etc/zextras/service-discover/carbonio-docs-connector.hcl > /dev/null \
-    || echo "WARNING: cannot render /etc/zextras/service-discover/carbonio-docs-connector.hcl, run carbonio-docs-connector-setup"
 }
 
 prerm() {
