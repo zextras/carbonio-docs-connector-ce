@@ -18,12 +18,13 @@ url="https://www.zextras.com/"
 depends=(
   "service-discover"
   "service-discover-base"
+  "service-discover-template"
   "pending-setups"
 )
 source=(
   "521-carbonio-docs-connector.sh"
   "carbonio-docs-connector"
-  "carbonio-docs-connector.hcl"
+  "carbonio-docs-connector-template.hcl"
   "carbonio-docs-connector.service"
   "carbonio-docs-connector-setup"
   "carbonio-docs-connector-sidecar.service"
@@ -36,9 +37,9 @@ source=(
 sha256sums=(
   'ece8af20142189524c543e1fca1f42e3abdb544fb0d464b706f37db712d53149'
   'f909f036d6f30c90aa1235fd516a5cc3190e4c85d88e0826b63a160c832db321'
-  '16ac6b1d1e0e7c76c1f9e64ab8ecc785d84f885fe3f9df3e67d08c0f931bc410'
+  '6da249c827c5c3b0da003b6356ae5f49b68e68b0a28995adb17d614c6b20490c'
   'd48d4037eba16e60a7be4bb57bfc32fe5bd5f9e64df053265c06d4b32c924309'
-  'f0dcb0a505e9132fcefaee0c2a8b95eccd269d95985cd0a4cb86a9511f671167'
+  '5f7f6b9a3de2505fc18512f3b722f610ec68442584678ed1ec889d9d8026ea71'
   '8fabb3f2fc99bddcd55f4c0f39322d57d88bb4cb8c36aba9f209d464ca3a60bd'
   'b2309f262e52dcfc34fe0ed7d40b362811f279a26d8a67e2e069faf36a226134'
   'SKIP'
@@ -47,7 +48,6 @@ sha256sums=(
   'ae9f03e59beaeff9407193e44a38524c32701fe9d6b3e842ba0f57319ce381bf'
 )
 backup=(
-  "etc/zextras/service-discover/carbonio-docs-connector.hcl"
   "etc/carbonio/docs-connector/config.properties"
 )
 
@@ -64,8 +64,8 @@ _package_common() {
   install -Dm644 "${srcdir}/carbonio-docs-connector.service" \
     "${pkgdir}/lib/systemd/system/carbonio-docs-connector.service"
 
-  install -Dm644 "${srcdir}/carbonio-docs-connector.hcl" \
-    "${pkgdir}/etc/zextras/service-discover/carbonio-docs-connector.hcl"
+  install -Dm644 "${srcdir}/carbonio-docs-connector-template.hcl" \
+    "${pkgdir}/etc/zextras/service-discover/templates/carbonio-docs-connector-template.hcl"
 
   install -Dm644 "${srcdir}/521-carbonio-docs-connector.sh" \
     "${pkgdir}/etc/zextras/pending-setups.d/521-carbonio-docs-connector.sh"
@@ -129,5 +129,10 @@ prerm() {
 postrm() {
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload >/dev/null 2>&1 || :
+  fi
+
+  rm -f /etc/zextras/service-discover/carbonio-docs-connector.hcl
+  if [ "$1" = "purge" ]; then
+    rm -f /etc/zextras/service-discover/carbonio-docs-connector.env
   fi
 }
