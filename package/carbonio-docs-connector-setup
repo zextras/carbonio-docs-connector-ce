@@ -9,7 +9,6 @@ if [[ $(id -u) -ne 0 ]]; then
   exit 1
 fi
 
-carbonio-docs-connector-hcl migrate || :
 if ! carbonio-docs-connector-hcl render; then
   echo "Cannot render /etc/zextras/service-discover/carbonio-docs-connector.hcl; leaving pending-setup to be retried."
   exit 1
