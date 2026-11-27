@@ -19,10 +19,16 @@ RUN set -eu; mkdir -p /out; \
     esac; \
     cp "${src}"/*-runner /out/carbonio-docs-connector-ce-runner
 
+FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.20 AS hcl
+COPY package/carbonio-docs-connector-template.hcl /carbonio-docs-connector-template.hcl
+RUN sed -E 's/\{\{ or \(env "[A-Z0-9_]+"\) "([^"]*)" \}\}/\1/g' \
+    /carbonio-docs-connector-template.hcl > /carbonio-docs-connector.hcl \
+    && ! grep -q '{{' /carbonio-docs-connector.hcl
+
 FROM ${SIDECAR_IMAGE}
 
 # Service registration
-COPY package/carbonio-docs-connector.hcl /consul/config/
+COPY --from=hcl /carbonio-docs-connector.hcl /consul/config/
 
 # Setup files
 COPY package/service-protocol.json /etc/carbonio/docs-connector/service-discover/
